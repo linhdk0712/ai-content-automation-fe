@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Content Automation</title>
+    <meta name="description" content="AI-powered content automation platform for creating, managing, and publishing content across multiple channels." />
+    <meta name="keywords" content="AI, content automation, content creation, social media, publishing" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1976d2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="AI Content" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="AI Content Automation" />
+    <meta property="og:description" content="AI-powered content automation platform" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://aicontentautomation.com" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AI Content Automation" />
+    <meta name="twitter:description" content="AI-powered content automation platform" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Critical CSS -->
+    <style>
+      /* Critical CSS for initial render */
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f5f5f5;
+      }
+      
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Loading spinner styles */
+      .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        margin-top: 16px;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DB9heCca.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/chunk-IloZ2OGx.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-DU-2Uplp.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-DIdkmVTH.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-BLWUN8J3.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-B5QGrkOq.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-B-bFj9Kt.js">
+    <link rel="modulepreload" crossorigin href="/assets/chunk-BahpKeVa.js">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root">
+      <!-- Fallback loading state -->
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading AI Content Automation...</div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+import{a,j as t}from"./chunk-BLWUN8J3.js";import{d as r,ay as i}from"./chunk-IloZ2OGx.js";import"./chunk-DIdkmVTH.js";import"./chunk-DU-2Uplp.js";const n=()=>a(i,{maxWidth:"lg",children:[t(r,{variant:"h4",gutterBottom:!0,children:"Analytics"}),t(r,{variant:"body1",children:"Analytics dashboard will be implemented here."})]});export{n as default};

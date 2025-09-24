@@ -1,0 +1,1 @@
+import{a as i,j as r}from"./chunk-BLWUN8J3.js";import{d as a,ay as n}from"./chunk-IloZ2OGx.js";import"./chunk-DIdkmVTH.js";import"./chunk-DU-2Uplp.js";const t=()=>i(n,{maxWidth:"lg",children:[r(a,{variant:"h4",gutterBottom:!0,children:"Pricing Plans"}),r(a,{variant:"body1",children:"Pricing plans will be implemented here."})]});export{t as default};

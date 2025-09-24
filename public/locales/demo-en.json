@@ -1,0 +1,103 @@
+{
+  "demo": {
+    "title": "Accessibility & Internationalization Demo",
+    "description": "This demo showcases comprehensive WCAG 2.1 AA compliance features, dynamic language switching with RTL support, voice commands, and customizable UI themes.",
+    "skipToMain": "Skip to main content",
+    "skipToControls": "Skip to demo controls",
+    "accessibility": "Accessibility",
+    "openAccessibilitySettings": "Open accessibility settings",
+    
+    "controls": {
+      "title": "Demo Controls",
+      "generateContent": "Generate Sample Content",
+      "clearContent": "Clear Content",
+      "testCompliance": "Test WCAG Compliance"
+    },
+    
+    "voiceControls": {
+      "title": "Voice Commands",
+      "enable": "Enable Voice Commands",
+      "disable": "Disable Voice Commands",
+      "availableCommands": "Available Voice Commands:"
+    },
+    
+    "voiceCommands": {
+      "generateContent": "generate demo content",
+      "clearContent": "clear content",
+      "openAccessibility": "open accessibility"
+    },
+    
+    "content": {
+      "title": "Generated Content",
+      "generatedContent": "Generated content area",
+      "empty": "No content generated yet. Use the controls above to generate sample content or try voice commands.",
+      "getStarted": "Get Started"
+    },
+    
+    "formatting": {
+      "title": "Localization Examples",
+      "date": "Current Date",
+      "currency": "Price",
+      "number": "Large Number",
+      "pluralization": "Pluralization"
+    },
+    
+    "features": {
+      "title": "Accessibility Features",
+      "keyboardNavigation": "Keyboard Navigation",
+      "keyboardNavigationDesc": "Enhanced keyboard navigation with focus management and arrow key support.",
+      "demoMenu": "Demo menu for keyboard navigation",
+      "screenReader": "Screen Reader Support",
+      "screenReaderDesc": "Comprehensive screen reader support with live announcements and semantic markup.",
+      "testScreenReader": "Test Screen Reader Announcement",
+      "testAnnouncement": "This is a test announcement for screen readers.",
+      "rtlSupport": "RTL Language Support",
+      "rtlSupportDesc": "Full right-to-left language support with automatic text direction switching.",
+      "rtlExample": "This text adapts to the current language direction.",
+      "customization": "UI Customization",
+      "customizationDesc": "Customizable themes, font sizes, and accessibility preferences.",
+      "currentSettings": "Current Settings",
+      "fontSize": "Font Size",
+      "highContrast": "High Contrast",
+      "reducedMotion": "Reduced Motion",
+      "language": "Language"
+    },
+    
+    "menu": {
+      "item1": "Menu Item 1",
+      "item2": "Menu Item 2", 
+      "item3": "Menu Item 3"
+    },
+    
+    "notifications": {
+      "title": "Notifications",
+      "contentGenerated": "Sample content has been generated successfully.",
+      "contentCleared": "Content has been cleared."
+    },
+    
+    "sampleContent": "This is sample content generated on {{date}}. The current price is {{price}} and we have {{count}} items in stock. This content demonstrates internationalization features including date formatting, currency display, and number localization.",
+    
+    "items": {
+      "singular": "item",
+      "plural": "items"
+    },
+    
+    "generatedContent": "Sample content has been generated with localized formatting.",
+    "contentGenerated": "Content generated successfully",
+    "contentCleared": "Content cleared successfully",
+    "accessibilityPanelOpened": "Accessibility panel opened",
+    "testingCompliance": "Testing WCAG compliance...",
+    "complianceTestPassed": "All accessibility tests passed!",
+    "complianceTestFailed": "Found {{count}} accessibility issues",
+    "complianceTestError": "Error running accessibility tests",
+    "voiceEnabled": "Voice commands enabled",
+    "voiceDisabled": "Voice commands disabled", 
+    "voiceError": "Error with voice commands. Please check microphone permissions."
+  },
+  
+  "common": {
+    "direction": "Text Direction",
+    "yes": "Yes",
+    "no": "No"
+  }
+}
