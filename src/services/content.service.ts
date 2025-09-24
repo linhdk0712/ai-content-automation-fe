@@ -610,6 +610,137 @@ export class ContentService {
     }
   }
 
+  // Content Library Operations
+  async getContentLibrary(request: ContentLibraryRequest): Promise<PaginatedResponse<ContentResponse>> {
+    try {
+      return await apiRequest.post<PaginatedResponse<ContentResponse>>('/content-library/list', request)
+    } catch (error) {
+      console.error('Failed to get content library:', error)
+      throw error
+    }
+  }
+
+  async searchContentLibrary(request: ContentSearchRequest): Promise<PaginatedResponse<ContentResponse>> {
+    try {
+      return await apiRequest.post<PaginatedResponse<ContentResponse>>('/content-library/search', request)
+    } catch (error) {
+      console.error('Failed to search content library:', error)
+      throw error
+    }
+  }
+
+  async toggleFavorite(contentId: number): Promise<void> {
+    try {
+      await apiRequest.post(`/content-library/${contentId}/toggle-favorite`)
+    } catch (error) {
+      console.error(`Failed to toggle favorite for content ${contentId}:`, error)
+      throw error
+    }
+  }
+
+  async getUserFavorites(page = 0, size = 20, sortBy = 'updatedAt', sortDirection = 'desc'): Promise<PaginatedResponse<ContentResponse>> {
+    try {
+      const params = new URLSearchParams()
+      params.append('page', page.toString())
+      params.append('size', size.toString())
+      params.append('sortBy', sortBy)
+      params.append('sortDirection', sortDirection)
+      
+      return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/favorites?${params.toString()}`)
+    } catch (error) {
+      console.error('Failed to get user favorites:', error)
+      throw error
+    }
+  }
+
+  async bulkStar(contentIds: number[]): Promise<BulkOperationResponse> {
+    try {
+      return await apiRequest.post<BulkOperationResponse>('/content-library/bulk/star', contentIds)
+    } catch (error) {
+      console.error('Failed to bulk star content:', error)
+      throw error
+    }
+  }
+
+  async bulkArchive(contentIds: number[]): Promise<BulkOperationResponse> {
+    try {
+      return await apiRequest.post<BulkOperationResponse>('/content-library/bulk/archive', contentIds)
+    } catch (error) {
+      console.error('Failed to bulk archive content:', error)
+      throw error
+    }
+  }
+
+  async bulkDeleteLibrary(contentIds: number[]): Promise<BulkOperationResponse> {
+    try {
+      return await apiRequest.post<BulkOperationResponse>('/content-library/bulk/delete', contentIds)
+    } catch (error) {
+      console.error('Failed to bulk delete content:', error)
+      throw error
+    }
+  }
+
+  async getLibraryStats(workspaceId?: number): Promise<ContentLibraryStatsResponse> {
+    try {
+      const params = new URLSearchParams()
+      if (workspaceId) {
+        params.append('workspaceId', workspaceId.toString())
+      }
+      
+      return await apiRequest.get<ContentLibraryStatsResponse>(`/content-library/stats?${params.toString()}`)
+    } catch (error) {
+      console.error('Failed to get library stats:', error)
+      throw error
+    }
+  }
+
+  async getPopularTags(limit = 20): Promise<ContentTagResponse[]> {
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', limit.toString())
+      
+      return await apiRequest.get<ContentTagResponse[]>(`/content-library/tags/popular?${params.toString()}`)
+    } catch (error) {
+      console.error('Failed to get popular tags:', error)
+      throw error
+    }
+  }
+
+  async exportContentLibrary(request: ContentExportRequest): Promise<ContentExportResponse> {
+    try {
+      return await apiRequest.post<ContentExportResponse>('/content-library/export', request)
+    } catch (error) {
+      console.error('Failed to export content library:', error)
+      throw error
+    }
+  }
+
+  async getRecentContent(page = 0, size = 20): Promise<PaginatedResponse<ContentResponse>> {
+    try {
+      const params = new URLSearchParams()
+      params.append('page', page.toString())
+      params.append('size', size.toString())
+      
+      return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/recent?${params.toString()}`)
+    } catch (error) {
+      console.error('Failed to get recent content:', error)
+      throw error
+    }
+  }
+
+  async getContentByType(contentType: ContentType, page = 0, size = 20): Promise<PaginatedResponse<ContentResponse>> {
+    try {
+      const params = new URLSearchParams()
+      params.append('page', page.toString())
+      params.append('size', size.toString())
+      
+      return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/by-type/${contentType}?${params.toString()}`)
+    } catch (error) {
+      console.error(`Failed to get content by type ${contentType}:`, error)
+      throw error
+    }
+  }
+
   // Content Statistics
   async getContentStatistics(workspaceId?: number): Promise<any> {
     try {

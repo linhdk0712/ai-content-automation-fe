@@ -806,3 +806,65 @@ export interface DuplicateContentRequest {
   preserveScheduling?: boolean
   preserveMedia?: boolean
 }
+
+// Content Library Types
+export interface ContentLibraryRequest {
+  userId?: number
+  workspaceId?: number
+  status?: ContentStatus[]
+  contentType?: ContentType[]
+  tags?: string[]
+  startDate?: string
+  endDate?: string
+  aiGenerated?: boolean
+  page?: number
+  size?: number
+  sortBy?: string
+  sortDirection?: string
+}
+
+export interface ContentSearchRequest {
+  userId?: number
+  query?: string
+  status?: ContentStatus[]
+  contentType?: ContentType[]
+  tags?: string[]
+  startDate?: string
+  endDate?: string
+  aiGenerated?: boolean
+  page?: number
+  size?: number
+  sortBy?: string
+  sortDirection?: string
+}
+
+export interface ContentExportRequest {
+  userId?: number
+  workspaceId?: number
+  status?: ContentStatus[]
+  contentType?: ContentType[]
+  tags?: string[]
+  format?: 'PDF' | 'DOCX' | 'HTML' | 'MARKDOWN'
+}
+
+export interface ContentExportResponse {
+  exportUrl: string
+  totalItems: number
+  format: string
+  generatedAt: string
+}
+
+export interface ContentLibraryStatsResponse {
+  totalContent: number
+  draftCount: number
+  publishedCount: number
+  archivedCount: number
+  favoritesCount: number
+  recentActivityCount: number
+  contentByType: Record<ContentType, number>
+}
+
+export interface ContentTagResponse {
+  name: string
+  count: number
+}

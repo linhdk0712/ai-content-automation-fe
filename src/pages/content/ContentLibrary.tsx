@@ -1,28 +1,5 @@
 import { useContent } from '@/hooks/useContent';
 import {
-  Add,
-  Analytics,
-  Delete,
-  Download,
-  Edit,
-  FileCopy,
-  FilterList,
-  Group,
-  Lock,
-  MoreVert,
-  Person,
-  Public,
-  Refresh,
-  Search,
-  Share,
-  Sort,
-  Star,
-  StarBorder,
-  Upload,
-  ViewList,
-  ViewModule
-} from '@mui/icons-material';
-import {
   Alert,
   Avatar,
   Box,
@@ -92,18 +69,16 @@ const ContentLibrary: React.FC = () => {
   const { user } = useAuth();
   const {
     loading,
-    loadContent,
     deleteContent,
     duplicateContent,
-    toggleStar,
-    bulkDelete,
-    bulkArchive,
-    exportContents,
     error  } = useContent();
 
-  // Mock data for demonstration
-  const contents: ContentItem[] = [];
-  const totalCount = 0;
+  const {
+    content  } = useContentLibrary();
+
+  // Use real data from content library
+  const contents: ContentItem[] = content?.content || [];
+  const totalCount = content?.totalElements || 0;
 
   // State management
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -125,8 +100,27 @@ const ContentLibrary: React.FC = () => {
 
   // Load contents on component mount and when filters change
   useEffect(() => {
-    loadContent(0);
-  }, [page, pageSize, searchQuery, filterStatus, filterType, filterAuthor, sortBy, sortOrder, loadContent]);
+    const request = {
+      status: filterStatus !== 'ALL' ? [filterStatus as any] : undefined,
+      contentType: filterType !== 'ALL' ? [filterType as any] : undefined,
+      page: page - 1, // Convert to 0-based
+      size: pageSize,
+      sortBy,
+      sortDirection: sortOrder.toUpperCase()
+    };
+    
+    if (searchQuery.trim()) {
+      searchContent({ ...request, query: searchQuery });
+    } else {
+      loadContentLibrary(request);
+    }
+  }, [page, pageSize, searchQuery, filterStatus, filterType, filterAuthor, sortBy, sortOrder, loadContentLibrary, searchContent]);
+
+  // Load stats and tags on mount
+  useEffect(() => {
+    loadStats();
+    loadPopularTags();
+  }, [loadStats, loadPopularTags]);
 
   // Debounced search
   const debouncedSearch = useCallback(
@@ -217,7 +211,7 @@ const ContentLibrary: React.FC = () => {
   };
 
   const handleToggleStar = async (content: ContentItem) => {
-    await toggleStar(content.id,"");
+    await toggleFavorite(content.id);
     handleMenuClose();
   };
 
@@ -228,19 +222,34 @@ const ContentLibrary: React.FC = () => {
 
   const confirmBulkAction = async () => {
     if (bulkAction && selectedItems.length > 0) {
-      if (bulkAction === 'delete') {
-        await bulkDelete(selectedItems,"");
-      } else if (bulkAction === 'archive') {
-        await bulkArchive(selectedItems,"");
+      try {
+        if (bulkAction === 'delete') {
+          await bulkDeleteLibrary(selectedItems);
+        } else if (bulkAction === 'archive') {
+          await bulkArchiveLibrary(selectedItems);
+        }
+        setSelectedItems([]);
+        setBulkActionDialogOpen(false);
+        setBulkAction(null);
+      } catch (error) {
+        console.error('Bulk action failed:', error);
       }
-      setSelectedItems([]);
-      setBulkActionDialogOpen(false);
-      setBulkAction(null);
     }
   };
 
   const handleExport = async () => {
-    await exportContents(0,"");
+    try {
+      const request = {
+        status: filterStatus !== 'ALL' ? [filterStatus as any] : undefined,
+        contentType: filterType !== 'ALL' ? [filterType as any] : undefined,
+        format: 'PDF' as const
+      };
+      const result = await exportLibrary(request);
+      // Handle export result (e.g., download file)
+      window.open(result.exportUrl, '_blank');
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
