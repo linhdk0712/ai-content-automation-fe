@@ -1,1 +1,0 @@
-import{a as t,j as e}from"./chunk-BLWUN8J3.js";import{d as r,ay as n}from"./chunk-IloZ2OGx.js";import"./chunk-DIdkmVTH.js";import"./chunk-DU-2Uplp.js";const a=()=>t(n,{maxWidth:"lg",children:[e(r,{variant:"h4",gutterBottom:!0,children:"Content Creator"}),e(r,{variant:"body1",children:"Content creation interface will be implemented here."})]});export{a as default};

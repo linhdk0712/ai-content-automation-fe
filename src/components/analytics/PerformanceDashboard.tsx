@@ -1,37 +1,37 @@
-import React, { useState, useEffect } from 'react';
 import {
+  Alert,
   Box,
-  Grid,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
   CircularProgress,
-  Alert
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  Typography
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { Eye, MessageCircle, Share, ThumbsUp, TrendingDown, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import {
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
   CartesianGrid,
-  Tooltip,
+  Cell,
   Legend,
-  ResponsiveContainer
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
-import { TrendingUp, TrendingDown, Eye, ThumbsUp, Share, MessageCircle } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { EngagementMetrics } from './EngagementMetrics.tsx';
-import { ContentComparison } from './ContentComparison.tsx';
 import { AudienceInsights } from './AudienceInsights.tsx';
+import { ContentComparison } from './ContentComparison.tsx';
+import { EngagementMetrics } from './EngagementMetrics.tsx';
 import { ROICalculator } from './ROICalculator.tsx';
 import { ReportGenerator } from './ReportGenerator.tsx';
 
@@ -73,8 +73,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   } = useAnalytics();
 
   useEffect(() => {
-    fetchDashboard(userId, filters);
-  }, [userId, filters, fetchDashboard]);
+    fetchDashboard(userId);
+  }, [userId, fetchDashboard]);
 
   const handleFilterChange = (key: keyof DashboardFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));

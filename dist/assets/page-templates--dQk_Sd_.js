@@ -1,1 +1,0 @@
-import{a as t,j as a}from"./chunk-BLWUN8J3.js";import{d as e,ay as r}from"./chunk-IloZ2OGx.js";import"./chunk-DIdkmVTH.js";import"./chunk-DU-2Uplp.js";const i=()=>t(r,{maxWidth:"lg",children:[a(e,{variant:"h4",gutterBottom:!0,children:"Templates"}),a(e,{variant:"body1",children:"Template library will be implemented here."})]});export{i as default};

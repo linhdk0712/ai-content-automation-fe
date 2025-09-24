@@ -1,54 +1,54 @@
-import React, { useState, useEffect } from 'react';
 import {
+  Alert,
+  Avatar,
   Box,
-  Grid,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
   Chip,
+  FormControl,
+  Grid,
+  InputLabel,
   LinearProgress,
-  Avatar,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Alert
+  MenuItem,
+  Select,
+  Typography
 } from '@mui/material';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  RadialBarChart,
-  RadialBar
-} from 'recharts';
-import { 
-  Users, 
-  TrendingUp, 
-  Globe, 
-  Clock, 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  Eye,
+  Clock,
   Download,
+  Eye,
+  Globe,
+  Heart,
+  MessageCircle,
+  Share2,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import { useAnalytics } from '../../hooks/useAnalytics';
 
 interface AudienceInsightsProps {
@@ -59,9 +59,7 @@ interface AudienceInsightsProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 export const AudienceInsights: React.FC<AudienceInsightsProps> = ({
-  userId,
-  filters
-}) => {
+  userId}) => {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<string>('30d');
   const [insightType, setInsightType] = useState<'demographics' | 'behavior' | 'growth'>('demographics');
@@ -73,12 +71,8 @@ export const AudienceInsights: React.FC<AudienceInsightsProps> = ({
   } = useAnalytics();
 
   useEffect(() => {
-    fetchAudienceInsights(userId, {
-      ...filters,
-      platform: selectedPlatform,
-      timeRange
-    });
-  }, [userId, filters, selectedPlatform, timeRange, fetchAudienceInsights]);
+    fetchAudienceInsights(userId);
+  }, [userId, fetchAudienceInsights]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
@@ -90,15 +84,7 @@ export const AudienceInsights: React.FC<AudienceInsightsProps> = ({
     return num.toString();
   };
 
-  const formatPercentage = (num: number): string => {
-    return num.toFixed(1) + '%';
-  };
 
-  const getGrowthColor = (growth: number): string => {
-    if (growth > 0) return '#4caf50';
-    if (growth < 0) return '#f44336';
-    return '#ff9800';
-  };
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     const RADIAN = Math.PI / 180;
@@ -219,7 +205,7 @@ export const AudienceInsights: React.FC<AudienceInsightsProps> = ({
                       fill="#8884d8"
                       dataKey="percentage"
                     >
-                      {(audienceData?.demographics?.ageGroups || []).map((entry: any, index: number) => (
+                      {(audienceData?.demographics?.ageGroups || []).map((_entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

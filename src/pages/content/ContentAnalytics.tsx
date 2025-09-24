@@ -92,13 +92,7 @@ const ContentAnalytics: React.FC = () => {
 
   const loadAnalyticsData = async () => {
     if (id) {
-      await fetchDashboard(parseInt(id), {
-        startDate: new Date(Date.now() - (dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90) * 24 * 60 * 60 * 1000),
-        endDate: new Date(),
-        platforms: [],
-        timeGranularity: 'DAY',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      });
+      await fetchDashboard(parseInt(id));
     }
   };
 
