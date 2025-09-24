@@ -37,6 +37,11 @@ const ContentCreator = createRouteComponent(
   'Content Creator'
 )
 
+const ContentLibrary = createRouteComponent(
+  () => import('./pages/content/ContentLibraryEnhanced'),
+  'Content Library'
+)
+
 const Templates = createRouteComponent(
   () => import('./pages/templates/Templates'),
   'Templates'
@@ -157,6 +162,8 @@ function App() {
                     <Route index element={<Navigate to="/dashboard" replace />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="content/create" element={<ContentCreator />} />
+                    <Route path="content/library" element={<ContentLibrary />} />
+                    <Route path="content/edit/:id" element={<ContentCreator />} />
                     <Route path="templates" element={<Templates />} />
                     <Route path="templates/new" element={<TemplateEditor />} />
                     <Route path="templates/:id" element={<TemplateViewer />} />

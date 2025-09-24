@@ -1,5 +1,28 @@
 import { useContent } from '@/hooks/useContent';
 import {
+  Add,
+  Analytics,
+  Delete,
+  Download,
+  Edit,
+  FileCopy,
+  FilterList,
+  Group,
+  Lock,
+  MoreVert,
+  Person,
+  Public,
+  Refresh,
+  Search,
+  Share,
+  Sort,
+  Star,
+  StarBorder,
+  Upload,
+  ViewList,
+  ViewModule
+} from '@mui/icons-material';
+import {
   Alert,
   Avatar,
   Box,
@@ -36,6 +59,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useContentLibrary } from '../../hooks/useContentLibrary';
 
 interface ContentItem {
   id: number;
@@ -74,7 +98,16 @@ const ContentLibrary: React.FC = () => {
     error  } = useContent();
 
   const {
-    content  } = useContentLibrary();
+    content,
+    loadContentLibrary,
+    searchContent,
+    loadStats,
+    loadPopularTags,
+    toggleFavorite,
+    bulkDeleteLibrary,
+    bulkArchiveLibrary,
+    exportLibrary
+  } = useContentLibrary();
 
   // Use real data from content library
   const contents: ContentItem[] = content?.content || [];

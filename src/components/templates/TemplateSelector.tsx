@@ -1,44 +1,44 @@
 import {
-    Close,
-    Search,
-    Star,
-    StarBorder,
-    Visibility
+  Close,
+  Search,
+  Star,
+  StarBorder,
+  Visibility
 } from '@mui/icons-material';
 import {
-    Alert,
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Skeleton,
-    Tab,
-    Tabs,
-    TextField,
-    Typography
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Skeleton,
+  Tab,
+  Tabs,
+  TextField,
+  Typography
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useTemplate } from '../../hooks/useTemplate';
 import {
-    Template,
-    TemplateCategory,
-    TemplateIndustry,
-    TemplateLanguage,
-    TemplateType
+  Template,
+  TemplateCategory,
+  TemplateIndustry,
+  TemplateLanguage,
+  TemplateType
 } from '../../types/template.types';
 
 interface TemplateSelectorProps {
@@ -57,11 +57,6 @@ interface TemplateSelectorProps {
   multiSelect?: boolean;
 }
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
 
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -73,7 +68,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   allowPreview = true,
   filterByCategory,
   filterByIndustry,
-  filterByType,
   showFavoritesOnly = false,
   showUserTemplatesOnly = false,
   maxSelections = 1,
@@ -100,8 +94,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   // State management
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'ALL'>('ALL');
-  const [selectedIndustry, setSelectedIndustry] = useState<TemplateIndustry | 'ALL'>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('ALL');
   const [selectedLanguage, setSelectedLanguage] = useState<TemplateLanguage | 'ALL'>('ALL');
   const [selectedTemplates, setSelectedTemplates] = useState<Template[]>([]);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
@@ -120,10 +114,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   // Apply initial filters
   useEffect(() => {
-    if (filterByCategory && filterByCategory !== 'ALL') {
+    if (filterByCategory) {
       setSelectedCategory(filterByCategory);
     }
-    if (filterByIndustry && filterByIndustry !== 'ALL') {
+    if (filterByIndustry) {
       setSelectedIndustry(filterByIndustry);
     }
   }, [filterByCategory, filterByIndustry]);
@@ -135,10 +129,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           if (!showUserTemplatesOnly && !showFavoritesOnly) {
             await searchTemplates({
               query: searchQuery || undefined,
-              category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
-              industry: selectedIndustry !== 'ALL' ? selectedIndustry : undefined,
+              category: selectedCategory !== 'ALL' ? selectedCategory as TemplateCategory : undefined,
+              industry: selectedIndustry !== 'ALL' ? selectedIndustry as TemplateIndustry : undefined,
               language: selectedLanguage !== 'ALL' ? selectedLanguage : undefined,
-              type: filterByType,
               page: 0,
               size: 20
             });
@@ -177,12 +170,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       }
     } else {
       // For single select, show use template dialog if template has variables
-      if (template.variables && template.variables.length > 0) {
+      if ((template as any).variables && (template as any).variables.length > 0) {
         setProcessingTemplate(template);
         setUseTemplateDialogOpen(true);
         // Initialize variable values
         const initialValues: Record<string, any> = {};
-        template.variables.forEach(variable => {
+        (template as any).variables.forEach((variable: any) => {
           if (variable.defaultValue !== undefined) {
             initialValues[variable.name] = variable.defaultValue;
           }
@@ -244,11 +237,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   const getCurrentTemplates = () => {
     if (showFavoritesOnly) return favorites;
-    if (showUserTemplatesOnly) return templates.filter(t => t.createdBy.id === 1); // Assuming user ID
+    if (showUserTemplatesOnly) return templates.filter(t => t.createdBy === 1); // Assuming user ID
     
     switch (tabValue) {
       case 0: return templates;
-      case 1: return templates.filter(t => t.createdBy.id === 1); // User templates
+      case 1: return templates.filter(t => t.createdBy === 1); // User templates
       case 2: return favorites;
       case 3: return popularTemplates;
       case 4: return recentTemplates;
@@ -309,15 +302,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
             <Chip label={template.category.replace('_', ' ')} size="small" />
-            <Chip label={template.type.replace('_', ' ')} size="small" variant="outlined" />
+            <Chip label={(template as any).type.replace('_', ' ')} size="small" variant="outlined" />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar src={template.createdBy.avatar} sx={{ width: 16, height: 16 }}>
-              {template.createdBy.name.charAt(0)}
+            <Avatar src={(template as any).createdBy?.avatar} sx={{ width: 16, height: 16 }}>
+              {(template as any).createdBy?.name?.charAt(0) || 'U'}
             </Avatar>
             <Typography variant="caption" color="text.secondary">
-              {template.createdBy.name}
+              {(template as any).createdBy?.name || 'Unknown'}
             </Typography>
           </Box>
         </CardContent>
@@ -384,7 +377,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value as TemplateCategory | 'ALL')}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
                     label="Category"
                   >
                     <MenuItem value="ALL">All Categories</MenuItem>
@@ -401,7 +394,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <InputLabel>Industry</InputLabel>
                   <Select
                     value={selectedIndustry}
-                    onChange={(e) => setSelectedIndustry(e.target.value as TemplateIndustry | 'ALL')}
+                    onChange={(e) => setSelectedIndustry(e.target.value)}
                     label="Industry"
                   >
                     <MenuItem value="ALL">All Industries</MenuItem>
@@ -436,7 +429,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           {/* Tabs */}
           {!showFavoritesOnly && !showUserTemplatesOnly && (
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mx: 2 }}>
-              <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+              <Tabs value={tabValue} onChange={(__e, newValue) => setTabValue(newValue)}>
                 <Tab label="All Templates" />
                 <Tab label="My Templates" />
                 <Tab label="Favorites" />
@@ -528,7 +521,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </Typography>
           
           <Grid container spacing={2}>
-            {processingTemplate?.variables?.map((variable) => (
+            {(processingTemplate as any)?.variables?.map((variable: any) => (
               <Grid item xs={12} md={6} key={variable.id}>
                 {variable.type === 'SELECT' ? (
                   <FormControl fullWidth>
@@ -538,7 +531,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       onChange={(e) => setVariableValues(prev => ({ ...prev, [variable.name]: e.target.value }))}
                       label={variable.label}
                     >
-                      {variable.options?.map((option) => (
+                      {variable.options?.map((option: any) => (
                         <MenuItem key={option} value={option}>
                           {option}
                         </MenuItem>
