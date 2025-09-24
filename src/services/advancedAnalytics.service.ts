@@ -1,6 +1,6 @@
 import { api } from './api';
 
-const BASE_URL = '/api/v1/analytics/advanced';
+const BASE_URL = '/analytics/advanced';
 
 export const advancedAnalyticsService = {
   // Dashboard methods

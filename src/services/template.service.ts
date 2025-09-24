@@ -23,27 +23,44 @@ import api from './api';
 class TemplateService {
   // Core CRUD Operations - Updated to match backend endpoints
   async searchTemplates(searchRequest: TemplateSearchRequest): Promise<TemplateSearchResponse> {
-    const response = await api.get('/api/v1/templates', { params: searchRequest });
-    return response.data;
+    const response = await api.get('/templates', { params: searchRequest });
+    const page = response.data;
+    return {
+      templates: page?.content ?? [],
+      totalElements: page?.totalElements ?? 0,
+      totalPages: page?.totalPages ?? 0,
+      currentPage: page?.number ?? 0,
+      pageSize: page?.size ?? (searchRequest.size ?? 20),
+      facets: {
+        categories: {},
+        types: {},
+        industries: {},
+        languages: {},
+        difficulties: {},
+        tags: {}
+      },
+      suggestions: [],
+      relatedTemplates: []
+    };
   }
 
   async getTemplateById(templateId: number): Promise<Template> {
-    const response = await api.get(`/api/v1/templates/${templateId}`);
+    const response = await api.get(`/templates/${templateId}`);
     return response.data;
   }
 
   async createTemplate(templateData: CreateTemplateRequest): Promise<Template> {
-    const response = await api.post('/api/v1/templates', templateData);
+    const response = await api.post('/templates', templateData);
     return response.data;
   }
 
   async updateTemplate(templateId: number, templateData: UpdateTemplateRequest): Promise<Template> {
-    const response = await api.put(`/api/v1/templates/${templateId}`, templateData);
+    const response = await api.put(`/templates/${templateId}`, templateData);
     return response.data;
   }
 
   async deleteTemplate(templateId: number): Promise<void> {
-    await api.delete(`/api/v1/templates/${templateId}`);
+    await api.delete(`/templates/${templateId}`);
   }
 
   // Template Processing and Validation
@@ -59,7 +76,7 @@ class TemplateService {
 
   // Template Discovery and Browsing - Updated to match backend endpoints
   async getCategories(): Promise<TemplateCategory[]> {
-    const response = await api.get('/api/v1/templates/categories');
+    const response = await api.get('/templates/categories');
     return response.data;
   }
 
@@ -93,27 +110,44 @@ class TemplateService {
 
   // User Template Management - Updated to match backend endpoints
   async getUserTemplates(page: number = 0, size: number = 20): Promise<TemplateSearchResponse> {
-    const response = await api.get('/api/v1/templates/my-templates', {
+    const response = await api.get('/templates/my-templates', {
       params: { page, size, sortBy: 'updatedAt', sortDir: 'desc' }
     });
-    return response.data;
+    const data = response.data;
+    return {
+      templates: data?.content ?? [],
+      totalElements: data?.totalElements ?? 0,
+      totalPages: data?.totalPages ?? 0,
+      currentPage: data?.number ?? page,
+      pageSize: data?.size ?? size,
+      facets: {
+        categories: {},
+        types: {},
+        industries: {},
+        languages: {},
+        difficulties: {},
+        tags: {}
+      },
+      suggestions: [],
+      relatedTemplates: []
+    };
   }
 
   async getFavoriteTemplates(): Promise<Template[]> {
-    const response = await api.get('/api/v1/templates/favorites');
+    const response = await api.get('/templates/favorites');
     return response.data;
   }
 
   async addToFavorites(templateId: number): Promise<void> {
-    await api.post(`/api/v1/templates/${templateId}/favorite`);
+    await api.post(`/templates/${templateId}/favorite`);
   }
 
   async removeFromFavorites(templateId: number): Promise<void> {
-    await api.delete(`/api/v1/templates/${templateId}/favorite`);
+    await api.delete(`/templates/${templateId}/favorite`);
   }
 
   async rateTemplate(templateId: number, rating: number): Promise<void> {
-    await api.post(`/api/v1/templates/${templateId}/rate`, { rating });
+    await api.post(`/templates/${templateId}/rate`, { rating });
   }
 
   // Template Analytics and Performance

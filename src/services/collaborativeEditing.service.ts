@@ -36,7 +36,7 @@ export interface ContentChange {
 }
 
 class CollaborativeEditingService {
-  private baseUrl = '/api/v1/collaboration';
+  private baseUrl = '/collaboration';
 
   async createSession(contentId: string): Promise<CollaborationSession> {
     const response = await api.post(`${this.baseUrl}/sessions`, { contentId });
