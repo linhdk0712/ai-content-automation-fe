@@ -42,6 +42,16 @@ const Templates = createRouteComponent(
   'Templates'
 )
 
+const TemplateEditor = createRouteComponent(
+  () => import('./components/templates/TemplateEditor'),
+  'Template Editor'
+)
+
+const TemplateViewer = createRouteComponent(
+  () => import('./components/templates/TemplateViewer'),
+  'Template Viewer'
+)
+
 const Analytics = createRouteComponent(
   () => import('./pages/analytics/Analytics'),
   'Analytics'
@@ -148,6 +158,9 @@ function App() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="content/create" element={<ContentCreator />} />
                     <Route path="templates" element={<Templates />} />
+                    <Route path="templates/new" element={<TemplateEditor />} />
+                    <Route path="templates/:id" element={<TemplateViewer />} />
+                    <Route path="templates/:id/edit" element={<TemplateEditor />} />
                     <Route path="analytics" element={<Analytics />} />
                     <Route path="settings" element={<Settings />} />
                   </Route>
