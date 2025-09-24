@@ -1,35 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Fab,
-  Avatar,
-  LinearProgress,
-  Chip,
-  useTheme,
-  SwipeableDrawer,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-} from '@mui/material';
 import {
   Add as AddIcon,
-  TrendingUp as TrendingUpIcon,
-  Schedule as ScheduleIcon,
   Analytics as AnalyticsIcon,
   ContentCopy as ContentIcon,
   Notifications as NotificationsIcon,
+  Schedule as ScheduleIcon,
   SwipeLeft as SwipeIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
-import { useSwipeable } from 'react-swipeable';
+import {
+  Avatar,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Fab,
+  Grid,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  SwipeableDrawer,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { SwipeEventData, useSwipeable } from 'react-swipeable';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useAuth } from '../../hooks/useAuth';
 import { useContentGeneration } from '../../hooks/useContentGeneration';
 
 interface DashboardCard {
@@ -59,14 +59,14 @@ const MobileDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { dashboardData, loading: analyticsLoading } = useAnalytics();
+  const { dashboardData } = useAnalytics();
   const analytics = {
     totalContent: 0,
     engagementRate: Math.round(((dashboardData?.engagementOverview?.averageEngagementRate ?? 0) * 100)),
     scheduledPosts: 0,
     totalViews: dashboardData?.engagementOverview?.totalViews ?? 0,
   };
-  const { generationResult } = useContentGeneration();
+  useContentGeneration();
 
   const cardContainerRef = useRef<HTMLDivElement>(null);
 
@@ -158,7 +158,7 @@ const MobileDashboard: React.FC = () => {
 
   // Pull to refresh
   const pullToRefreshHandlers = useSwipeable({
-    onSwipedDown: (eventData) => {
+    onSwipedDown: (eventData: SwipeEventData) => {
       if (eventData.deltaY > 100 && window.scrollY === 0) {
         handleRefresh();
       }
