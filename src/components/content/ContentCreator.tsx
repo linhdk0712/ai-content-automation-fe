@@ -7,13 +7,20 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControl,
   FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
+  Alert as MuiAlert,
   Select,
   Slider,
+  Snackbar,
   Switch,
   TextField,
   Typography
@@ -21,6 +28,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useContentGeneration } from '../../hooks/useContentGeneration';
 import { useTemplates } from '../../hooks/useTemplates';
+import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
 import AIProviderSelector from './AIProviderSelector';
 import ContentPreview from './ContentPreview';
 import GenerationHistory from './GenerationHistory';
@@ -53,6 +61,13 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
 
   const {
     loadTemplates  } = useTemplates();
+
+  const [offerTriggerOpen, setOfferTriggerOpen] = useState(false);
+  const [isTriggering, setIsTriggering] = useState(false);
+  const [lastContentId, setLastContentId] = useState<number | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info'>('info');
 
   const industries = [
     'Marketing',
@@ -142,6 +157,46 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     };
 
     await generateContent(request);
+  };
+
+  useEffect(() => {
+    // Offer sending to AI Avatar workflow after successful generation
+    if (generationResult?.success) {
+      const maybeId = (generationResult as any)?.contentId || null;
+      setLastContentId(maybeId);
+      setOfferTriggerOpen(true);
+    }
+  }, [generationResult]);
+
+  const handleSendToWorkflow = async () => {
+    if (!lastContentId) {
+      setOfferTriggerOpen(false);
+      return;
+    }
+    setIsTriggering(true);
+    try {
+      const contentData = {
+        title: generationResult?.title,
+        content: generationResult?.content,
+        metadata: generationResult,
+        industry,
+        contentType,
+        language
+      };
+      const run = await triggerAiAvatarWorkflow(lastContentId, contentData);
+      setOfferTriggerOpen(false);
+      setToastSeverity('success');
+      setToastMsg('Sent to AI Avatar workflow');
+      setToastOpen(true);
+      window.location.href = `/workflows/run/${run.id}`;
+    } catch (e) {
+      setOfferTriggerOpen(false);
+      setToastSeverity('error');
+      setToastMsg('Failed to send to workflow');
+      setToastOpen(true);
+    } finally {
+      setIsTriggering(false);
+    }
   };
 
   const handleTemplateSelect = (template: any) => {
@@ -440,6 +495,32 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       {activeTab === 'create' && renderCreateTab()}
       {activeTab === 'templates' && renderTemplatesTab()}
       {activeTab === 'history' && renderHistoryTab()}
+
+      <Dialog open={offerTriggerOpen} onClose={() => setOfferTriggerOpen(false)}>
+        <DialogTitle>Send to AI Avatar Workflow?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Your content is ready. Do you want to send it to the AI Avatar workflow in n8n to generate voice and video automatically?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOfferTriggerOpen(false)} disabled={isTriggering}>Not now</Button>
+          <Button variant="contained" onClick={handleSendToWorkflow} disabled={isTriggering || !lastContentId}>
+            {isTriggering ? 'Sending…' : 'Send to Workflow'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert elevation={6} variant="filled" onClose={() => setToastOpen(false)} severity={toastSeverity}>
+          {toastMsg}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };

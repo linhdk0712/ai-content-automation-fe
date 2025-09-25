@@ -67,6 +67,11 @@ const Settings = createRouteComponent(
   'Settings'
 )
 
+const RunViewer = createRouteComponent(
+  () => import('./pages/workflows/RunViewer'),
+  'Workflow Run'
+)
+
 const Pricing = createRouteComponent(
   () => import('./pages/pricing/Pricing'),
   'Pricing'
@@ -170,6 +175,7 @@ function App() {
                     <Route path="templates/:id/edit" element={<TemplateEditor />} />
                     <Route path="analytics" element={<Analytics />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="workflows/run/:runId" element={<RunViewer />} />
                   </Route>
                   
                   {/* Catch all route */}
