@@ -1,4 +1,4 @@
-import { webSocketService } from './websocket.service';
+import { supabaseService } from './supabase.service';
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
 
 export interface UserPresence {
@@ -44,34 +44,64 @@ export class UserPresenceService extends BrowserEventEmitter {
  
   constructor() {
     super();
-    this.setupWebSocketListeners();
+    this.setupSupabaseListeners();
     this.setupVisibilityHandlers();
     this.setupActivityTracking();
   }
 
-  private setupWebSocketListeners(): void {
-    webSocketService.on('userPresence', (presence: unknown) => {
-      this.handlePresenceUpdate(presence as UserPresence);
+  private setupSupabaseListeners(): void {
+    supabaseService.on('authStateChanged', ({ user }) => {
+      if (user) {
+        this.initializeUser({
+          userId: user.id,
+          username: user.email || 'Unknown',
+          avatar: user.user_metadata?.avatar_url
+        });
+        this.subscribeToPresenceUpdates();
+      } else {
+        this.destroy();
+      }
     });
+  }
 
-    webSocketService.on('userActivity', (activity: unknown) => {
-      this.handleActivityUpdate(activity as UserActivity);
-    });
-
-    webSocketService.on('presenceUpdate', (update: unknown) => {
-      this.handlePresenceUpdateEvent(update as PresenceUpdate);
-    });
-
-    webSocketService.on('connected', () => {
-      if (this.currentUser) {
-        this.broadcastPresence();
-        this.startHeartbeat();
+  private subscribeToPresenceUpdates(): void {
+    // Subscribe to user presence table changes
+    supabaseService.subscribeToTable('user_presence', (payload) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        this.handlePresenceUpdate(this.convertToUserPresence(payload.new));
       }
     });
 
-    webSocketService.on('disconnected', () => {
-      this.stopHeartbeat();
+    // Subscribe to user activities
+    supabaseService.subscribeToTable('user_activities', (payload) => {
+      if (payload.eventType === 'INSERT') {
+        this.handleActivityUpdate(this.convertToUserActivity(payload.new));
+      }
     });
+  }
+
+  private convertToUserPresence(data: any): UserPresence {
+    return {
+      userId: data.user_id,
+      username: data.username || data.email || 'Unknown',
+      avatar: data.avatar_url,
+      status: data.status,
+      lastSeen: new Date(data.last_seen).getTime(),
+      currentLocation: data.metadata?.location,
+      isTyping: data.metadata?.isTyping,
+      customStatus: data.metadata?.customStatus
+    };
+  }
+
+  private convertToUserActivity(data: any): UserActivity {
+    return {
+      userId: data.user_id,
+      action: data.action,
+      resource: data.resource,
+      resourceId: data.resource_id,
+      timestamp: new Date(data.created_at).getTime(),
+      metadata: data.metadata
+    };
   }
 
   private setupVisibilityHandlers(): void {
@@ -215,19 +245,24 @@ export class UserPresenceService extends BrowserEventEmitter {
     this.broadcastPresence();
   }
 
-  setTyping(isTyping: boolean, context?: { contentId?: string; workspaceId?: string }): void {
-    if (!this.currentUser) return;
+  async setTyping(isTyping: boolean, context?: { contentId?: string; workspaceId?: string }): Promise<void> {
+    if (!this.currentUser || !supabaseService.user) return;
 
     this.currentUser.isTyping = isTyping;
     
-    webSocketService.send({
-      type: 'typing_status',
-      payload: {
-        isTyping,
-        context,
-        timestamp: Date.now()
-      }
-    });
+    try {
+      await supabaseService.update('user_presence', supabaseService.user.id, {
+        metadata: {
+          ...this.currentUser.currentLocation && { location: this.currentUser.currentLocation },
+          isTyping,
+          typingContext: context,
+          customStatus: this.currentUser.customStatus
+        },
+        last_seen: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to update typing status:', error);
+    }
 
     // Auto-clear typing status after 3 seconds of inactivity
     if (isTyping) {
@@ -246,16 +281,22 @@ export class UserPresenceService extends BrowserEventEmitter {
     }
   }
 
-  private broadcastPresence(): void {
-    if (!this.currentUser) return;
+  private async broadcastPresence(): Promise<void> {
+    if (!this.currentUser || !supabaseService.user) return;
 
-    webSocketService.send({
-      type: 'presence_update',
-      payload: {
-        ...this.currentUser,
-        timestamp: Date.now()
-      }
-    });
+    try {
+      await supabaseService.update('user_presence', supabaseService.user.id, {
+        status: this.currentUser.status,
+        last_seen: new Date().toISOString(),
+        metadata: {
+          location: this.currentUser.currentLocation,
+          isTyping: this.currentUser.isTyping,
+          customStatus: this.currentUser.customStatus
+        }
+      });
+    } catch (error) {
+      console.error('Failed to broadcast presence:', error);
+    }
   }
 
   private startHeartbeat(): void {
@@ -287,8 +328,8 @@ export class UserPresenceService extends BrowserEventEmitter {
     }
   }
 
-  trackActivity(action: string, resource: string, resourceId: string, metadata?: Record<string, any>): void {
-    if (!this.currentUser) return;
+  async trackActivity(action: string, resource: string, resourceId: string, metadata?: Record<string, any>): Promise<void> {
+    if (!this.currentUser || !supabaseService.user) return;
 
     const activity: UserActivity = {
       userId: this.currentUser.userId,
@@ -299,13 +340,21 @@ export class UserPresenceService extends BrowserEventEmitter {
       metadata
     };
 
-    webSocketService.send({
-      type: 'user_activity',
-      payload: activity
-    });
+    try {
+      await supabaseService.insert('user_activities', {
+        user_id: supabaseService.user.id,
+        action,
+        resource,
+        resource_id: resourceId,
+        metadata,
+        created_at: new Date().toISOString()
+      });
 
-    // Add to local activities
-    this.handleActivityUpdate(activity);
+      // Add to local activities
+      this.handleActivityUpdate(activity);
+    } catch (error) {
+      console.error('Failed to track activity:', error);
+    }
   }
 
   getPresence(userId: string): UserPresence | undefined {
@@ -353,20 +402,27 @@ export class UserPresenceService extends BrowserEventEmitter {
     return activities.slice(0, limit);
   }
 
-  subscribeToWorkspace(workspaceId: string): void {
-    webSocketService.subscribe(`presence:workspace:${workspaceId}`);
+  subscribeToWorkspace(workspaceId: string): string | null {
+    return supabaseService.subscribeToPresence(workspaceId, (payload) => {
+      // Handle presence updates for workspace
+      console.log('Workspace presence update:', payload);
+    });
   }
 
-  unsubscribeFromWorkspace(workspaceId: string): void {
-    webSocketService.unsubscribe(`presence:workspace:${workspaceId}`);
+  unsubscribeFromWorkspace(channelName: string): void {
+    supabaseService.unsubscribe(channelName);
   }
 
-  subscribeToContent(contentId: string): void {
-    webSocketService.subscribe(`presence:content:${contentId}`);
+  subscribeToContent(contentId: string): string | null {
+    return supabaseService.subscribeToTable('user_presence', (payload) => {
+      if (payload.new?.metadata?.location?.contentId === contentId) {
+        this.handlePresenceUpdate(this.convertToUserPresence(payload.new));
+      }
+    }, `metadata->location->>contentId=eq.${contentId}`);
   }
 
-  unsubscribeFromContent(contentId: string): void {
-    webSocketService.unsubscribe(`presence:content:${contentId}`);
+  unsubscribeFromContent(channelName: string): void {
+    supabaseService.unsubscribe(channelName);
   }
 
   getCurrentUser(): UserPresence | null {

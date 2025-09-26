@@ -41,7 +41,7 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
   sx
 }) => {
   const {
-    providers,
+    providers: rawProviders,
     providerStatuses,
     recommendations,
     isLoading,
@@ -49,6 +49,9 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
     loadProviders,
     getProviderRecommendations
   } = useAIProviders();
+
+  // Ensure providers is always an array to prevent runtime errors
+  const providers = Array.isArray(rawProviders) ? rawProviders : [];
 
   const [showDetails, setShowDetails] = useState(false);
 
@@ -247,6 +250,15 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
     return (
       <Alert severity="error" sx={sx}>
         Failed to load AI providers: {error}
+      </Alert>
+    );
+  }
+
+  // Handle case where providers is empty
+  if (providers.length === 0 && !isLoading) {
+    return (
+      <Alert severity="warning" sx={sx}>
+        No AI providers available. Please check your configuration.
       </Alert>
     );
   }

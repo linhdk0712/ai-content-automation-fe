@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { analyticsService } from '../services/analytics.service';
 
 interface DashboardFilters {
   startDate: Date;
@@ -212,7 +211,28 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await analyticsService.getContentList(userId, filters);
+      
+      const params = new URLSearchParams({
+        userId: userId.toString(),
+        startDate: filters.startDate.toISOString(),
+        endDate: filters.endDate.toISOString(),
+        platforms: filters.platforms.join(','),
+        timeGranularity: filters.timeGranularity,
+        timezone: filters.timezone
+      });
+      
+      const response = await fetch(`/api/v1/analytics/content?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content list');
+      }
+      
+      const data = await response.json();
       setContentList(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch content list');
@@ -232,7 +252,21 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await analyticsService.compareContent(params);
+      
+      const response = await fetch('/api/v1/analytics/compare', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to compare content');
+      }
+      
+      const data = await response.json();
       setComparisonData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to compare content');
@@ -245,7 +279,19 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await analyticsService.getAudienceInsights(String(userId));
+      
+      const response = await fetch(`/api/v1/analytics/audience/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch audience insights');
+      }
+      
+      const data = await response.json();
       setAudienceData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch audience insights');
@@ -258,7 +304,26 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await analyticsService.getROIData(userId, filters);
+      
+      const params = new URLSearchParams({
+        userId: userId.toString(),
+        startDate: filters.startDate.toISOString(),
+        endDate: filters.endDate.toISOString(),
+        platforms: filters.platforms.join(',')
+      });
+      
+      const response = await fetch(`/api/v1/analytics/roi?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch ROI data');
+      }
+      
+      const data = await response.json();
       setROIData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch ROI data');
@@ -278,7 +343,30 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      await analyticsService.exportData(params);
+      
+      const response = await fetch('/api/v1/analytics/export', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+      
+      // Handle file download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `engagement-data.${params.format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export data');
     } finally {
@@ -296,8 +384,22 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const reportUrl = await analyticsService.generateReport(params);
-      return reportUrl;
+      
+      const response = await fetch('/api/v1/analytics/report', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate report');
+      }
+      
+      const data = await response.json();
+      return data.reportUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate report');
       throw err;

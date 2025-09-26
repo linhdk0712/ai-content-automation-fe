@@ -2,14 +2,11 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import {
   Box,
   Button,
-  Container,
-  Divider,
   Link,
-  Paper,
   TextField,
   Typography,
 } from '@mui/material'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
@@ -23,9 +20,17 @@ const schema = yup.object({
 })
 
 const Login: React.FC = () => {
-  const { login } = useAuth()
+  const { login, isAuthenticated } = useAuth()
   const { showError, showSuccess } = useNotification()
   const navigate = useNavigate()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Already authenticated, redirecting to dashboard')
+      navigate('/dashboard')
+    }
+  }, [isAuthenticated, navigate])
 
   const {
     register,
@@ -37,93 +42,115 @@ const Login: React.FC = () => {
 
   const onSubmit = async (data: LoginRequest) => {
     try {
+      console.log('Login form submitted:', data.usernameOrEmail)
       await login(data.usernameOrEmail, data.password)
+      console.log('Login successful, showing success message')
       showSuccess('Login successful!')
-      navigate('/dashboard')
+      // Don't navigate here - let useEffect handle it
     } catch (error: any) {
+      console.error('Login failed:', error)
       showError(error.response?.data?.message || 'Login failed')
     }
   }
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: '#f5f5f5',
+        p: 2,
+      }}
+    >
       <Box
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          width: '25vw',
+          minWidth: 400,
+          maxWidth: 600,
+          bgcolor: 'white',
+          p: 3,
+          borderRadius: 1,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
       >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
-            Sign In
-          </Typography>
+        <Typography 
+          variant="h5" 
+          align="center"
+          sx={{ 
+            mb: 3,
+            fontWeight: 500,
+            color: '#333'
+          }}
+        >
+          Đăng nhập
+        </Typography>
+        
+        <Box 
+          component="form" 
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+        >
+          <TextField
+            fullWidth
+            label="Tên đăng nhập hoặc Email"
+            variant="outlined"
+            size="medium"
+            autoFocus
+            error={!!errors.usernameOrEmail}
+            helperText={errors.usernameOrEmail?.message}
+            {...register('usernameOrEmail')}
+          />
           
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="usernameOrEmail"
-              label="Username or Email"
-              autoComplete="username"
-              autoFocus
-              error={!!errors.usernameOrEmail}
-              helperText={errors.usernameOrEmail?.message}
-              {...register('usernameOrEmail')}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              {...register('password')}
-            />
-            
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={isSubmitting}
+          <TextField
+            fullWidth
+            label="Mật khẩu"
+            type="password"
+            variant="outlined"
+            size="medium"
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            {...register('password')}
+          />
+          
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={isSubmitting}
+            sx={{ 
+              py: 1,
+              mt: 1,
+              textTransform: 'none',
+              fontSize: '1rem',
+            }}
+          >
+            {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </Button>
+          
+          <Box textAlign="center" sx={{ mt: 1 }}>
+            <Link 
+              component={RouterLink} 
+              to="/register" 
+              variant="body2"
+              sx={{ 
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
+              }}
             >
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
-            </Button>
-            
-            <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to="/register" variant="body2">
-                Don't have an account? Sign Up
-              </Link>
-            </Box>
-            
-            <Divider sx={{ my: 2 }}>OR</Divider>
-            
-            <Button
-              fullWidth
-              variant="outlined"
-              sx={{ mb: 1 }}
-              onClick={() => {/* TODO: Implement Google OAuth */}}
-            >
-              Continue with Google
-            </Button>
-            
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => {/* TODO: Implement Facebook OAuth */}}
-            >
-              Continue with Facebook
-            </Button>
+              Chưa có tài khoản? Đăng ký
+            </Link>
           </Box>
-        </Paper>
+        </Box>
       </Box>
-    </Container>
+    </Box>
   )
 }
 

@@ -1,108 +1,144 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { webSocketService } from '../services/websocket.service';
-import { collaborationService } from '../services/collaboration.service';
-import { liveAnalyticsService } from '../services/liveAnalytics.service';
-import { userPresenceService } from '../services/userPresence.service';
+import { supabaseService } from '../services/supabase.service';
+import { User, Session } from '@supabase/supabase-js';
 
-interface RealTimeContextType {
-  isConnected: boolean;
-  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
-  lastError: Error | null;
+interface SupabaseContextType {
+  user: User | null;
+  session: Session | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<any>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
-const RealTimeContext = createContext<RealTimeContextType>({
-  isConnected: false,
-  connectionStatus: 'disconnected',
-  lastError: null
-});
+const SupabaseContext = createContext<SupabaseContextType | null>(null);
 
-export const useRealTimeContext = () => {
-  const context = useContext(RealTimeContext);
+export const useSupabase = () => {
+  const context = useContext(SupabaseContext);
   if (!context) {
-    throw new Error('useRealTimeContext must be used within a RealTimeProvider');
+    throw new Error('useSupabase must be used within a SupabaseProvider');
   }
   return context;
 };
 
-interface RealTimeProviderProps {
+interface SupabaseProviderProps {
   children: ReactNode;
-  autoConnect?: boolean;
 }
 
-export const RealTimeProvider: React.FC<RealTimeProviderProps> = ({
-  children,
-  autoConnect = true
-}) => {
-  const [isConnected, setIsConnected] = React.useState(false);
-  const [connectionStatus, setConnectionStatus] = React.useState<RealTimeContextType['connectionStatus']>('disconnected');
-  const [lastError, setLastError] = React.useState<Error | null>(null);
+export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) => {
+  const [user, setUser] = React.useState<User | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<Error | null>(null);
 
   useEffect(() => {
-    // Set up WebSocket event listeners
-    const handleConnected = () => {
-      setIsConnected(true);
-      setConnectionStatus('connected');
-      setLastError(null);
-      console.log('Real-time services connected');
+    const handleAuthStateChanged = ({ user, session }: { user: User | null; session: Session | null }) => {
+      setUser(user);
+      setSession(session);
+      setIsLoading(false);
+      setError(null);
     };
 
-    const handleDisconnected = () => {
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-      console.log('Real-time services disconnected');
+    const handleSignedIn = ({ user, session }: { user: User | null; session: Session | null }) => {
+      console.log('User signed in:', user?.email);
     };
 
-    const handleError = (err: unknown) => {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setLastError(error);
-      setConnectionStatus('error');
-      console.error('Real-time services error:', error);
+    const handleSignedOut = () => {
+      console.log('User signed out');
+      setUser(null);
+      setSession(null);
     };
 
-    // No-op reserved for future use: connecting state is set directly
+    // Set up event listeners
+    supabaseService.on('authStateChanged', handleAuthStateChanged);
+    supabaseService.on('signedIn', handleSignedIn);
+    supabaseService.on('signedOut', handleSignedOut);
 
-    // Add event listeners
-    webSocketService.on('connected', handleConnected);
-    webSocketService.on('disconnected', handleDisconnected);
-    webSocketService.on('error', handleError);
+    // Initial state
+    setUser(supabaseService.user);
+    setSession(supabaseService.session);
+    setIsLoading(false);
 
-    // Auto-connect if enabled
-    if (autoConnect) {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        setConnectionStatus('connecting');
-        webSocketService.connect(token).catch(handleError);
-      }
-    }
-
-    // Cleanup
     return () => {
-      webSocketService.off('connected', handleConnected);
-      webSocketService.off('disconnected', handleDisconnected);
-      webSocketService.off('error', handleError);
-    };
-  }, [autoConnect]);
-
-  // Cleanup services on unmount
-  useEffect(() => {
-    return () => {
-      // Clean up all real-time services
-      webSocketService.disconnect();
-      collaborationService.leaveContent();
-      liveAnalyticsService.destroy();
-      userPresenceService.destroy();
+      supabaseService.off('authStateChanged', handleAuthStateChanged);
+      supabaseService.off('signedIn', handleSignedIn);
+      supabaseService.off('signedOut', handleSignedOut);
     };
   }, []);
 
-  const contextValue: RealTimeContextType = React.useMemo(() => ({
-    isConnected,
-    connectionStatus,
-    lastError
-  }), [isConnected, connectionStatus, lastError]);
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      return await supabaseService.signIn(email, password);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Sign in failed');
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      return await supabaseService.signUp(email, password, metadata);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Sign up failed');
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      setError(null);
+      await supabaseService.signOut();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Sign out failed');
+      setError(error);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null);
+      await supabaseService.resetPassword(email);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Password reset failed');
+      setError(error);
+      throw error;
+    }
+  };
+
+  const contextValue: SupabaseContextType = React.useMemo(() => ({
+    user,
+    session,
+    isAuthenticated: !!user,
+    isLoading,
+    error,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword
+  }), [user, session, isLoading, error]);
 
   return (
-    <RealTimeContext.Provider value={contextValue}>
+    <SupabaseContext.Provider value={contextValue}>
       {children}
-    </RealTimeContext.Provider>
+    </SupabaseContext.Provider>
   );
 };
+
+// Backward compatibility - export with old names
+export const RealTimeContext = SupabaseContext;
+export const useRealTimeContext = useSupabase;
+export const RealTimeProvider = SupabaseProvider;

@@ -119,15 +119,65 @@ class AuthService {
   async login(usernameOrEmail: string, password: string): Promise<AuthResponse> {
     try {
       const request: LoginRequest = { usernameOrEmail, password }
-      
-      // Make direct API call to handle response structure properly
-      const response = await api.post('/auth/login', request)
-      
-      // Extract the actual response data
-      const authData = response.data as AuthResponse
 
-      if (authData.accessToken && authData.refreshToken) {
+      // DEBUG: Use raw API call to see exact response
+      console.log('Making raw API call to /auth/login')
+      const response = await api.post('/auth/login', request)
+      console.log('Raw response:', {
+        status: response.status,
+        data: response.data,
+        dataType: typeof response.data
+      })
+
+      // Manual ResponseBase extraction
+      const responseData = response.data
+      let authData: AuthResponse
+
+      if (responseData && typeof responseData === 'object' &&
+        'errorCode' in responseData && 'errorMessage' in responseData && 'data' in responseData) {
+        console.log('ResponseBase format detected')
+        const responseBase = responseData as ResponseBase<AuthResponse>
+        console.log('ResponseBase:', responseBase)
+
+        // Simple rule: errorCode = "SUCCESS" means success, anything else is an error
+        if (responseBase.errorCode !== 'SUCCESS') {
+          console.log('Login error:', {
+            errorCode: responseBase.errorCode,
+            errorMessage: responseBase.errorMessage
+          })
+          throw new Error(responseBase.errorMessage || 'Login failed')
+        } else {
+          console.log('Login success:', {
+            errorCode: responseBase.errorCode,
+            errorMessage: responseBase.errorMessage
+          })
+        }
+
+        authData = responseBase.data as AuthResponse
+      } else {
+        console.log('Direct format detected')
+        authData = responseData as AuthResponse
+      }
+
+      console.log('Login response received:', authData)
+
+      if (authData && authData.accessToken && authData.refreshToken) {
+        console.log('Setting tokens:', {
+          accessToken: authData.accessToken?.substring(0, 20) + '...',
+          refreshToken: authData.refreshToken?.substring(0, 20) + '...'
+        })
         TokenManager.setTokens(authData.accessToken, authData.refreshToken)
+
+        // Verify tokens were set
+        const storedAccessToken = TokenManager.getAccessToken()
+        const storedRefreshToken = TokenManager.getRefreshToken()
+        console.log('Tokens stored successfully:', {
+          accessToken: storedAccessToken?.substring(0, 20) + '...',
+          refreshToken: storedRefreshToken?.substring(0, 20) + '...'
+        })
+      } else {
+        console.error('Invalid auth data received:', authData)
+        throw new Error('Invalid authentication response')
       }
 
       return authData
@@ -138,9 +188,9 @@ class AuthService {
   }
 
   // Enhanced registration with validation
-  async register(request: RegisterRequest): Promise<ApiResponse> {
+  async register(request: RegisterRequest): Promise<string> {
     try {
-      return await apiRequest.post<ApiResponse>('/auth/register', request)
+      return await apiRequest.post<string>('/auth/register', request)
     } catch (error) {
       console.error('Registration failed:', error)
       throw error
@@ -158,10 +208,10 @@ class AuthService {
     } finally {
       // Always clear local tokens
       TokenManager.clearTokens()
-      
+
       // Clear any cached user data
       this.clearUserCache()
-      
+
       // Redirect to login page
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
@@ -173,10 +223,10 @@ class AuthService {
   async refreshToken(): Promise<AuthResponse> {
     try {
       const newAccessToken = await TokenManager.refreshAccessToken()
-      
+
       // Get updated user info
       const user = await this.getCurrentUser()
-      
+
       return {
         accessToken: newAccessToken,
         refreshToken: TokenManager.getRefreshToken() || '',
@@ -201,6 +251,15 @@ class AuthService {
   // Enhanced user profile retrieval
   async getCurrentUser(): Promise<UserProfile> {
     try {
+      // Debug: Check if we have a token before making the request
+      const token = this.getAccessToken()
+      console.log('getCurrentUser - Token available:', !!token)
+      console.log('getCurrentUser - Token preview:', token ? token.substring(0, 30) + '...' : 'null')
+      
+      if (!token) {
+        throw new Error('No access token available')
+      }
+      
       return await apiRequest.get<UserProfile>('/auth/me')
     } catch (error) {
       console.error('Failed to get current user:', error)
@@ -209,20 +268,20 @@ class AuthService {
   }
 
   // Email verification
-  async verifyEmail(token: string): Promise<ApiResponse> {
+  async verifyEmail(token: string): Promise<string> {
     try {
       const request: EmailVerificationRequest = { token }
-      return await apiRequest.post<ApiResponse>('/auth/verify-email', request)
+      return await apiRequest.post<string>('/auth/verify-email', request)
     } catch (error) {
       console.error('Email verification failed:', error)
       throw error
     }
   }
 
-  async resendVerification(email: string): Promise<ApiResponse> {
+  async resendVerification(email: string): Promise<string> {
     try {
       const request: ResendVerificationRequest = { email }
-      return await apiRequest.post<ApiResponse>('/auth/resend-verification', request)
+      return await apiRequest.post<string>('/auth/resend-verification', request)
     } catch (error) {
       console.error('Failed to resend verification:', error)
       throw error
@@ -230,20 +289,20 @@ class AuthService {
   }
 
   // Password reset flow
-  async forgotPassword(email: string): Promise<ApiResponse> {
+  async forgotPassword(email: string): Promise<string> {
     try {
       const request: ForgotPasswordRequest = { email }
-      return await apiRequest.post<ApiResponse>('/auth/forgot-password', request)
+      return await apiRequest.post<string>('/auth/forgot-password', request)
     } catch (error) {
       console.error('Forgot password request failed:', error)
       throw error
     }
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<ApiResponse> {
+  async resetPassword(token: string, newPassword: string): Promise<string> {
     try {
       const request: ResetPasswordRequest = { token, newPassword }
-      return await apiRequest.post<ApiResponse>('/auth/reset-password', request)
+      return await apiRequest.post<string>('/auth/reset-password', request)
     } catch (error) {
       console.error('Password reset failed:', error)
       throw error
@@ -254,10 +313,10 @@ class AuthService {
   async updateProfile(request: UpdateProfileRequest): Promise<ApiResponse> {
     try {
       const response = await apiRequest.put<ApiResponse>('/auth/profile', request)
-      
+
       // Clear user cache to force refresh
       this.clearUserCache()
-      
+
       return response
     } catch (error) {
       console.error('Profile update failed:', error)
@@ -307,11 +366,11 @@ class AuthService {
     try {
       const response = await api.post('/auth/mfa/verify', request)
       const authData = response.data as AuthResponse
-      
+
       if (authData.accessToken && authData.refreshToken) {
         TokenManager.setTokens(authData.accessToken, authData.refreshToken)
       }
-      
+
       return authData
     } catch (error) {
       console.error('MFA verification failed:', error)
@@ -352,11 +411,11 @@ class AuthService {
       const request: OAuth2CallbackRequest = { code, state, provider }
       const response = await api.post('/auth/oauth2/callback', request)
       const authData = response.data as AuthResponse
-      
+
       if (authData.accessToken && authData.refreshToken) {
         TokenManager.setTokens(authData.accessToken, authData.refreshToken)
       }
-      
+
       return authData.user
     } catch (error) {
       console.error('OAuth2 callback failed:', error)
@@ -383,9 +442,17 @@ class AuthService {
 
   isAuthenticated(): boolean {
     const token = this.getAccessToken()
+    console.log('Checking authentication:', {
+      hasToken: !!token,
+      tokenPreview: token?.substring(0, 20) + '...',
+      isExpired: token ? TokenManager.isTokenExpired(token) : 'no token'
+    })
+
     if (!token) return false
 
-    return !TokenManager.isTokenExpired(token)
+    const isValid = !TokenManager.isTokenExpired(token)
+    console.log('Token validation result:', isValid)
+    return isValid
   }
 
   // Enhanced utility methods
@@ -414,7 +481,7 @@ class AuthService {
       if (!this.isAuthenticated()) {
         return false
       }
-      
+
       // Verify with server
       await this.getCurrentUser()
       return true
@@ -429,11 +496,11 @@ class AuthService {
   async deleteAccount(): Promise<ApiResponse> {
     try {
       const response = await apiRequest.delete<ApiResponse>('/auth/account')
-      
+
       // Clear tokens after successful deletion
       this.clearTokens()
       this.clearUserCache()
-      
+
       return response
     } catch (error) {
       console.error('Account deletion failed:', error)
@@ -501,10 +568,10 @@ class AuthService {
   async revokeAllSessions(): Promise<ApiResponse> {
     try {
       const response = await apiRequest.delete<ApiResponse>('/auth/sessions/all')
-      
+
       // Clear current tokens as well
       this.clearTokens()
-      
+
       return response
     } catch (error) {
       console.error('Failed to revoke all sessions:', error)

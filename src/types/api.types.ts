@@ -1,10 +1,17 @@
 // Enhanced API Types matching backend DTOs
 
+// New ResponseBase format matching backend
+export interface ResponseBase<T = unknown> {
+  errorCode: string // "SUCCESS" for success, specific error code for errors
+  errorMessage: string // "Operation completed successfully" for success, error message for errors
+  data: T | null
+}
+
+// Legacy ApiResponse (deprecated - keeping for backward compatibility)
 export interface ApiResponse<T = unknown> {
   success: boolean
   message: string
   data?: T
-  error?: string
   timestamp?: string
   path?: string
 }

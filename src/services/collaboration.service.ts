@@ -1,4 +1,4 @@
-import { webSocketService } from './websocket.service';
+import { supabaseService } from './supabase.service';
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
 
 export interface CollaborationUser {
@@ -48,16 +48,12 @@ export class CollaborationService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupWebSocketListeners();
+    this.setupSupabaseListeners();
   }
 
-  private setupWebSocketListeners(): void {
-    webSocketService.on('collaborationEvent', (event: CollaborationEvent) => {
-      this.handleCollaborationEvent(event);
-    });
-
-    webSocketService.on('connected', () => {
-      if (this.currentContentId) {
+  private setupSupabaseListeners(): void {
+    supabaseService.on('authStateChanged', ({ user }) => {
+      if (user && this.currentContentId) {
         this.joinContent(this.currentContentId);
       }
     });
@@ -69,81 +65,121 @@ export class CollaborationService extends BrowserEventEmitter {
     }
 
     this.currentContentId = contentId;
-    webSocketService.subscribe(`content:${contentId}`);
     
-    webSocketService.send({
-      type: 'collaboration_join',
-      payload: {
-        contentId,
-        timestamp: Date.now()
+    // Subscribe to content changes
+    supabaseService.subscribeToTable('content', (payload) => {
+      if (payload.new?.id === contentId) {
+        this.handleCollaborationEvent({
+          type: 'text_change',
+          userId: payload.new.user_id,
+          contentId: contentId,
+          data: { content: payload.new.content },
+          timestamp: new Date(payload.new.updated_at).getTime()
+        });
       }
-    });
+    }, `id=eq.${contentId}`);
+
+    // Subscribe to user presence for this content
+    supabaseService.subscribeToTable('user_presence', (payload) => {
+      if (payload.new?.metadata?.location?.contentId === contentId) {
+        const user: CollaborationUser = {
+          id: payload.new.user_id,
+          name: payload.new.username || 'Unknown',
+          avatar: payload.new.avatar_url,
+          isActive: payload.new.status === 'online',
+          lastActivity: new Date(payload.new.last_seen).getTime(),
+          cursor: payload.new.metadata?.cursor,
+          selection: payload.new.metadata?.selection
+        };
+        
+        this.activeUsers.set(user.id, user);
+        this.emit('userJoined', user);
+      }
+    }, `metadata->location->>contentId=eq.${contentId}`);
 
     this.emit('contentJoined', contentId);
   }
 
   leaveContent(): void {
     if (this.currentContentId) {
-      webSocketService.unsubscribe(`content:${this.currentContentId}`);
-      
-      webSocketService.send({
-        type: 'collaboration_leave',
-        payload: {
-          contentId: this.currentContentId,
-          timestamp: Date.now()
-        }
-      });
-
+      // Unsubscribe from all channels (this would need channel tracking)
       this.activeUsers.clear();
       this.currentContentId = null;
       this.emit('contentLeft');
     }
   }
 
-  updateCursor(position: CursorPosition): void {
-    if (!this.currentContentId) return;
+  async updateCursor(position: CursorPosition): Promise<void> {
+    if (!this.currentContentId || !supabaseService.user) return;
 
-    webSocketService.send({
-      type: 'collaboration_cursor',
-      payload: {
-        contentId: this.currentContentId,
-        position,
-        timestamp: Date.now()
-      }
-    });
+    try {
+      await supabaseService.update('user_presence', supabaseService.user.id, {
+        metadata: {
+          location: { contentId: this.currentContentId },
+          cursor: position
+        },
+        last_seen: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to update cursor:', error);
+    }
   }
 
-  updateSelection(selection: TextSelection): void {
-    if (!this.currentContentId) return;
+  async updateSelection(selection: TextSelection): Promise<void> {
+    if (!this.currentContentId || !supabaseService.user) return;
 
-    webSocketService.send({
-      type: 'collaboration_selection',
-      payload: {
-        contentId: this.currentContentId,
-        selection,
-        timestamp: Date.now()
-      }
-    });
+    try {
+      await supabaseService.update('user_presence', supabaseService.user.id, {
+        metadata: {
+          location: { contentId: this.currentContentId },
+          selection: selection
+        },
+        last_seen: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to update selection:', error);
+    }
   }
 
-  applyTextOperation(operation: TextOperation): void {
-    if (!this.currentContentId) return;
+  async applyTextOperation(operation: TextOperation): Promise<void> {
+    if (!this.currentContentId || !supabaseService.user) return;
 
-    // Add to operation queue
-    this.operationQueue.push(operation);
+    try {
+      // Get current content
+      const content = await supabaseService.select('content', {
+        filter: { id: this.currentContentId },
+        limit: 1
+      });
 
-    // Send to other collaborators
-    webSocketService.send({
-      type: 'collaboration_operation',
-      payload: {
-        contentId: this.currentContentId,
-        operation,
-        timestamp: Date.now()
+      if (content && content.length > 0) {
+        let newContent = content[0].content;
+        
+        // Apply operation (simplified)
+        switch (operation.type) {
+          case 'insert':
+            newContent = newContent.slice(0, operation.position) + 
+                        (operation.content || '') + 
+                        newContent.slice(operation.position);
+            break;
+          case 'delete':
+            newContent = newContent.slice(0, operation.position) + 
+                        newContent.slice(operation.position + (operation.length || 0));
+            break;
+        }
+
+        // Update content in database
+        await supabaseService.update('content', this.currentContentId, {
+          content: newContent,
+          updated_at: new Date().toISOString()
+        });
+
+        // Add to operation queue for local processing
+        this.operationQueue.push(operation);
+        this.processOperationQueue();
       }
-    });
-
-    // Process operations
-    this.processOperationQueue();
+    } catch (error) {
+      console.error('Failed to apply text operation:', error);
+    }
   }
 
   private handleCollaborationEvent(event: CollaborationEvent): void {

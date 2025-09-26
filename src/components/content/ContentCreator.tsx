@@ -28,7 +28,15 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useContentGeneration } from '../../hooks/useContentGeneration';
 import { useTemplates } from '../../hooks/useTemplates';
+import { contentService } from '../../services/content.service';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import {
+  ContentTypeSelect,
+  IndustrySelect,
+  LanguageSelect,
+  TargetAudienceSelect,
+  ToneSelect
+} from '../common/ListOfValuesSelect';
 import AIProviderSelector from './AIProviderSelector';
 import ContentPreview from './ContentPreview';
 import GenerationHistory from './GenerationHistory';
@@ -40,9 +48,11 @@ interface ContentCreatorProps {
 
 const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   const [prompt, setPrompt] = useState('');
-  const [industry, setIndustry] = useState('Marketing');
-  const [contentType, setContentType] = useState('TEXT');
-  const [language, setLanguage] = useState('en');
+  const [industry, setIndustry] = useState('');
+  const [contentType, setContentType] = useState('');
+  const [language, setLanguage] = useState('vi');
+  const [tone, setTone] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
   const [maxTokens, setMaxTokens] = useState(500);
   const [temperature, setTemperature] = useState(0.7);
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -64,43 +74,18 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
 
   const [offerTriggerOpen, setOfferTriggerOpen] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [lastContentId, setLastContentId] = useState<number | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info'>('info');
 
-  const industries = [
-    'Marketing',
-    'E-commerce',
-    'Healthcare',
-    'Education',
-    'Technology',
-    'Finance',
-    'Real Estate',
-    'Food & Beverage'
-  ];
-
-  const contentTypes = [
-    { value: 'TEXT', label: 'General Text' },
-    { value: 'MARKETING', label: 'Marketing Content' },
-    { value: 'TECHNICAL', label: 'Technical Documentation' },
-    { value: 'CREATIVE', label: 'Creative Writing' },
-    { value: 'EDUCATIONAL', label: 'Educational Content' },
-    { value: 'SOCIAL_MEDIA', label: 'Social Media Post' },
-    { value: 'EMAIL', label: 'Email Content' },
-    { value: 'BLOG', label: 'Blog Article' }
-  ];
-
-  const languages = [
-    { value: 'en', label: 'English' },
-    { value: 'vi', label: 'Vietnamese' },
-    { value: 'es', label: 'Spanish' },
-    { value: 'fr', label: 'French' },
-    { value: 'de', label: 'German' },
-    { value: 'zh', label: 'Chinese' },
-    { value: 'ja', label: 'Japanese' },
-    { value: 'ko', label: 'Korean' }
-  ];
+  // // Removed hardcoded arrays - now using List of Values system
+  //   { value: 'de', label: 'German' },
+  //   { value: 'zh', label: 'Chinese' },
+  //   { value: 'ja', label: 'Japanese' },
+  //   { value: 'ko', label: 'Korean' }
+  // ];
 
   const optimizationOptions = [
     { value: 'QUALITY', label: 'Highest Quality', description: 'Best AI models for premium results' },
@@ -162,17 +147,16 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   useEffect(() => {
     // Offer sending to AI Avatar workflow after successful generation
     if (generationResult?.success) {
-      const maybeId = (generationResult as any)?.contentId || null;
+      // Some providers/responses may not return a persisted contentId yet.
+      // Fallback to 0 to allow sending raw content to workflow.
+      const maybeId = (generationResult as any)?.contentId ?? 0;
       setLastContentId(maybeId);
       setOfferTriggerOpen(true);
     }
   }, [generationResult]);
 
   const handleSendToWorkflow = async () => {
-    if (!lastContentId) {
-      setOfferTriggerOpen(false);
-      return;
-    }
+    // Allow triggering even when content isn't saved yet (use 0 as placeholder id)
     setIsTriggering(true);
     try {
       const contentData = {
@@ -183,7 +167,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
         contentType,
         language
       };
-      const run = await triggerAiAvatarWorkflow(lastContentId, contentData);
+      const run = await triggerAiAvatarWorkflow(lastContentId ?? 0, contentData);
       setOfferTriggerOpen(false);
       setToastSeverity('success');
       setToastMsg('Sent to AI Avatar workflow');
@@ -196,6 +180,39 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       setToastOpen(true);
     } finally {
       setIsTriggering(false);
+    }
+  };
+
+  const handleSaveToLibrary = async () => {
+    if (!generationResult?.content) {
+      setOfferTriggerOpen(false);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const saved = await contentService.createContent({
+        title: generationResult?.title || 'Untitled',
+        textContent: generationResult?.content,
+        contentType: 'TEXT' as any,
+        industry,
+        language,
+        fromAiGeneration: true,
+        aiProvider: generationResult?.provider,
+        metadata: generationResult as any,
+      } as any);
+      setLastContentId(saved?.id ?? 0);
+      setToastSeverity('success');
+      setToastMsg('Saved to Content Library');
+      setToastOpen(true);
+      setOfferTriggerOpen(false);
+      window.location.href = `/content/${saved.id}`;
+    } catch (e) {
+      setToastSeverity('error');
+      setToastMsg('Failed to save content');
+      setToastOpen(true);
+      setOfferTriggerOpen(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -212,12 +229,39 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   };
 
   const renderCreateTab = () => (
-    <Grid container spacing={3}>
+    <Box 
+      className="content-creator-layout"
+      sx={{ 
+        display: 'flex',
+        flexDirection: { xs: 'column', lg: 'row' },
+        gap: 3,
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: '100%',
+      }}
+    >
       {/* Left Panel - Input Form */}
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
+      <Box 
+        className="content-creator-form"
+        sx={{ 
+          flex: { lg: '0 0 500px' },
+          width: { xs: '100%', lg: '500px' },
+          maxWidth: '100%'
+        }}
+      >
+        <Card sx={{ 
+          height: 'fit-content',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          border: '1px solid',
+          borderColor: 'divider'
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ 
+              fontWeight: 600,
+              color: 'primary.main',
+              mb: 3
+            }}>
               Content Generation
             </Typography>
 
@@ -226,7 +270,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               <Alert 
                 severity="info" 
                 onClose={handleClearTemplate}
-                sx={{ mb: 2 }}
+                sx={{ mb: 3, borderRadius: 2 }}
               >
                 Using template: <strong>{selectedTemplate.name}</strong>
               </Alert>
@@ -241,40 +285,106 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               placeholder="Describe what content you want to generate..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              sx={{ mb: 2 }}
+              sx={{ 
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2
+                }
+              }}
               helperText={`${prompt.length}/2000 characters`}
               inputProps={{ maxLength: 2000 }}
             />
 
             {/* Industry and Content Type */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={6}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6}>
+                <IndustrySelect
+                  label="Industry"
+                  value={industry}
+                  onChange={(value) => setIndustry(value as string)}
+                  placeholder="Select industry"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <ContentTypeSelect
+                  label="Content Type"
+                  value={contentType}
+                  onChange={(value) => setContentType(value as string)}
+                  placeholder="Select content type"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Language and Tone */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6}>
+                <LanguageSelect
+                  label="Language"
+                  value={language}
+                  onChange={(value) => setLanguage(value as string)}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <ToneSelect
+                  label="Tone"
+                  value={tone}
+                  onChange={(value) => setTone(value as string)}
+                  placeholder="Select tone"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Target Audience */}
+            <Box sx={{ mb: 3 }}>
+              <TargetAudienceSelect
+                label="Target Audience"
+                value={targetAudience}
+                onChange={(value) => setTargetAudience(value as string)}
+                placeholder="Select target audience"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              />
+            </Box>
+
+            {/* Optimization Criteria */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12}>
                 <FormControl fullWidth>
-                  <InputLabel>Industry</InputLabel>
+                  <InputLabel>Optimization</InputLabel>
                   <Select
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    label="Industry"
+                    value={optimizationCriteria}
+                    onChange={(e) => setOptimizationCriteria(e.target.value)}
+                    label="Optimization"
+                    sx={{ borderRadius: 2 }}
                   >
-                    {industries.map((ind) => (
-                      <MenuItem key={ind} value={ind}>
-                        {ind}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="BALANCED">Balanced</MenuItem>
+                    <MenuItem value="CREATIVE">Creative</MenuItem>
+                    <MenuItem value="FACTUAL">Factual</MenuItem>
+                    <MenuItem value="ENGAGING">Engaging</MenuItem>
+                    ))
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel>Content Type</InputLabel>
+                  <InputLabel>Optimization</InputLabel>
                   <Select
-                    value={contentType}
-                    onChange={(e) => setContentType(e.target.value)}
-                    label="Content Type"
+                    value={optimizationCriteria}
+                    onChange={(e) => setOptimizationCriteria(e.target.value)}
+                    label="Optimization"
+                    sx={{ borderRadius: 2 }}
                   >
-                    {contentTypes.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>
-                        {type.label}
+                    {optimizationOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        <Box>
+                          <Typography variant="body2">{option.label}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {option.description}
+                          </Typography>
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -282,49 +392,12 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               </Grid>
             </Grid>
 
-            {/* Language */}
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Language</InputLabel>
-              <Select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                label="Language"
-              >
-                {languages.map((lang) => (
-                  <MenuItem key={lang.value} value={lang.value}>
-                    {lang.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Optimization Criteria */}
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Optimization</InputLabel>
-              <Select
-                value={optimizationCriteria}
-                onChange={(e) => setOptimizationCriteria(e.target.value)}
-                label="Optimization"
-              >
-                {optimizationOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    <Box>
-                      <Typography variant="body2">{option.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {option.description}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
             {/* AI Provider Selection */}
             <AIProviderSelector
               selectedProvider={selectedProvider}
               onProviderSelect={setSelectedProvider}
               optimizationCriteria={optimizationCriteria}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
 
             {/* Advanced Settings */}
@@ -336,12 +409,19 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 />
               }
               label="Advanced Settings"
-              sx={{ mb: 1 }}
+              sx={{ mb: 2 }}
             />
 
             {showAdvancedSettings && (
-              <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <Box sx={{ 
+                mb: 3, 
+                p: 3, 
+                bgcolor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider'
+              }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
                   Max Tokens: {maxTokens}
                 </Typography>
                 <Slider
@@ -357,10 +437,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                     { value: 2000, label: '2K' },
                     { value: 4000, label: '4K' }
                   ]}
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 3 }}
                 />
 
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
                   Temperature: {temperature}
                 </Typography>
                 <Slider
@@ -381,7 +461,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
 
             {/* Error Display */}
             {generationError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                 {generationError}
               </Alert>
             )}
@@ -394,40 +474,65 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               onClick={handleGenerate}
               disabled={!prompt.trim() || isGenerating}
               startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
-              sx={{ mb: 2 }}
+              sx={{ 
+                mb: 3,
+                py: 1.5,
+                borderRadius: 2,
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+                }
+              }}
             >
               {isGenerating ? 'Generating...' : 'Generate Content'}
             </Button>
 
             {/* Quick Actions */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1, 
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
               <Chip
                 label="Use Template"
                 onClick={() => setActiveTab('templates')}
                 variant="outlined"
                 size="small"
+                sx={{ borderRadius: 2 }}
               />
               <Chip
                 label="View History"
                 onClick={() => setActiveTab('history')}
                 variant="outlined"
                 size="small"
+                sx={{ borderRadius: 2 }}
               />
             </Box>
           </CardContent>
         </Card>
-      </Grid>
+      </Box>
 
       {/* Right Panel - Preview */}
-      <Grid item xs={12} md={6}>
+      <Box 
+        className="content-creator-preview"
+        sx={{ 
+          flex: 1,
+          width: { xs: '100%', lg: 'auto' },
+          maxWidth: '100%',
+          minWidth: 0
+        }}
+      >
         <ContentPreview
           content={generationResult?.content}
           title={generationResult?.title}
           isGenerating={isGenerating}
           metadata={generationResult}
         />
-      </Grid>
-    </Grid>
+      </Box>
+    </Box>
   );
 
   const renderTemplatesTab = () => (
@@ -453,24 +558,31 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   );
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          AI Content Creator
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Generate high-quality content using advanced AI models
-        </Typography>
-      </Box>
-
+    <Box sx={{ 
+      width: '100%',
+      maxWidth: '100%',
+      mx: 'auto'
+    }}>
       {/* Tab Navigation */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ 
+        mb: 5,
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        gap: 1.5,
+        p: 1.5,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
         <Button
           variant={activeTab === 'create' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('create')}
           startIcon={<AutoAwesome />}
-          sx={{ mr: 1 }}
+          sx={{ 
+            minWidth: { xs: '100px', sm: '120px' },
+            borderRadius: 2
+          }}
         >
           Create
         </Button>
@@ -478,7 +590,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           variant={activeTab === 'templates' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('templates')}
           startIcon={<Settings />}
-          sx={{ mr: 1 }}
+          sx={{ 
+            minWidth: { xs: '100px', sm: '120px' },
+            borderRadius: 2
+          }}
         >
           Templates
         </Button>
@@ -486,15 +601,21 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           variant={activeTab === 'history' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('history')}
           startIcon={<History />}
+          sx={{ 
+            minWidth: { xs: '100px', sm: '120px' },
+            borderRadius: 2
+          }}
         >
           History
         </Button>
       </Box>
 
       {/* Tab Content */}
-      {activeTab === 'create' && renderCreateTab()}
-      {activeTab === 'templates' && renderTemplatesTab()}
-      {activeTab === 'history' && renderHistoryTab()}
+      <Box sx={{ width: '100%' }}>
+        {activeTab === 'create' && renderCreateTab()}
+        {activeTab === 'templates' && renderTemplatesTab()}
+        {activeTab === 'history' && renderHistoryTab()}
+      </Box>
 
       <Dialog open={offerTriggerOpen} onClose={() => setOfferTriggerOpen(false)}>
         <DialogTitle>Send to AI Avatar Workflow?</DialogTitle>
@@ -504,8 +625,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOfferTriggerOpen(false)} disabled={isTriggering}>Not now</Button>
-          <Button variant="contained" onClick={handleSendToWorkflow} disabled={isTriggering || !lastContentId}>
+        <Button onClick={() => setOfferTriggerOpen(false)} disabled={isTriggering || isSaving}>Not now</Button>
+        <Button onClick={handleSaveToLibrary} disabled={isTriggering || isSaving}>
+          {isSaving ? 'Saving…' : 'Save to Library'}
+        </Button>
+        <Button variant="contained" onClick={handleSendToWorkflow} disabled={isTriggering || isSaving}>
             {isTriggering ? 'Sending…' : 'Send to Workflow'}
           </Button>
         </DialogActions>

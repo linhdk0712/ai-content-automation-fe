@@ -12,6 +12,10 @@ import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { theme } from './theme'
+import './styles/improvements.css'
+import './styles/layout-fixes.css'
+import './styles/auth.css'
+import './styles/dashboard.css'
 
 // Create a client
 const queryClient = new QueryClient({

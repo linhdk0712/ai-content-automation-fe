@@ -1,20 +1,30 @@
-import { Box, Container, Typography } from '@mui/material'
 import React from 'react'
+import { Box } from '@mui/material'
 import ContentCreator from '../../components/content/ContentCreator'
+import PageHeader from '../../components/common/PageHeader'
 
 const ContentCreatorPage: React.FC = () => {
+  const breadcrumbs = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Content', href: '/content' },
+    { label: 'Create' }
+  ]
+
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          AI Content Creator
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          Generate high-quality content using advanced AI models
-        </Typography>
-        <ContentCreator />
-      </Box>
-    </Container>
+    <Box sx={{ 
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 3
+    }}>
+      <PageHeader
+        title="AI Content Creator"
+        subtitle="Generate high-quality content using advanced AI models"
+        breadcrumbs={breadcrumbs}
+        centered
+      />
+      <ContentCreator />
+    </Box>
   )
 }
 

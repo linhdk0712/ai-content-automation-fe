@@ -21,6 +21,7 @@ import {
   PublishContentRequest,
   PublishResponse,
   RegenerateContentRequest,
+  ResponseBase,
   ScheduleContentRequest,
   ScheduleResponse,
   UpdateContentRequest

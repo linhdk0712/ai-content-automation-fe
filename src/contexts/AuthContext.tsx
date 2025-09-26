@@ -1,5 +1,5 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { authService, UserProfile, RegisterRequest } from '../services/auth.service';
+import React, { createContext, ReactNode, useEffect, useState } from 'react';
+import { authService, RegisterRequest, UserProfile } from '../services/auth.service';
 
 export interface User extends UserProfile {}
 
@@ -33,12 +33,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
+      console.log('Checking auth status...')
       
-      if (authService.isAuthenticated()) {
+      const isAuth = authService.isAuthenticated()
+      console.log('Auth service says authenticated:', isAuth)
+      
+      if (isAuth) {
+        console.log('Getting current user...')
         const userProfile = await authService.getCurrentUser();
+        console.log('User profile received:', userProfile)
         setUser(userProfile);
         setIsAuthenticated(true);
       } else {
+        console.log('Not authenticated, clearing state')
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -54,8 +61,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (usernameOrEmail: string, password: string) => {
     try {
+      console.log('Starting login process...')
       const response = await authService.login(usernameOrEmail, password);
-      setUser({
+      console.log('Login response:', response)
+      
+      const userData = {
         id: response.user.id,
         username: response.user.username,
         email: response.user.email,
@@ -65,9 +75,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         emailVerified: response.user.emailVerified,
         isActive: true,
         roles: [],
-      } as User);
+      } as User;
+      
+      console.log('Setting user data:', userData)
+      setUser(userData);
       setIsAuthenticated(true);
+      console.log('Login completed successfully')
     } catch (error: any) {
+      console.error('Login error:', error)
       throw new Error(error.response?.data?.message || 'Login failed');
     }
   };

@@ -6,15 +6,19 @@ import { AccessibilityProvider, AccessibilityToolbarComponent } from './componen
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Layout from './components/common/Layout'
 import LoadingSpinner from './components/common/LoadingStates'
-import { NotificationProvider } from './components/common/NotificationSystem'
+import NotificationContainer from './components/common/NotificationContainer'
 import ProtectedRoute from './components/common/ProtectedRoute'
-import { RealTimeProvider } from './contexts/RealTimeContext'
+import { SupabaseProvider } from './contexts/RealTimeContext'
 import { useAuth } from './hooks/useAuth'
 import { useUserPresence } from './hooks/useUserPresence'
-import { useWebSocket } from './hooks/useWebSocket'
-import { ThemeProvider } from './theme/ThemeProvider'
 import { ComponentPreloader, createRouteComponent } from './utils/codeSplitting'
 import { usePerformanceMonitor } from './utils/performance'
+
+// Import debug utilities in development
+if (import.meta.env.DEV) {
+  import('./utils/login-test')
+  import('./utils/response-debug')
+}
 
 // Enhanced lazy loading with route-based code splitting
 const Login = createRouteComponent(
@@ -87,16 +91,30 @@ const PaymentFailure = createRouteComponent(
   'Payment Failure'
 )
 
+const RealtimeEventsTest = createRouteComponent(
+  () => import('./components/realtime/RealtimeEventsTest').then(m => ({ default: m.RealtimeEventsTest })),
+  'Realtime Events Test'
+)
+
+const EnvTest = createRouteComponent(
+  () => import('./components/debug/EnvTest').then(m => ({ default: m.EnvTest })),
+  'Environment Test'
+)
+
+const AuthDebug = createRouteComponent(
+  () => import('./components/debug/AuthDebug'),
+  'Auth Debug'
+)
+
 // Preload critical components
 ComponentPreloader.preload('Dashboard', () => import('./pages/Dashboard'))
 ComponentPreloader.preload('ContentCreator', () => import('./pages/content/ContentCreator'))
 
 
 
-function App() {
+function AppContent() {
   const { isLoading, user } = useAuth()
   const { startMeasure, endMeasure } = usePerformanceMonitor()
-  const { isConnected, connect } = useWebSocket({ autoConnect: true })
   const { initializeUser } = useUserPresence({ autoInitialize: false })
 
   // Measure app initialization time
@@ -117,79 +135,75 @@ function App() {
         username: user.username || user.email || 'Anonymous User',
         avatar: (user as any).avatar || (user as any).profilePictureUrl || undefined
       })
-
-      // Connect WebSocket if not already connected
-      if (!isConnected) {
-        const token = localStorage.getItem('auth_token')
-        if (token) {
-          connect(token)
-        }
-      }
     }
-  }, [user, isLoading, isConnected, connect, initializeUser])
+  }, [user, isLoading, initializeUser])
 
   if (isLoading) {
-    return (
-      <ThemeProvider>
-        <LoadingSpinner fullScreen message="Loading application..." />
-      </ThemeProvider>
-    )
+    return <LoadingSpinner fullScreen message="Loading application..." />
   }
 
   return (
-    <ThemeProvider>
-      <AccessibilityProvider>
-        <NotificationProvider>
-          <RealTimeProvider autoConnect={!!user}>
-            <ErrorBoundary
-              onError={(error, errorInfo) => {
-                console.error('App Error:', error, errorInfo)
-                // Send to error tracking service in production
-              }}
-            >
-              <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  
-                  {/* Payment routes */}
-                  <Route path="/payment/success" element={<PaymentSuccess />} />
-                  <Route path="/payment/failure" element={<PaymentFailure />} />
-                  
-                  {/* Protected routes */}
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Layout />
-                    </ProtectedRoute>
-                  }>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="content/create" element={<ContentCreator />} />
-                    <Route path="content/library" element={<ContentLibrary />} />
-                    <Route path="content/edit/:id" element={<ContentCreator />} />
-                    <Route path="templates" element={<Templates />} />
-                    <Route path="templates/new" element={<TemplateEditor />} />
-                    <Route path="templates/:id" element={<TemplateViewer />} />
-                    <Route path="templates/:id/edit" element={<TemplateEditor />} />
-                    <Route path="analytics" element={<Analytics />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="workflows/run/:runId" element={<RunViewer />} />
-                  </Route>
-                  
-                  {/* Catch all route */}
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-                
-                {/* Accessibility toolbar */}
-                <AccessibilityToolbarComponent />
-              </Box>
-            </ErrorBoundary>
-          </RealTimeProvider>
-        </NotificationProvider>
-      </AccessibilityProvider>
-    </ThemeProvider>
+    <SupabaseProvider>
+      <ErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('App Error:', error, errorInfo)
+          // Send to error tracking service in production
+        }}
+      >
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+          <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/pricing" element={<Pricing />} />
+          
+          {/* Payment routes */}
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
+          
+          {/* Protected routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="content/create" element={<ContentCreator />} />
+            <Route path="content/library" element={<ContentLibrary />} />
+            <Route path="content/edit/:id" element={<ContentCreator />} />
+            <Route path="templates" element={<Templates />} />
+            <Route path="templates/new" element={<TemplateEditor />} />
+            <Route path="templates/:id" element={<TemplateViewer />} />
+            <Route path="templates/:id/edit" element={<TemplateEditor />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="workflows/run/:runId" element={<RunViewer />} />
+            <Route path="realtime-test" element={<RealtimeEventsTest />} />
+            <Route path="env-test" element={<EnvTest />} />
+            <Route path="auth-debug" element={<AuthDebug />} />
+          </Route>
+          
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+          
+          {/* Accessibility toolbar */}
+          <AccessibilityToolbarComponent />
+          
+          {/* Notification container for ResponseBase notifications */}
+          <NotificationContainer />
+        </Box>
+      </ErrorBoundary>
+    </SupabaseProvider>
+  )
+}
+
+function App() {
+  return (
+    <AccessibilityProvider>
+      <AppContent />
+    </AccessibilityProvider>
   )
 }
 

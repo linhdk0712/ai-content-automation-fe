@@ -1,0 +1,17 @@
+/* Simple Auth Styles */
+
+/* Basic form styling */
+.auth-form .MuiTextField-root {
+  margin-bottom: 0;
+}
+
+.auth-form .MuiButton-root {
+  text-transform: none;
+}
+
+/* Simple responsive adjustments */
+@media (max-width: 480px) {
+  .auth-form-container {
+    padding: 16px;
+  }
+}

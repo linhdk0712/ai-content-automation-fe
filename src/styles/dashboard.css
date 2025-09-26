@@ -1,0 +1,326 @@
+/* Dashboard specific spacing improvements */
+
+/* Dashboard container */
+.dashboard-page {
+  padding: 8px 12px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 600px) {
+  .dashboard-page {
+    padding: 12px 16px;
+  }
+}
+
+@media (min-width: 900px) {
+  .dashboard-page {
+    padding: 16px 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-page {
+    padding: 16px 24px;
+  }
+}
+
+/* Dashboard header */
+.dashboard-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .dashboard-header {
+    margin-bottom: 10px;
+    text-align: center;
+  }
+}
+
+/* Metric cards */
+.metric-card {
+  height: 100%;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 12px;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.metric-card .MuiCardContent-root {
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .metric-card .MuiCardContent-root {
+    padding: 8px;
+  }
+}
+
+/* Chart container */
+.chart-container {
+  margin-bottom: 32px;
+}
+
+.chart-container .MuiCardContent-root {
+  padding: 24px;
+}
+
+.chart-container .chart-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Quick actions */
+.quick-actions {
+  margin-bottom: 32px;
+}
+
+.quick-actions .MuiCardContent-root {
+  padding: 24px;
+}
+
+.quick-actions .actions-header {
+  margin-bottom: 24px;
+}
+
+.quick-actions .MuiGrid-container {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.quick-actions .MuiButton-root {
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.quick-actions .primary-action {
+  padding: 16px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.quick-actions .primary-action:hover {
+  box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
+}
+
+/* Activity sections */
+.activity-section {
+  margin-bottom: 32px;
+}
+
+.activity-section .MuiCardContent-root {
+  padding: 24px;
+}
+
+.activity-section .section-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-section .section-title {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.activity-section .MuiList-root {
+  padding: 0;
+}
+
+.activity-section .MuiListItem-root {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.activity-section .MuiListItem-root:last-child {
+  border-bottom: none;
+}
+
+.activity-section .MuiListItemText-primary {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.activity-section .MuiListItemText-secondary {
+  color: #666;
+}
+
+/* Empty states */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.empty-state .empty-icon {
+  font-size: 56px;
+  color: #999;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.empty-state .empty-text {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .dashboard-page {
+    padding: 16px;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 24px;
+  }
+  
+  .metric-card,
+  .chart-container,
+  .quick-actions,
+  .activity-section {
+    margin-bottom: 24px;
+  }
+  
+  .chart-container .MuiCardContent-root,
+  .quick-actions .MuiCardContent-root,
+  .activity-section .MuiCardContent-root {
+    padding: 20px;
+  }
+  
+  .chart-container .chart-header,
+  .quick-actions .actions-header,
+  .activity-section .section-header {
+    margin-bottom: 20px;
+  }
+  
+  .activity-section .MuiListItem-root {
+    padding: 12px 0;
+  }
+  
+  .empty-state {
+    padding: 24px 16px;
+  }
+  
+  .empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-page {
+    padding: 12px;
+  }
+  
+  .dashboard-header {
+    margin-bottom: 20px;
+  }
+  
+  .metric-card,
+  .chart-container,
+  .quick-actions,
+  .activity-section {
+    margin-bottom: 20px;
+  }
+  
+  .metric-card .MuiCardContent-root,
+  .chart-container .MuiCardContent-root,
+  .quick-actions .MuiCardContent-root,
+  .activity-section .MuiCardContent-root {
+    padding: 16px;
+  }
+  
+  .chart-container .chart-header,
+  .quick-actions .actions-header,
+  .activity-section .section-header {
+    margin-bottom: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .quick-actions .MuiButton-root {
+    padding: 10px 14px;
+    font-size: 0.875rem;
+  }
+  
+  .quick-actions .primary-action {
+    padding: 14px 20px;
+    font-size: 0.95rem;
+  }
+  
+  .activity-section .MuiListItem-root {
+    padding: 10px 0;
+  }
+  
+  .empty-state {
+    padding: 20px 12px;
+  }
+  
+  .empty-state .empty-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+  
+  .empty-state .empty-text {
+    font-size: 0.875rem;
+  }
+}
+
+/* Animation improvements */
+.metric-card,
+.chart-container,
+.quick-actions,
+.activity-section {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover effects */
+.activity-section .MuiListItem-root:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.quick-actions .MuiButton-outlined:hover {
+  background-color: rgba(25, 118, 210, 0.04);
+  border-color: #1976d2;
+}
+
+/* Focus states for accessibility */
+.quick-actions .MuiButton-root:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.activity-section .MuiListItem-root:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  border-radius: 8px;
+}

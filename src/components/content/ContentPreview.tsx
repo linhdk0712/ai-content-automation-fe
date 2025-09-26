@@ -115,32 +115,71 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   };
 
   const renderLoadingState = () => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <CircularProgress size={20} sx={{ mr: 1 }} />
-          <Typography variant="h6">
+    <Card sx={{ 
+      height: '100%',
+      minHeight: 400,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      border: '1px solid',
+      borderColor: 'divider'
+    }}>
+      <CardContent sx={{ textAlign: 'center', py: 6 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          mb: 3 
+        }}>
+          <CircularProgress 
+            size={48} 
+            sx={{ 
+              mb: 2,
+              color: 'primary.main'
+            }} 
+          />
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Generating Content...
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
+            This may take a few seconds depending on the selected AI provider and content complexity.
+          </Typography>
         </Box>
-        <Box sx={{ mb: 2 }}>
-          <LinearProgress />
+        <Box sx={{ width: '100%', maxWidth: 300, mx: 'auto' }}>
+          <LinearProgress sx={{ borderRadius: 2, height: 6 }} />
         </Box>
-        <Typography variant="body2" color="text.secondary">
-          This may take a few seconds depending on the selected AI provider and content complexity.
-        </Typography>
       </CardContent>
     </Card>
   );
 
   const renderEmptyState = () => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ textAlign: 'center', py: 4 }}>
-        <Psychology sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" gutterBottom>
+    <Card sx={{ 
+      height: '100%',
+      minHeight: 400,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      border: '1px solid',
+      borderColor: 'divider'
+    }}>
+      <CardContent sx={{ textAlign: 'center', py: 6 }}>
+        <Psychology sx={{ 
+          fontSize: 80, 
+          mb: 3,
+          opacity: 0.9
+        }} />
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
           Ready to Generate
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body1" sx={{ 
+          maxWidth: 400,
+          mx: 'auto',
+          opacity: 0.9,
+          lineHeight: 1.6
+        }}>
           Enter your prompt and click "Generate Content" to see AI-powered results here.
         </Typography>
       </CardContent>
@@ -156,36 +195,75 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   }
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
+    <Card sx={{ 
+      height: 'fit-content',
+      minHeight: 400,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: 3
+    }}>
+      <CardContent sx={{ p: 3 }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 3,
+          pb: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 600,
+            color: 'primary.main',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Visibility fontSize="small" />
             Content Preview
           </Typography>
-          <Box>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Tooltip title="Edit content">
               <IconButton
                 onClick={() => setIsEditing(!isEditing)}
                 color={isEditing ? 'primary' : 'default'}
+                size="small"
+                sx={{ 
+                  borderRadius: 2,
+                  bgcolor: isEditing ? 'primary.50' : 'transparent'
+                }}
               >
-                <Edit />
+                <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Copy to clipboard">
-              <IconButton onClick={handleCopy}>
-                <ContentCopy />
+              <IconButton 
+                onClick={handleCopy}
+                size="small"
+                sx={{ borderRadius: 2 }}
+              >
+                <ContentCopy fontSize="small" />
               </IconButton>
             </Tooltip>
             {onRegenerate && (
               <Tooltip title="Regenerate content">
-                <IconButton onClick={onRegenerate}>
-                  <Refresh />
+                <IconButton 
+                  onClick={onRegenerate}
+                  size="small"
+                  sx={{ borderRadius: 2 }}
+                >
+                  <Refresh fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
-            <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
-              <MoreVert />
+            <IconButton 
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+              size="small"
+              sx={{ borderRadius: 2 }}
+            >
+              <MoreVert fontSize="small" />
             </IconButton>
           </Box>
         </Box>
@@ -199,39 +277,77 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
 
         {/* Content */}
         {isEditing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
               multiline
-              rows={8}
+              rows={10}
               value={editableContent}
               onChange={(e) => setEditableContent(e.target.value)}
               variant="outlined"
-              sx={{ mb: 2 }}
+              placeholder="Edit your content here..."
+              sx={{ 
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: '#fafbfc',
+                  '&:hover': {
+                    backgroundColor: '#f5f6f7',
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                  },
+                }
+              }}
             />
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button variant="contained" onClick={handleSaveEdit}>
-                Save Changes
-              </Button>
-              <Button variant="outlined" onClick={handleCancelEdit}>
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button 
+                variant="outlined" 
+                onClick={handleCancelEdit}
+                sx={{ borderRadius: 2 }}
+              >
                 Cancel
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={handleSaveEdit}
+                sx={{ borderRadius: 2 }}
+              >
+                Save Changes
               </Button>
             </Box>
           </Box>
         ) : (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 3 }}>
             <Typography
               variant="body1"
               sx={{
                 whiteSpace: 'pre-wrap',
-                lineHeight: 1.6,
-                maxHeight: 300,
+                lineHeight: 1.7,
+                maxHeight: 400,
                 overflow: 'auto',
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-                border: 1,
-                borderColor: 'divider'
+                p: 3,
+                bgcolor: '#fafbfc',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                fontSize: '1rem',
+                fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: '#f1f1f1',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#c1c1c1',
+                  borderRadius: '3px',
+                  '&:hover': {
+                    background: '#a8a8a8',
+                  },
+                },
               }}
             >
               {editableContent}

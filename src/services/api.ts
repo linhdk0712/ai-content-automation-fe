@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { ApiError, ApiResponse } from '../types/api.types'
+import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
+import { notificationService } from './notification.service'
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
@@ -92,15 +93,40 @@ class TokenManager {
         refreshToken,
       })
 
-      // Handle direct response structure from backend
-      const authData = response.data as { accessToken: string; refreshToken: string }
-      if (authData?.accessToken && authData?.refreshToken) {
-        this.setTokens(authData.accessToken, authData.refreshToken)
-        return authData.accessToken
-      } else {
-        throw new Error('Invalid refresh response')
+      console.log('Token refresh response:', response.data)
+
+      // Handle ResponseBase format from backend
+      const responseData = response.data
+      
+      // Check if it's ResponseBase format
+      if (responseData && typeof responseData === 'object' && 
+          'errorCode' in responseData && 'errorMessage' in responseData && 'data' in responseData) {
+        const responseBase = responseData as ResponseBase<{ accessToken: string; refreshToken: string }>
+        
+        if (responseBase.errorCode || responseBase.errorMessage) {
+          throw new Error(responseBase.errorMessage || 'Token refresh failed')
+        }
+        
+        const authData = responseBase.data
+        if (authData?.accessToken && authData?.refreshToken) {
+          this.setTokens(authData.accessToken, authData.refreshToken)
+          return authData.accessToken
+        } else {
+          throw new Error('Invalid refresh response - no auth data')
+        }
+      } 
+      // Handle legacy format (fallback)
+      else {
+        const authData = responseData as { accessToken: string; refreshToken: string }
+        if (authData?.accessToken && authData?.refreshToken) {
+          this.setTokens(authData.accessToken, authData.refreshToken)
+          return authData.accessToken
+        } else {
+          throw new Error('Invalid refresh response - legacy format')
+        }
       }
     } catch (error) {
+      console.error('Token refresh failed:', error)
       this.clearTokens()
       // Redirect to login page
       if (typeof window !== 'undefined') {
@@ -130,12 +156,18 @@ api.interceptors.request.use(
 
     // Add authentication token
     let token = TokenManager.getAccessToken()
+    console.log('Request interceptor - Token available:', token ? 'Yes' : 'No')
+    console.log('Request URL:', config.url)
 
     if (token) {
+      console.log('Token preview:', token.substring(0, 20) + '...')
+      
       // Check if token is expired and refresh if needed
       if (TokenManager.isTokenExpired(token)) {
+        console.log('Token is expired, attempting refresh...')
         try {
           token = await TokenManager.refreshAccessToken()
+          console.log('Token refreshed successfully')
         } catch (error) {
           console.warn('Token refresh failed:', error)
           // Continue with expired token, let the server handle it
@@ -144,7 +176,11 @@ api.interceptors.request.use(
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
+        console.log('Authorization header set for', config.url, ':', `Bearer ${token.substring(0, 20)}...`)
+        console.log('Full headers:', config.headers)
       }
+    } else {
+      console.log('No token available - request will be unauthenticated for:', config.url)
     }
 
     // Add retry configuration to request
@@ -233,7 +269,17 @@ api.interceptors.response.use(
       console.error(`❌ ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - ${error.response?.status || 'Network Error'} (${duration}ms)`)
     }
 
-    return Promise.reject(createApiError(error))
+    // Create API error
+    const apiError = createApiError(error)
+    
+    // Show error notification for non-auth endpoints (to avoid spam during token refresh)
+    if (!originalRequest.url?.includes('/auth/refresh') && 
+        !originalRequest.url?.includes('/auth/login') &&
+        error.response?.status !== 401) {
+      notificationService.showApiError(apiError)
+    }
+
+    return Promise.reject(apiError)
   }
 )
 
@@ -264,14 +310,45 @@ function createApiError(error: AxiosError): ApiError {
 
   if (response) {
     // Server responded with error status
-    const apiResponse = response.data as ApiResponse<unknown>
-    return {
-      message: apiResponse?.message || response.statusText || 'Request failed',
-      status: response.status,
-      code: apiResponse?.error,
-      details: apiResponse?.data as Record<string, unknown> | undefined,
-      timestamp: new Date().toISOString(),
-      path: response.config?.url || ''
+    const responseData = response.data as ResponseBase<unknown> | ApiResponse<unknown>
+    
+    // Check if it's ResponseBase format
+    if (responseData && typeof responseData === 'object' && 
+        ('errorCode' in responseData && 'errorMessage' in responseData)) {
+      const responseBase = responseData as ResponseBase<unknown>
+      
+      // For ResponseBase, use the specific error message and code
+      return {
+        message: responseBase.errorMessage || response.statusText || 'Request failed',
+        status: response.status,
+        code: responseBase.errorCode || undefined,
+        details: responseBase.data as Record<string, unknown> | undefined,
+        timestamp: new Date().toISOString(),
+        path: response.config?.url || ''
+      }
+    }
+    
+    // Check if it's legacy ApiResponse format
+    else if (responseData && typeof responseData === 'object' && 'message' in responseData) {
+      const apiResponse = responseData as ApiResponse<unknown>
+      return {
+        message: apiResponse.message || response.statusText || 'Request failed',
+        status: response.status,
+        code: (apiResponse as any).error,
+        details: apiResponse.data as Record<string, unknown> | undefined,
+        timestamp: new Date().toISOString(),
+        path: response.config?.url || ''
+      }
+    }
+    
+    // Fallback for unknown response format
+    else {
+      return {
+        message: response.statusText || 'Request failed',
+        status: response.status,
+        timestamp: new Date().toISOString(),
+        path: response.config?.url || ''
+      }
     }
   } else if (request) {
     // Network error
@@ -296,26 +373,27 @@ function createApiError(error: AxiosError): ApiError {
 
 // Enhanced API helper functions with proper typing and error handling
 export const apiRequest = {
-  get: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    api.get(url, config).then(extractResponseData) as Promise<T>,
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig & { showNotification?: boolean }): Promise<T> =>
+    api.get(url, config).then(response => extractResponseData(response, config?.showNotification)) as Promise<T>,
 
-  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    api.post(url, data, config).then(extractResponseData) as Promise<T>,
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig & { showNotification?: boolean }): Promise<T> =>
+    api.post(url, data, config).then(response => extractResponseData(response, config?.showNotification)) as Promise<T>,
 
-  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    api.put(url, data, config).then(extractResponseData) as Promise<T>,
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig & { showNotification?: boolean }): Promise<T> =>
+    api.put(url, data, config).then(response => extractResponseData(response, config?.showNotification)) as Promise<T>,
 
-  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    api.patch(url, data, config).then(extractResponseData) as Promise<T>,
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig & { showNotification?: boolean }): Promise<T> =>
+    api.patch(url, data, config).then(response => extractResponseData(response, config?.showNotification)) as Promise<T>,
 
-  delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    api.delete(url, config).then(extractResponseData) as Promise<T>,
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig & { showNotification?: boolean }): Promise<T> =>
+    api.delete(url, config).then(response => extractResponseData(response, config?.showNotification)) as Promise<T>,
 
   // Upload method for file uploads with progress tracking
   upload: <T = unknown>(
     url: string,
     formData: FormData,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    showNotification?: boolean
   ): Promise<T> =>
     api.post(url, formData, {
       headers: {
@@ -327,27 +405,128 @@ export const apiRequest = {
           onProgress(progress)
         }
       },
-    }).then(extractResponseData) as Promise<T>,
+    }).then(response => extractResponseData(response, showNotification)) as Promise<T>,
 }
 
 // Helper function to extract data from API response
-function extractResponseData<T = unknown>(response: AxiosResponse<ApiResponse<T> | T>): T {
+function extractResponseData<T = unknown>(
+  response: AxiosResponse<ResponseBase<T> | ApiResponse<T> | T>, 
+  showNotification: boolean = false
+): T {
   const apiResponse = response.data
-  console.log("apiResponse", apiResponse)
-  // Check if response follows ApiResponse wrapper format
-  if (typeof apiResponse === 'object' && apiResponse !== null && 'success' in apiResponse) {
+  console.log("Raw API Response:", apiResponse)
+  console.log("Response URL:", response.config?.url)
+  console.log("Response Status:", response.status)
+  
+  // Check if response follows new ResponseBase format
+  // ResponseBase has specific structure: { errorCode, errorMessage, data }
+  // All three fields must be present (even if null)
+  const isObject = typeof apiResponse === 'object' && apiResponse !== null
+  const hasErrorCode = isObject && 'errorCode' in apiResponse
+  const hasErrorMessage = isObject && 'errorMessage' in apiResponse  
+  const hasData = isObject && 'data' in apiResponse
+  const hasResponseBaseStructure = hasErrorCode && hasErrorMessage && hasData
+  
+  console.log("ResponseBase detection:", {
+    isObject,
+    hasErrorCode,
+    hasErrorMessage,
+    hasData,
+    hasResponseBaseStructure,
+    keys: isObject ? Object.keys(apiResponse) : []
+  })
+  
+  if (hasResponseBaseStructure) {
+    const responseBase = apiResponse as ResponseBase<T>
+    
+    console.log("Processing ResponseBase:", {
+      errorCode: responseBase.errorCode,
+      errorMessage: responseBase.errorMessage,
+      hasData: responseBase.data !== null && responseBase.data !== undefined,
+      dataType: typeof responseBase.data,
+      fullResponse: responseBase
+    })
+    
+    // Show notification based on response
+    if (showNotification) {
+      try {
+        notificationService.showResponseNotification(
+          response.status,
+          responseBase.errorCode,
+          responseBase.errorMessage,
+          response.status >= 200 && response.status < 300 ? 'Operation completed successfully' : undefined
+        )
+      } catch (notificationError) {
+        console.error('Notification error:', notificationError)
+        // Don't let notification errors break the API call
+      }
+    }
+    
+    // Simple rule: errorCode = "SUCCESS" means success, anything else is an error
+    if (responseBase.errorCode !== 'SUCCESS') {
+      console.log("Error response detected:", {
+        errorCode: responseBase.errorCode,
+        errorMessage: responseBase.errorMessage
+      })
+      const error = new Error(responseBase.errorMessage || 'Request failed')
+      ;(error as any).code = responseBase.errorCode
+      ;(error as any).status = response.status
+      throw error
+    } else {
+      console.log("Success response detected:", {
+        errorCode: responseBase.errorCode,
+        errorMessage: responseBase.errorMessage
+      })
+    }
+    
+    // Return data if available, otherwise return the whole response as T
+    if (responseBase.data !== null && responseBase.data !== undefined) {
+      return responseBase.data
+    } else {
+      // For cases where data is null but operation was successful
+      return null as T
+    }
+  }
+  
+  // Check if response follows legacy ApiResponse wrapper format
+  else if (typeof apiResponse === 'object' && apiResponse !== null && 'success' in apiResponse) {
     const wrappedResponse = apiResponse as ApiResponse<T>
+    
+    // Show notification for legacy format
+    if (showNotification) {
+      if (wrappedResponse.success) {
+        notificationService.showSuccess(wrappedResponse.message || 'Operation completed successfully')
+      } else {
+        notificationService.showError(wrappedResponse.message || 'Request failed')
+      }
+    }
+    
     if (wrappedResponse.success && wrappedResponse.data !== undefined) {
       return wrappedResponse.data
     } else if (wrappedResponse.success && wrappedResponse.data === undefined) {
       // For responses that have success: true but no data field, return the response itself
-      // This handles cases where the response is the actual data with success field
       return apiResponse as T
     } else {
       throw new Error(wrappedResponse.message || 'Request failed')
     }
-  } else {
-    // Response is direct data (not wrapped in ApiResponse format)
+  } 
+  
+  // Response is direct data (not wrapped) or unknown format
+  else {
+    console.log("Treating as direct data response")
+    
+    // Show generic success notification for direct data responses
+    if (showNotification && response.status >= 200 && response.status < 300) {
+      notificationService.showSuccess('Operation completed successfully')
+    }
+    
+    // For login endpoint, if we get an object with accessToken, treat it as AuthResponse
+    if (response.config?.url?.includes('/auth/login') && 
+        isObject && 'accessToken' in apiResponse) {
+      console.log("Detected direct AuthResponse format")
+      return apiResponse as T
+    }
+    
     return apiResponse as T
   }
 }

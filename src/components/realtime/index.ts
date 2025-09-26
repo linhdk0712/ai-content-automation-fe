@@ -13,12 +13,11 @@ export { usePublishingStatus } from '../../hooks/usePublishingStatus';
 export { useUserPresence } from '../../hooks/useUserPresence';
 
 // Real-time services exports
-export { webSocketService } from '../../services/websocket.service';
+export { supabaseService } from '../../services/supabase.service';
 export { collaborationService } from '../../services/collaboration.service';
-export { realTimeNotificationService } from '../../services/realTimeNotification.service';
 export { liveAnalyticsService } from '../../services/liveAnalytics.service';
 export { publishingStatusService } from '../../services/publishingStatus.service';
 export { userPresenceService } from '../../services/userPresence.service';
 
 // Context exports
-export { RealTimeProvider, useRealTimeContext } from '../../contexts/RealTimeContext';
+export { SupabaseProvider, useSupabase } from '../../contexts/RealTimeContext';

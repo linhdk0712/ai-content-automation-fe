@@ -1,135 +1,145 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { webSocketService } from '../services/websocket.service';
+import { supabaseService } from '../services/supabase.service';
+import { useSupabase } from '../contexts/RealTimeContext';
 
-export interface UseWebSocketOptions {
-  autoConnect?: boolean;
-  reconnectOnMount?: boolean;
+export interface UseSupabaseRealtimeOptions {
+  autoSubscribe?: boolean;
 }
 
-export interface WebSocketState {
+export interface RealtimeState {
   isConnected: boolean;
-  isConnecting: boolean;
+  subscriptions: string[];
   error: Error | null;
   lastMessage: any;
 }
 
-export function useWebSocket(options: UseWebSocketOptions = {}) {
-  const { autoConnect = true, reconnectOnMount = true } = options;
+export function useSupabaseRealtime(options: UseSupabaseRealtimeOptions = {}) {
+  const { autoSubscribe = true } = options;
+  const { isAuthenticated } = useSupabase();
   
-  const [state, setState] = useState<WebSocketState>({
+  const [state, setState] = useState<RealtimeState>({
     isConnected: false,
-    isConnecting: false,
+    subscriptions: [],
     error: null,
     lastMessage: null
   });
 
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const subscriptionsRef = useRef<Set<string>>(new Set());
 
-  const connect = useCallback(async (token?: string) => {
-    if (stateRef.current.isConnecting || stateRef.current.isConnected) {
-      return;
+  const subscribeToTable = useCallback((
+    table: string,
+    callback: (payload: any) => void,
+    filter?: string
+  ) => {
+    if (!isAuthenticated) {
+      console.warn('User not authenticated, cannot subscribe to table');
+      return null;
     }
-
-    setState(prev => ({ ...prev, isConnecting: true, error: null }));
 
     try {
-      const authToken = token || localStorage.getItem('auth_token') || '';
-      await webSocketService.connect(authToken);
-    } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        isConnecting: false, 
-        error: error as Error 
+      const channelName = supabaseService.subscribeToTable(table as any, callback, filter);
+      subscriptionsRef.current.add(channelName);
+      
+      setState(prev => ({
+        ...prev,
+        subscriptions: Array.from(subscriptionsRef.current),
+        error: null
       }));
+      
+      return channelName;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Subscription failed');
+      setState(prev => ({ ...prev, error: err }));
+      return null;
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  const disconnect = useCallback(() => {
-    webSocketService.disconnect();
-  }, []);
-
-  const send = useCallback((message: any) => {
-    if (stateRef.current.isConnected) {
-      webSocketService.send(message);
-    } else {
-      console.warn('WebSocket not connected, message queued');
-      webSocketService.send(message); // Will be queued
+  const subscribeToPresence = useCallback((
+    workspaceId: string,
+    callback: (payload: any) => void
+  ) => {
+    if (!isAuthenticated) {
+      console.warn('User not authenticated, cannot subscribe to presence');
+      return null;
     }
+
+    try {
+      const channelName = supabaseService.subscribeToPresence(workspaceId, callback);
+      subscriptionsRef.current.add(channelName);
+      
+      setState(prev => ({
+        ...prev,
+        subscriptions: Array.from(subscriptionsRef.current),
+        error: null
+      }));
+      
+      return channelName;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Presence subscription failed');
+      setState(prev => ({ ...prev, error: err }));
+      return null;
+    }
+  }, [isAuthenticated]);
+
+  const unsubscribe = useCallback((channelName: string) => {
+    supabaseService.unsubscribe(channelName);
+    subscriptionsRef.current.delete(channelName);
+    
+    setState(prev => ({
+      ...prev,
+      subscriptions: Array.from(subscriptionsRef.current)
+    }));
   }, []);
 
-  const subscribe = useCallback((channel: string) => {
-    webSocketService.subscribe(channel);
-  }, []);
-
-  const unsubscribe = useCallback((channel: string) => {
-    webSocketService.unsubscribe(channel);
+  const unsubscribeAll = useCallback(() => {
+    subscriptionsRef.current.forEach(channelName => {
+      supabaseService.unsubscribe(channelName);
+    });
+    subscriptionsRef.current.clear();
+    
+    setState(prev => ({
+      ...prev,
+      subscriptions: []
+    }));
   }, []);
 
   useEffect(() => {
-    const handleConnected = () => {
-      setState(prev => ({ 
-        ...prev, 
-        isConnected: true, 
-        isConnecting: false, 
-        error: null 
+    const handleSubscribed = ({ table, channelName }: { table: string; channelName: string }) => {
+      setState(prev => ({
+        ...prev,
+        isConnected: true,
+        lastMessage: { type: 'subscribed', table, channelName }
       }));
     };
 
-    const handleDisconnected = () => {
-      setState(prev => ({ 
-        ...prev, 
-        isConnected: false, 
-        isConnecting: false 
-      }));
-    };
-
-    const handleError = (error: Error) => {
-      setState(prev => ({ 
-        ...prev, 
-        error, 
-        isConnecting: false 
-      }));
-    };
-
-    const handleMessage = (message: any) => {
-      setState(prev => ({ 
-        ...prev, 
-        lastMessage: message 
-      }));
-    };
-
-    webSocketService.on('connected', handleConnected);
-    webSocketService.on('disconnected', handleDisconnected);
-    webSocketService.on<Error>('error', handleError);
-    webSocketService.on('message', handleMessage);
-
-    // Auto-connect if enabled
-    if (autoConnect && !webSocketService.getConnectionStatus()) {
-      connect();
-    }
+    supabaseService.on('subscribed', handleSubscribed);
 
     return () => {
-      webSocketService.off('connected', handleConnected as any);
-      webSocketService.off('disconnected', handleDisconnected as any);
-      webSocketService.off('error', handleError as any);
-      webSocketService.off('message', handleMessage as any);
+      supabaseService.off('subscribed', handleSubscribed);
     };
-  }, [autoConnect, connect]);
+  }, []);
 
-  // Reconnect on mount if needed
+  // Cleanup subscriptions when component unmounts or user signs out
   useEffect(() => {
-    if (reconnectOnMount && !webSocketService.getConnectionStatus()) {
-      connect();
+    if (!isAuthenticated) {
+      unsubscribeAll();
     }
-  }, [reconnectOnMount, connect]);
+  }, [isAuthenticated, unsubscribeAll]);
+
+  useEffect(() => {
+    return () => {
+      unsubscribeAll();
+    };
+  }, [unsubscribeAll]);
 
   return {
     ...state,
-    connect,
-    disconnect,
-    send,
-    subscribe,
-    unsubscribe
+    subscribeToTable,
+    subscribeToPresence,
+    unsubscribe,
+    unsubscribeAll
   };
 }
+
+// Backward compatibility
+export const useWebSocket = useSupabaseRealtime;

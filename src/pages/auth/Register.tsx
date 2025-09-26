@@ -2,10 +2,8 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import {
   Box,
   Button,
-  Container,
   Grid,
   Link,
-  Paper,
   TextField,
   Typography,
 } from '@mui/material'
@@ -24,9 +22,6 @@ const schema = yup.object({
   confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
   firstName: yup.string().required('First name is required'),
   lastName: yup.string(),
-  phoneNumber: yup.string(),
-  timezone: yup.string(),
-  language: yup.string(),
 })
 
 type RegisterFormData = RegisterRequest & { confirmPassword: string }
@@ -56,116 +51,138 @@ const Register: React.FC = () => {
   }
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: '#f5f5f5',
+        p: 2,
+      }}
+    >
       <Box
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          width: '25vw',
+          minWidth: 400,
+          maxWidth: 600,
+          bgcolor: 'white',
+          p: 3,
+          borderRadius: 1,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
       >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
-            Sign Up
-          </Typography>
-          
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  autoComplete="given-name"
-                  fullWidth
-                  id="firstName"
-                  label="First Name"
-                  autoFocus
-                  error={!!errors.firstName}
-                  helperText={errors.firstName?.message}
-                  {...register('firstName')}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  required
-                  fullWidth
-                  id="lastName"
-                  label="Last Name"
-                  autoComplete="family-name"
-                  error={!!errors.lastName}
-                  helperText={errors.lastName?.message}
-                  {...register('lastName')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  id="username"
-                  label="Username"
-                  autoComplete="username"
-                  error={!!errors.username}
-                  helperText={errors.username?.message}
-                  {...register('username')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  id="email"
-                  label="Email Address"
-                  autoComplete="email"
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                  {...register('email')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Password"
-                  type="password"
-                  id="password"
-                  autoComplete="new-password"
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                  {...register('password')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Confirm Password"
-                  type="password"
-                  id="confirmPassword"
-                  error={!!errors.confirmPassword}
-                  helperText={errors.confirmPassword?.message}
-                  {...register('confirmPassword')}
-                />
-              </Grid>
+        <Typography 
+          variant="h5" 
+          align="center"
+          sx={{ 
+            mb: 3,
+            fontWeight: 500,
+            color: '#333'
+          }}
+        >
+          Đăng ký tài khoản
+        </Typography>
+        
+        <Box 
+          component="form" 
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Họ"
+                autoFocus
+                error={!!errors.firstName}
+                helperText={errors.firstName?.message}
+                {...register('firstName')}
+              />
             </Grid>
-            
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={isSubmitting}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Tên"
+                error={!!errors.lastName}
+                helperText={errors.lastName?.message}
+                {...register('lastName')}
+              />
+            </Grid>
+          </Grid>
+          
+          <TextField
+            fullWidth
+            label="Tên đăng nhập"
+            error={!!errors.username}
+            helperText={errors.username?.message}
+            {...register('username')}
+          />
+          
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            {...register('email')}
+          />
+          
+          <TextField
+            fullWidth
+            label="Mật khẩu"
+            type="password"
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            {...register('password')}
+          />
+          
+          <TextField
+            fullWidth
+            label="Xác nhận mật khẩu"
+            type="password"
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword?.message}
+            {...register('confirmPassword')}
+          />
+          
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={isSubmitting}
+            sx={{ 
+              py: 1,
+              mt: 1,
+              textTransform: 'none',
+              fontSize: '1rem',
+            }}
+          >
+            {isSubmitting ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+          </Button>
+          
+          <Box textAlign="center" sx={{ mt: 1 }}>
+            <Link 
+              component={RouterLink} 
+              to="/login" 
+              variant="body2"
+              sx={{ 
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
+              }}
             >
-              {isSubmitting ? 'Creating Account...' : 'Sign Up'}
-            </Button>
-            
-            <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to="/login" variant="body2">
-                Already have an account? Sign In
-              </Link>
-            </Box>
+              Đã có tài khoản? Đăng nhập
+            </Link>
           </Box>
-        </Paper>
+        </Box>
       </Box>
-    </Container>
+    </Box>
   )
 }
 

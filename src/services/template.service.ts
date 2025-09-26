@@ -24,7 +24,8 @@ class TemplateService {
   // Core CRUD Operations - Updated to match backend endpoints
   async searchTemplates(searchRequest: TemplateSearchRequest): Promise<TemplateSearchResponse> {
     const response = await api.get('/templates', { params: searchRequest });
-    const page = response.data;
+    // API returns ResponseBase format, so data is in response.data.data
+    const page = response.data?.data || response.data;
     return {
       templates: page?.content ?? [],
       totalElements: page?.totalElements ?? 0,
@@ -84,28 +85,40 @@ class TemplateService {
     const response = await api.get('/templates/popular', {
       params: { limit }
     });
-    return response.data;
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
   }
 
   async getFeaturedTemplates(limit: number = 10): Promise<Template[]> {
     const response = await api.get('/templates/featured', {
       params: { limit }
     });
-    return response.data;
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
   }
 
   async getRecentTemplates(limit: number = 10): Promise<Template[]> {
     const response = await api.get('/templates/recent', {
       params: { limit }
     });
-    return response.data;
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
   }
 
   async getRecommendedTemplates(limit: number = 10): Promise<Template[]> {
     const response = await api.get('/templates/recommendations', {
       params: { limit }
     });
-    return response.data;
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
+  }
+
+  async getTrendingTemplates(limit: number = 10): Promise<Template[]> {
+    const response = await api.get('/templates/trending', {
+      params: { limit }
+    });
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
   }
 
   // User Template Management - Updated to match backend endpoints
@@ -113,7 +126,8 @@ class TemplateService {
     const response = await api.get('/templates/my-templates', {
       params: { page, size, sortBy: 'updatedAt', sortDir: 'desc' }
     });
-    const data = response.data;
+    // API returns ResponseBase format, so data is in response.data.data
+    const data = response.data?.data || response.data;
     return {
       templates: data?.content ?? [],
       totalElements: data?.totalElements ?? 0,
@@ -135,7 +149,8 @@ class TemplateService {
 
   async getFavoriteTemplates(): Promise<Template[]> {
     const response = await api.get('/templates/favorites');
-    return response.data;
+    // API returns ResponseBase format, extract data
+    return response.data?.data || response.data || [];
   }
 
   async addToFavorites(templateId: number): Promise<void> {

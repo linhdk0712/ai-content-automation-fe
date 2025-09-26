@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { useRealTimeNotifications } from '../../hooks/useRealTimeNotifications';
-import { Notification } from '../../services/realTimeNotification.service';
+import { useRealTimeNotifications, NotificationType } from '../../hooks/useRealTimeNotifications';
+
+// Use the NotificationType from the hook instead of the deleted service
+type Notification = NotificationType;
 
 interface RealTimeNotificationCenterProps {
   className?: string;

@@ -49,8 +49,8 @@ import {
 } from '@mui/icons-material'
 import { Settings } from 'lucide-react'
 
-const drawerWidth = 280
-const collapsedWidth = 64
+const drawerWidth = 240
+const collapsedWidth = 56
 
 interface NavigationItem {
   text: string
@@ -113,9 +113,16 @@ const secondaryItems: NavigationItem[] = [
 interface SidebarProps {
   collapsed?: boolean
   onToggleCollapse?: () => void
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  collapsed = false, 
+  onToggleCollapse,
+  mobileOpen = false,
+  onMobileClose
+}) => {
   const navigate = useNavigate()
   const location = useLocation()
   const theme = useTheme()
@@ -125,6 +132,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
 
   const handleNavigation = (path: string) => {
     navigate(path)
+    // Close mobile drawer when navigating
+    if (onMobileClose) {
+      onMobileClose()
+    }
   }
 
   const isActive = (path: string) => {
@@ -174,8 +185,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
               }
             }}
             sx={{
-              pl: collapsed ? 1 : 2 + level * 2,
-              minHeight: 48,
+              pl: collapsed ? 1 : 1.5 + level * 1.5,
+              pr: collapsed ? 1 : 1,
+              minHeight: 40,
               '&.Mui-selected': {
                 bgcolor: 'primary.main',
                 color: 'primary.contrastText',
@@ -188,9 +200,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: collapsed ? 'auto' : 40 }}>
+            <ListItemIcon sx={{ minWidth: collapsed ? 'auto' : 32 }}>
               <Badge badgeContent={item.badge} color="error">
-                {item.icon}
+                {React.cloneElement(item.icon, { fontSize: 'small' })}
               </Badge>
             </ListItemIcon>
             
@@ -199,8 +211,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
                 <ListItemText 
                   primary={item.text}
                   primaryTypographyProps={{
-                    fontSize: level > 0 ? '0.875rem' : '1rem',
-                    fontWeight: active ? 600 : 400
+                    fontSize: level > 0 ? '0.75rem' : '0.85rem',
+                    fontWeight: active ? 600 : 500
                   }}
                 />
                 {hasChildren && (
@@ -224,35 +236,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
     )
   }
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: collapsed ? collapsedWidth : drawerWidth,
-        flexShrink: 0,
-        transition: theme.transitions.create('width', {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-        '& .MuiDrawer-paper': {
-          width: collapsed ? collapsedWidth : drawerWidth,
-          boxSizing: 'border-box',
-          bgcolor: 'background.paper',
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          transition: theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-          overflowX: 'hidden'
-        },
-      }}
-    >
+  const drawerContent = (
+    <>
       <Toolbar>
         {!collapsed && (
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              AI Content
+            <Typography variant="subtitle1" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 700, fontSize: '0.95rem' }}>
+              AI Content Pro
             </Typography>
             {onToggleCollapse && (
               <IconButton onClick={onToggleCollapse} size="small">
@@ -269,11 +259,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
       </Toolbar>
       
       {!collapsed && (
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 1.5 }}>
           <TextField
             fullWidth
             size="small"
-            placeholder="Search navigation..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -283,20 +273,85 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }
                 </InputAdornment>
               ),
             }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: '#fafbfc',
+                fontSize: '0.8rem',
+              },
+              '& .MuiInputBase-input': {
+                fontSize: '0.8rem',
+              }
+            }}
           />
         </Box>
       )}
       
-      <List sx={{ flexGrow: 1, px: 1 }}>
+      <List sx={{ flexGrow: 1, px: 0.5 }}>
         {filterItems(navigationItems).map(item => renderNavigationItem(item))}
       </List>
       
       <Divider />
       
-      <List sx={{ px: 1 }}>
+      <List sx={{ px: 0.5 }}>
         {filterItems(secondaryItems).map(item => renderNavigationItem(item))}
       </List>
-    </Drawer>
+    </>
+  )
+
+  return (
+    <Box component="nav">
+      {/* Mobile drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            bgcolor: 'background.paper',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+      
+      {/* Desktop drawer - Fixed position to not affect main content layout */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: collapsed ? collapsedWidth : drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: collapsed ? collapsedWidth : drawerWidth,
+            boxSizing: 'border-box',
+            bgcolor: 'background.paper',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            overflowX: 'hidden',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            height: '100vh',
+            zIndex: 1200,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+    </Box>
   )
 }
 

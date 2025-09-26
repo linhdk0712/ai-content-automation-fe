@@ -48,8 +48,18 @@ export const useAIProviders = () => {
         aiProviderService.getAllProviderStatuses()
       ]);
 
-      setProviders(providersData);
-      setProviderStatuses(statusesData);
+      // Ensure providers is always an array
+      const safeProviders = Array.isArray(providersData) 
+        ? providersData 
+        : (providersData?.data ?? providersData?.items ?? []);
+      
+      // Ensure statuses is always an object
+      const safeStatuses = statusesData && typeof statusesData === 'object' 
+        ? statusesData 
+        : {};
+
+      setProviders(Array.isArray(safeProviders) ? safeProviders : []);
+      setProviderStatuses(safeStatuses);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load AI providers';
       setError(errorMessage);

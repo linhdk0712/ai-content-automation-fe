@@ -1,4 +1,4 @@
-import { webSocketService } from './websocket.service';
+import { supabaseService } from './supabase.service';
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
 
 export interface AnalyticsMetric {
@@ -55,20 +55,30 @@ export class LiveAnalyticsService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupWebSocketListeners();
+    this.setupSupabaseListeners();
     this.startBufferFlush();
   }
 
-  private setupWebSocketListeners(): void {
-    webSocketService.on('analyticsUpdate', (update: AnalyticsUpdate) => {
-      this.handleAnalyticsUpdate(update);
+  private setupSupabaseListeners(): void {
+    // Subscribe to analytics updates via Supabase realtime
+    supabaseService.on('authStateChanged', ({ user }) => {
+      if (user) {
+        this.subscribeToAnalytics();
+      }
     });
+  }
 
-    webSocketService.on('connected', () => {
-      // Re-subscribe to all analytics channels
-      this.subscriptions.forEach(subscription => {
-        webSocketService.subscribe(subscription);
-      });
+  private subscribeToAnalytics(): void {
+    // Subscribe to analytics table changes
+    supabaseService.subscribeToTable('analytics_metrics', (payload) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        const metric = this.convertToAnalyticsMetric(payload.new);
+        this.handleAnalyticsUpdate({ 
+          metrics: [metric], 
+          timestamp: Date.now(), 
+          source: 'supabase' 
+        });
+      }
     });
   }
 
@@ -154,23 +164,59 @@ export class LiveAnalyticsService extends BrowserEventEmitter {
     const subscription = this.createSubscriptionKey(filter);
     this.subscriptions.add(subscription);
     
-    webSocketService.subscribe(`analytics:${subscription}`);
-    
-    // Request initial data
-    webSocketService.send({
-      type: 'analytics_subscribe',
-      payload: {
-        filter,
-        subscription
-      }
-    });
+    // Load initial data from Supabase
+    this.loadInitialMetrics(filter);
   }
 
   unsubscribeFromMetrics(filter: AnalyticsFilter): void {
     const subscription = this.createSubscriptionKey(filter);
     this.subscriptions.delete(subscription);
-    
-    webSocketService.unsubscribe(`analytics:${subscription}`);
+  }
+
+  private async loadInitialMetrics(filter: AnalyticsFilter): Promise<void> {
+    try {
+      const options: any = {};
+      
+      if (filter.workspaceId) {
+        options.filter = { workspace_id: filter.workspaceId };
+      }
+      
+      if (filter.timeRange) {
+        const timeRangeMs = this.parseTimeRange(filter.timeRange);
+        const cutoff = new Date(Date.now() - timeRangeMs).toISOString();
+        options.filter = { ...options.filter, created_at: `gte.${cutoff}` };
+      }
+      
+      options.order = { column: 'created_at', ascending: false };
+      options.limit = 100;
+
+      const metrics = await supabaseService.select('analytics_metrics', options);
+      
+      if (metrics) {
+        const analyticsMetrics = metrics.map(m => this.convertToAnalyticsMetric(m));
+        this.handleAnalyticsUpdate({
+          metrics: analyticsMetrics,
+          timestamp: Date.now(),
+          source: 'initial_load'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load initial metrics:', error);
+    }
+  }
+
+  private convertToAnalyticsMetric(data: any): AnalyticsMetric {
+    return {
+      id: data.id,
+      name: data.name,
+      value: data.value,
+      previousValue: data.previous_value,
+      change: data.change,
+      changePercent: data.change_percent,
+      timestamp: new Date(data.created_at).getTime(),
+      unit: data.unit,
+      category: data.category
+    };
   }
 
   private createSubscriptionKey(filter: AnalyticsFilter): string {

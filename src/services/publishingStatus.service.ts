@@ -1,5 +1,5 @@
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
-import { webSocketService } from './websocket.service';
+import { supabaseService } from './supabase.service';
 
 export interface PublishingJob {
   id: string;
@@ -60,25 +60,30 @@ export class PublishingStatusService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupWebSocketListeners();
+    this.setupSupabaseListeners();
   }
 
-  private setupWebSocketListeners(): void {
-    webSocketService.on('publishingStatus', (data: any) => {
-      this.handlePublishingStatusUpdate(data);
+  private setupSupabaseListeners(): void {
+    supabaseService.on('authStateChanged', ({ user }) => {
+      if (user) {
+        this.subscribeToPublishingUpdates();
+      }
+    });
+  }
+
+  private subscribeToPublishingUpdates(): void {
+    // Subscribe to publishing jobs table
+    supabaseService.subscribeToTable('publishing_jobs', (payload) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        this.handlePublishingStatusUpdate(payload.new);
+      }
     });
 
-    webSocketService.on('publishingProgress', (progress: PublishingProgress) => {
-      this.handleProgressUpdate(progress);
-    });
-
-    webSocketService.on('publishingQueue', (queue: PublishingQueue) => {
-      this.handleQueueUpdate(queue);
-    });
-
-    webSocketService.on('connected', () => {
-      // Request current status for all active jobs
-      this.requestActiveJobsStatus();
+    // Subscribe to publishing progress table
+    supabaseService.subscribeToTable('publishing_progress', (payload) => {
+      if (payload.eventType === 'INSERT') {
+        this.handleProgressUpdate(payload.new);
+      }
     });
   }
 
@@ -152,65 +157,77 @@ export class PublishingStatusService extends BrowserEventEmitter {
     this.emit('queueUpdated', queue);
   }
 
-  private requestActiveJobsStatus(): void {
-    webSocketService.send({
-      type: 'publishing_status_request',
-      payload: {
-        activeOnly: true
+  private async loadActiveJobs(): Promise<void> {
+    try {
+      const jobs = await supabaseService.select('publishing_jobs', {
+        filter: { status: 'processing' },
+        order: { column: 'created_at', ascending: false }
+      });
+
+      if (jobs) {
+        jobs.forEach(job => this.handlePublishingStatusUpdate(job));
       }
-    });
+    } catch (error) {
+      console.error('Failed to load active jobs:', error);
+    }
   }
 
-  startPublishing(contentId: string, platforms: string[], options?: {
+  async startPublishing(contentId: string, platforms: string[], options?: {
     scheduledTime?: number;
     priority?: 'low' | 'normal' | 'high';
     metadata?: Record<string, any>;
   }): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const jobId = this.generateJobId();
-      
-      webSocketService.send({
-        type: 'start_publishing',
-        payload: {
-          jobId,
-          contentId,
-          platforms,
-          options
-        }
-      });
-
-      // Wait for job creation confirmation
-      const timeout = setTimeout(() => {
-        reject(new Error('Publishing job creation timeout'));
-      }, 10000);
-
-      const onJobCreated = (job: PublishingJob) => {
-        if (job.id === jobId) {
-          clearTimeout(timeout);
-          this.off('jobUpdated', onJobCreated as any);
-          resolve(jobId);
-        }
+    try {
+      const jobData = {
+        content_id: contentId,
+        platforms: platforms,
+        status: 'queued' as const,
+        progress: 0,
+        scheduled_time: options?.scheduledTime ? new Date(options.scheduledTime).toISOString() : null,
+        priority: options?.priority || 'normal',
+        metadata: options?.metadata || {},
+        user_id: supabaseService.user?.id
       };
 
-      this.on('jobUpdated', onJobCreated);
-    });
+      const job = await supabaseService.insert('publishing_jobs', jobData);
+      return job.id;
+    } catch (error) {
+      console.error('Failed to start publishing:', error);
+      throw error;
+    }
   }
 
-  cancelPublishing(jobId: string): void {
-    webSocketService.send({
-      type: 'cancel_publishing',
-      payload: { jobId }
-    });
+  async cancelPublishing(jobId: string): Promise<void> {
+    try {
+      await supabaseService.update('publishing_jobs', jobId, {
+        status: 'cancelled',
+        completed_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to cancel publishing:', error);
+      throw error;
+    }
   }
 
-  retryPublishing(jobId: string, platforms?: string[]): void {
-    webSocketService.send({
-      type: 'retry_publishing',
-      payload: { 
-        jobId,
-        platforms // If specified, retry only these platforms
+  async retryPublishing(jobId: string, platforms?: string[]): Promise<void> {
+    try {
+      const updateData: any = {
+        status: 'queued',
+        progress: 0,
+        error: null,
+        started_at: null,
+        completed_at: null
+      };
+
+      if (platforms) {
+        updateData.platforms = platforms;
       }
-    });
+
+      await supabaseService.update('publishing_jobs', jobId, updateData);
+    } catch (error) {
+      console.error('Failed to retry publishing:', error);
+      throw error;
+    }
   }
 
   getJob(jobId: string): PublishingJob | undefined {
@@ -343,20 +360,28 @@ export class PublishingStatusService extends BrowserEventEmitter {
     };
   }
 
-  subscribeToJob(jobId: string): void {
-    webSocketService.subscribe(`publishing:${jobId}`);
+  subscribeToJob(jobId: string): string | null {
+    return supabaseService.subscribeToTable('publishing_jobs', (payload) => {
+      if (payload.new?.id === jobId) {
+        this.handlePublishingStatusUpdate(payload.new);
+      }
+    }, `id=eq.${jobId}`);
   }
 
-  unsubscribeFromJob(jobId: string): void {
-    webSocketService.unsubscribe(`publishing:${jobId}`);
+  unsubscribeFromJob(channelName: string): void {
+    supabaseService.unsubscribe(channelName);
   }
 
-  subscribeToContent(contentId: string): void {
-    webSocketService.subscribe(`publishing:content:${contentId}`);
+  subscribeToContent(contentId: string): string | null {
+    return supabaseService.subscribeToTable('publishing_jobs', (payload) => {
+      if (payload.new?.content_id === contentId) {
+        this.handlePublishingStatusUpdate(payload.new);
+      }
+    }, `content_id=eq.${contentId}`);
   }
 
-  unsubscribeFromContent(contentId: string): void {
-    webSocketService.unsubscribe(`publishing:content:${contentId}`);
+  unsubscribeFromContent(channelName: string): void {
+    supabaseService.unsubscribe(channelName);
   }
 
   private generateJobId(): string {

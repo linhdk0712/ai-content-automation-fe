@@ -1,0 +1,171 @@
+/* Enhanced scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Smooth transitions for all interactive elements */
+.MuiButton-root,
+.MuiCard-root,
+.MuiTextField-root,
+.MuiSelect-root,
+.MuiIconButton-root {
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Enhanced focus states */
+.MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1) !important;
+}
+
+.MuiButton-contained:focus {
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.3) !important;
+}
+
+/* Improved card hover effects */
+.MuiCard-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Better spacing for mobile */
+@media (max-width: 600px) {
+  .MuiContainer-root {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  .MuiCardContent-root {
+    padding: 16px !important;
+  }
+  
+  .MuiButton-root {
+    min-width: auto !important;
+    padding: 8px 16px !important;
+  }
+}
+
+/* Enhanced loading animations */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Better text selection */
+::selection {
+  background-color: rgba(25, 118, 210, 0.2);
+  color: inherit;
+}
+
+::-moz-selection {
+  background-color: rgba(25, 118, 210, 0.2);
+  color: inherit;
+}
+
+/* Improved accessibility */
+.MuiButton-root:focus-visible,
+.MuiIconButton-root:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Better responsive grid spacing */
+.MuiGrid-container {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.MuiGrid-item {
+  padding-left: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Ensure content is properly centered */
+.content-centered {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Fix any layout shifts */
+.main-content {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Enhanced backdrop blur for modals */
+.MuiBackdrop-root {
+  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Improved chip styling */
+.MuiChip-root {
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.MuiChip-root:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Better alert styling */
+.MuiAlert-root {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced progress indicators */
+.MuiLinearProgress-root {
+  border-radius: 4px;
+  height: 6px;
+}
+
+.MuiCircularProgress-root {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

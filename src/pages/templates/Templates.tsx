@@ -174,6 +174,9 @@ const Templates: React.FC = () => {
         size: 12
       };
 
+      console.log('Loading templates with request:', searchRequest);
+      console.log('Tab value:', tabValue);
+
       let response;
       switch (tabValue) {
         case 0: // All Templates
@@ -190,13 +193,17 @@ const Templates: React.FC = () => {
           const popular = await templateService.getPopularTemplates(12);
           response = { templates: popular, totalElements: popular.length, totalPages: 1, currentPage: 0, pageSize: 12 };
           break;
-        case 4: // Recent
-          const recent = await templateService.getRecentTemplates(12);
-          response = { templates: recent, totalElements: recent.length, totalPages: 1, currentPage: 0, pageSize: 12 };
+        case 4: // Trending (instead of Recent since backend doesn't have recent endpoint)
+          const trending = await templateService.getTrendingTemplates(12);
+          response = { templates: trending, totalElements: trending.length, totalPages: 1, currentPage: 0, pageSize: 12 };
           break;
         default:
           response = await templateService.searchTemplates(searchRequest);
       }
+
+      console.log('Template service response:', response);
+      console.log('Templates array:', response.templates);
+      console.log('Templates length:', response.templates?.length);
 
       setTemplates(response.templates);
       setTotalPages(response.totalPages);
@@ -496,7 +503,7 @@ const Templates: React.FC = () => {
           <Tab label="My Templates" />
           <Tab label="Favorites" />
           <Tab label="Popular" />
-          <Tab label="Recent" />
+          <Tab label="Trending" />
         </Tabs>
       </Box>
 
@@ -513,8 +520,25 @@ const Templates: React.FC = () => {
       {/* Templates Grid */}
       {!loading && (
         <>
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="caption">
+                Debug: Templates count: {templates.length}, Total elements: {totalElements}, Total pages: {totalPages}
+              </Typography>
+            </Box>
+          )}
+          
           <Grid container spacing={3}>
-            {templates.map(renderTemplateCard)}
+            {templates.length > 0 ? (
+              templates.map(renderTemplateCard)
+            ) : (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  No templates found. Try adjusting your search criteria.
+                </Alert>
+              </Grid>
+            )}
           </Grid>
 
           {/* Pagination */}

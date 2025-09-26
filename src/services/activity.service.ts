@@ -2,9 +2,9 @@ import { api } from './api';
 
 interface Activity {
   id: string;
-  type: 'content_created' | 'content_updated' | 'content_published' | 'content_scheduled' | 
-        'comment_added' | 'member_joined' | 'member_left' | 'approval_requested' | 
-        'content_approved' | 'content_rejected';
+  type: 'content_created' | 'content_updated' | 'content_published' | 'content_scheduled' |
+  'comment_added' | 'member_joined' | 'member_left' | 'approval_requested' |
+  'content_approved' | 'content_rejected';
   actor: {
     id: string;
     name: string;
@@ -33,7 +33,7 @@ interface ActivityFilters {
 class ActivityService {
   async getActivities(filters?: ActivityFilters): Promise<Activity[]> {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       if (filters.types) {
         filters.types.forEach(type => params.append('types', type));
@@ -117,7 +117,7 @@ class ActivityService {
   async exportActivities(filters?: ActivityFilters, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
     const params = new URLSearchParams();
     params.append('format', format);
-    
+
     if (filters) {
       if (filters.types) {
         filters.types.forEach(type => params.append('types', type));

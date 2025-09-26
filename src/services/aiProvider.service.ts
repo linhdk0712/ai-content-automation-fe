@@ -17,41 +17,46 @@ interface CostEstimateRequest {
 class AIProviderService {
   async getAllProviders() {
     const response = await api.get('/ai/providers');
-    return response.data;
+    // Backend returns data wrapped in ResponseBase, extract the actual data
+    return response.data?.data || response.data || [];
   }
 
   async getAllProviderStatuses() {
     const response = await api.get('/ai/providers/status');
-    return response.data;
+    // Backend returns data wrapped in ResponseBase, extract the actual data
+    return response.data?.data || response.data || {};
   }
 
   async checkProviderStatus(providerName: string) {
     const response = await api.get(`/ai/providers/${providerName}/status`);
-    return response.data;
+    // Backend returns data wrapped in ResponseBase, extract the actual data
+    return response.data?.data || response.data;
   }
 
   async getProviderRecommendations(request: ProviderRecommendationRequest) {
     const response = await api.post('/ai/providers/recommendations', request);
-    return response.data;
+    // Backend returns data wrapped in ResponseBase, extract the actual data
+    return response.data?.data || response.data || [];
   }
 
   async estimateCost(request: CostEstimateRequest) {
     const response = await api.post('/ai/providers/estimate-cost', request);
-    return response.data;
+    // Backend returns data wrapped in ResponseBase, extract the actual data
+    return response.data?.data || response.data;
   }
 
   async getProviderMetrics(providerName: string, days: number = 30) {
     const response = await api.get(`/ai/providers/${providerName}/metrics`, {
       params: { days }
     });
-    return response.data;
+    return response.data?.data || response.data;
   }
 
   async getProviderUsageStats(days: number = 30) {
     const response = await api.get('/ai/providers/usage-stats', {
       params: { days }
     });
-    return response.data;
+    return response.data?.data || response.data;
   }
 
   async getProviderComparison(providers: string[], criteria: string) {
@@ -59,7 +64,7 @@ class AIProviderService {
       providers,
       criteria
     });
-    return response.data;
+    return response.data?.data || response.data;
   }
 
   // Provider configuration (admin only)

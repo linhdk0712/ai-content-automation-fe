@@ -1,141 +1,249 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Notification as NotificationType, realTimeNotificationService, UserActivity } from '../services/realTimeNotification.service';
+import { supabaseService } from '../services/supabase.service';
+import { useSupabase } from '../contexts/RealTimeContext';
+
+export interface NotificationType {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  metadata: Record<string, any> | null;
+  created_at: string;
+}
 
 export interface UseRealTimeNotificationsOptions {
   autoRequestPermission?: boolean;
   maxNotifications?: number;
+  autoSubscribe?: boolean;
 }
 
 export interface NotificationState {
   notifications: NotificationType[];
   unreadCount: number;
-  isOnline: boolean;
-  recentActivities: UserActivity[];
+  isSubscribed: boolean;
+  channelName: string | null;
 }
 
 export function useRealTimeNotifications(options: UseRealTimeNotificationsOptions = {}) {
-  const { autoRequestPermission = true, maxNotifications = 50 } = options;
+  const { autoRequestPermission = true, maxNotifications = 50, autoSubscribe = true } = options;
+  const { user, isAuthenticated } = useSupabase();
   
   const [state, setState] = useState<NotificationState>({
     notifications: [],
     unreadCount: 0,
-    isOnline: true,
-    recentActivities: []
+    isSubscribed: false,
+    channelName: null
   });
 
   const requestPermission = useCallback(async () => {
-    return await realTimeNotificationService.requestNotificationPermission();
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+    return false;
   }, []);
 
-  const markAsRead = useCallback((notificationId: string) => {
-    realTimeNotificationService.markAsRead(notificationId);
-  }, []);
+  const loadNotifications = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
 
-  const markAllAsRead = useCallback(() => {
-    realTimeNotificationService.markAllAsRead();
-  }, []);
+    try {
+      const notifications = await supabaseService.select('notifications', {
+        filter: { user_id: user.id },
+        order: { column: 'created_at', ascending: false },
+        limit: maxNotifications
+      });
 
-  const removeNotification = useCallback((notificationId: string) => {
-    realTimeNotificationService.removeNotification(notificationId);
-  }, []);
+      const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
 
-  const clearAllNotifications = useCallback(() => {
-    realTimeNotificationService.clearAllNotifications();
-  }, []);
-
-  const getNotifications = useCallback((filter?: {
-    category?: string;
-    priority?: string;
-    isRead?: boolean;
-    limit?: number;
-  }) => {
-    return realTimeNotificationService.getNotifications(filter);
-  }, []);
-
-  const subscribeToUserActivities = useCallback((userId: string) => {
-    realTimeNotificationService.subscribeToUserActivities(userId);
-  }, []);
-
-  const unsubscribeFromUserActivities = useCallback((userId: string) => {
-    realTimeNotificationService.unsubscribeFromUserActivities(userId);
-  }, []);
-
-  useEffect(() => {
-    const updateNotifications = () => {
-      const notifications = realTimeNotificationService.getNotifications({ limit: maxNotifications });
-      const unreadCount = realTimeNotificationService.getUnreadCount();
-      
       setState(prev => ({
         ...prev,
-        notifications,
+        notifications: notifications || [],
         unreadCount
       }));
-    };
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  }, [isAuthenticated, user, maxNotifications]);
 
-    const handleNotificationAdded = () => {
-      updateNotifications();
-    };
+  const markAsRead = useCallback(async (notificationId: string) => {
+    if (!isAuthenticated) return;
 
-    const handleNotificationRead = () => {
-      updateNotifications();
-    };
+    try {
+      await supabaseService.update('notifications', notificationId, {
+        is_read: true
+      });
 
-    const handleAllNotificationsRead = () => {
-      updateNotifications();
-    };
-
-    const handleNotificationRemoved = () => {
-      updateNotifications();
-    };
-
-    const handleAllNotificationsCleared = () => {
-      updateNotifications();
-    };
-
-    const handleConnectionStatusChanged = (isOnline: unknown) => {
-      const online = isOnline as boolean;
-      setState(prev => ({ ...prev, isOnline: online }));
-    };
-
-    const handleUserActivity = (activity: unknown) => {
-      const userActivity = activity as UserActivity;
       setState(prev => ({
         ...prev,
-        recentActivities: [userActivity, ...prev.recentActivities.slice(0, 19)] // Keep last 20
+        notifications: prev.notifications.map(n => 
+          n.id === notificationId ? { ...n, is_read: true } : n
+        ),
+        unreadCount: Math.max(0, prev.unreadCount - 1)
       }));
-    };
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  }, [isAuthenticated]);
 
-    realTimeNotificationService.on('notificationAdded', handleNotificationAdded);
-    realTimeNotificationService.on('notificationRead', handleNotificationRead);
-    realTimeNotificationService.on('allNotificationsRead', handleAllNotificationsRead);
-    realTimeNotificationService.on('notificationRemoved', handleNotificationRemoved);
-    realTimeNotificationService.on('allNotificationsCleared', handleAllNotificationsCleared);
-    realTimeNotificationService.on('connectionStatusChanged', handleConnectionStatusChanged);
-    realTimeNotificationService.on('userActivity', handleUserActivity);
+  const markAllAsRead = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
 
-    // Initial load
-    updateNotifications();
+    try {
+      // Update all unread notifications for this user
+      const unreadNotifications = state.notifications.filter(n => !n.is_read);
+      
+      await Promise.all(
+        unreadNotifications.map(notification =>
+          supabaseService.update('notifications', notification.id, { is_read: true })
+        )
+      );
+
+      setState(prev => ({
+        ...prev,
+        notifications: prev.notifications.map(n => ({ ...n, is_read: true })),
+        unreadCount: 0
+      }));
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  }, [isAuthenticated, user, state.notifications]);
+
+  const removeNotification = useCallback(async (notificationId: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      await supabaseService.delete('notifications', notificationId);
+
+      setState(prev => {
+        const notification = prev.notifications.find(n => n.id === notificationId);
+        const wasUnread = notification && !notification.is_read;
+        
+        return {
+          ...prev,
+          notifications: prev.notifications.filter(n => n.id !== notificationId),
+          unreadCount: wasUnread ? Math.max(0, prev.unreadCount - 1) : prev.unreadCount
+        };
+      });
+    } catch (error) {
+      console.error('Failed to remove notification:', error);
+    }
+  }, [isAuthenticated]);
+
+  const clearAllNotifications = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
+
+    try {
+      await Promise.all(
+        state.notifications.map(notification =>
+          supabaseService.delete('notifications', notification.id)
+        )
+      );
+
+      setState(prev => ({
+        ...prev,
+        notifications: [],
+        unreadCount: 0
+      }));
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+    }
+  }, [isAuthenticated, user, state.notifications]);
+
+  const subscribeToNotifications = useCallback(() => {
+    if (!isAuthenticated || !user) return null;
+
+    const channelName = supabaseService.subscribeToTable(
+      'notifications',
+      (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new.user_id === user.id) {
+          const newNotification = payload.new as NotificationType;
+          
+          setState(prev => ({
+            ...prev,
+            notifications: [newNotification, ...prev.notifications.slice(0, maxNotifications - 1)],
+            unreadCount: prev.unreadCount + 1
+          }));
+
+          // Show browser notification if permission granted
+          if (Notification.permission === 'granted') {
+            new Notification(newNotification.title, {
+              body: newNotification.message,
+              icon: '/favicon.ico'
+            });
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new.user_id === user.id) {
+          const updatedNotification = payload.new as NotificationType;
+          
+          setState(prev => ({
+            ...prev,
+            notifications: prev.notifications.map(n => 
+              n.id === updatedNotification.id ? updatedNotification : n
+            )
+          }));
+        } else if (payload.eventType === 'DELETE' && payload.old.user_id === user.id) {
+          setState(prev => {
+            const wasUnread = !payload.old.is_read;
+            return {
+              ...prev,
+              notifications: prev.notifications.filter(n => n.id !== payload.old.id),
+              unreadCount: wasUnread ? Math.max(0, prev.unreadCount - 1) : prev.unreadCount
+            };
+          });
+        }
+      },
+      `user_id=eq.${user.id}`
+    );
+
     setState(prev => ({
       ...prev,
-      isOnline: realTimeNotificationService.getConnectionStatus(),
-      recentActivities: realTimeNotificationService.getUserActivities(undefined, 20)
+      isSubscribed: true,
+      channelName
     }));
 
-    // Request permission if enabled
-    if (autoRequestPermission && Notification.permission === 'default') {
+    return channelName;
+  }, [isAuthenticated, user, maxNotifications]);
+
+  const unsubscribeFromNotifications = useCallback(() => {
+    if (state.channelName) {
+      supabaseService.unsubscribe(state.channelName);
+      setState(prev => ({
+        ...prev,
+        isSubscribed: false,
+        channelName: null
+      }));
+    }
+  }, [state.channelName]);
+
+  // Auto-subscribe and load notifications when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && autoSubscribe) {
+      loadNotifications();
+      subscribeToNotifications();
+    } else {
+      unsubscribeFromNotifications();
+      setState(prev => ({
+        ...prev,
+        notifications: [],
+        unreadCount: 0
+      }));
+    }
+  }, [isAuthenticated, autoSubscribe, loadNotifications, subscribeToNotifications, unsubscribeFromNotifications]);
+
+  // Request permission on mount if enabled
+  useEffect(() => {
+    if (autoRequestPermission && 'Notification' in window && Notification.permission === 'default') {
       requestPermission();
     }
+  }, [autoRequestPermission, requestPermission]);
 
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      realTimeNotificationService.off('notificationAdded', handleNotificationAdded);
-      realTimeNotificationService.off('notificationRead', handleNotificationRead);
-      realTimeNotificationService.off('allNotificationsRead', handleAllNotificationsRead);
-      realTimeNotificationService.off('notificationRemoved', handleNotificationRemoved);
-      realTimeNotificationService.off('allNotificationsCleared', handleAllNotificationsCleared);
-      realTimeNotificationService.off('connectionStatusChanged', handleConnectionStatusChanged);
-      realTimeNotificationService.off('userActivity', handleUserActivity);
+      unsubscribeFromNotifications();
     };
-  }, [maxNotifications, autoRequestPermission, requestPermission]);
+  }, [unsubscribeFromNotifications]);
 
   return {
     ...state,
@@ -144,8 +252,8 @@ export function useRealTimeNotifications(options: UseRealTimeNotificationsOption
     markAllAsRead,
     removeNotification,
     clearAllNotifications,
-    getNotifications,
-    subscribeToUserActivities,
-    unsubscribeFromUserActivities
+    loadNotifications,
+    subscribeToNotifications,
+    unsubscribeFromNotifications
   };
 }
