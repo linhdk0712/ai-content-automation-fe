@@ -129,7 +129,7 @@ export function createLazyComponent<TProps>(
           )
         }
       >
-        {/* @ts-expect-error Forwarding generic ref to lazy component */}
+
         <LazyComponent {...props} ref={ref} />
       </Suspense>
     </ErrorBoundary>

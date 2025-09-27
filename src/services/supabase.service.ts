@@ -135,6 +135,138 @@ export interface Database {
           metadata?: Record<string, any> | null;
         };
       };
+      analytics_metrics: {
+        Row: {
+          id: string;
+          name: string;
+          value: number;
+          previous_value: number | null;
+          change: number | null;
+          change_percent: number | null;
+          unit: string | null;
+          category: string;
+          workspace_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          value: number;
+          previous_value?: number | null;
+          change?: number | null;
+          change_percent?: number | null;
+          unit?: string | null;
+          category: string;
+          workspace_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          value?: number;
+          previous_value?: number | null;
+          change?: number | null;
+          change_percent?: number | null;
+          unit?: string | null;
+          category?: string;
+        };
+      };
+      publishing_jobs: {
+        Row: {
+          id: string;
+          content_id: string;
+          platforms: string[];
+          status: string;
+          progress: number;
+          started_at: string | null;
+          completed_at: string | null;
+          estimated_completion: string | null;
+          error: string | null;
+          results: Record<string, any>[];
+          metadata: Record<string, any> | null;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          content_id: string;
+          platforms: string[];
+          status?: string;
+          progress?: number;
+          started_at?: string | null;
+          completed_at?: string | null;
+          estimated_completion?: string | null;
+          error?: string | null;
+          results?: Record<string, any>[];
+          metadata?: Record<string, any> | null;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          status?: string;
+          progress?: number;
+          started_at?: string | null;
+          completed_at?: string | null;
+          estimated_completion?: string | null;
+          error?: string | null;
+          results?: Record<string, any>[];
+          metadata?: Record<string, any> | null;
+        };
+      };
+      publishing_progress: {
+        Row: {
+          id: string;
+          job_id: string;
+          platform: string;
+          stage: string;
+          progress: number;
+          message: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          platform: string;
+          stage: string;
+          progress: number;
+          message: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          stage?: string;
+          progress?: number;
+          message?: string;
+        };
+      };
+      user_activities: {
+        Row: {
+          id: string;
+          user_id: string;
+          action: string;
+          resource: string;
+          resource_id: string;
+          metadata: Record<string, any> | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action: string;
+          resource: string;
+          resource_id: string;
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          action?: string;
+          resource?: string;
+          resource_id?: string;
+          metadata?: Record<string, any> | null;
+        };
+      };
     };
   };
 }

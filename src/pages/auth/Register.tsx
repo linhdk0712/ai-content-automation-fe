@@ -24,7 +24,7 @@ const schema = yup.object({
   lastName: yup.string(),
 })
 
-type RegisterFormData = RegisterRequest & { confirmPassword: string }
+type RegisterFormData = yup.InferType<typeof schema>
 
 const Register: React.FC = () => {
   const { register: registerUser } = useAuth()
@@ -42,7 +42,13 @@ const Register: React.FC = () => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       const { confirmPassword, ...registerData } = data
-      await registerUser(registerData)
+      await registerUser({
+        username: registerData.username || '',
+        email: registerData.email || '',
+        password: registerData.password || '',
+        firstName: registerData.firstName || '',
+        lastName: registerData.lastName,
+      })
       showSuccess('Registration successful! Please check your email for verification.')
       navigate('/dashboard')
     } catch (error: any) {

@@ -40,11 +40,20 @@ export async function apiCall<T>(
     }
 
     // Make API call
-    const result = await apiRequest[method]<T>(
-      url, 
-      method === 'get' || method === 'delete' ? axiosConfig : data,
-      method === 'get' || method === 'delete' ? undefined : { ...axiosConfig, showNotification: showSuccessNotification }
-    )
+    let result: T
+    if (method === 'get') {
+      result = await apiRequest.get<T>(url, axiosConfig)
+    } else if (method === 'delete') {
+      result = await apiRequest.delete<T>(url, axiosConfig)
+    } else if (method === 'post') {
+      result = await apiRequest.post<T>(url, data, axiosConfig)
+    } else if (method === 'put') {
+      result = await apiRequest.put<T>(url, data, axiosConfig)
+    } else if (method === 'patch') {
+      result = await apiRequest.patch<T>(url, data, axiosConfig)
+    } else {
+      throw new Error(`Unsupported HTTP method: ${method}`)
+    }
 
     // Remove loading notification
     if (loadingNotificationId) {
@@ -68,7 +77,13 @@ export async function apiCall<T>(
       if (errorMessage) {
         notificationService.showError(errorMessage)
       } else if (error instanceof Error) {
-        notificationService.showApiError(error as ApiError)
+        const apiError: ApiError = {
+          message: error.message,
+          status: 500,
+          timestamp: new Date().toISOString(),
+          path: url
+        }
+        notificationService.showApiError(apiError)
       }
     }
 
@@ -193,7 +208,13 @@ export const errorHandlers = {
   // Generic error handler
   handleError: (error: unknown, fallbackMessage: string = 'An error occurred') => {
     if (error instanceof Error) {
-      notificationService.showApiError(error as ApiError)
+      const apiError: ApiError = {
+        message: error.message,
+        status: 500,
+        timestamp: new Date().toISOString(),
+        path: ''
+      }
+      notificationService.showApiError(apiError)
     } else {
       notificationService.showError(fallbackMessage)
     }

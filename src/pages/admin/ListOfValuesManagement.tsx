@@ -109,7 +109,7 @@ export const ListOfValuesManagement: React.FC = () => {
   }
 
   const handleRefreshCache = () => {
-    queryClient.invalidateQueries(['listOfValues'])
+    queryClient.invalidateQueries({ queryKey: ['listOfValues'] })
     refetchCategories()
     refetchBulk()
     setShowCacheDialog(false)

@@ -53,13 +53,7 @@ const profileSchema = yup.object({
     .max(10, 'Language code must not exceed 10 characters'),
 });
 
-interface ProfileFormData {
-  firstName: string;
-  lastName?: string;
-  phoneNumber?: string;
-  timezone?: string;
-  language?: string;
-}
+type ProfileFormData = yup.InferType<typeof profileSchema>;
 
 const UserProfile: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -91,7 +85,13 @@ const UserProfile: React.FC = () => {
       setSuccess(null);
       setIsLoading(true);
       
-      await authService.updateProfile(data);
+      await authService.updateProfile({
+        firstName: data.firstName || '',
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+        timezone: data.timezone,
+        language: data.language
+      });
       await refreshUser();
       
       setSuccess('Cập nhật thông tin thành công!');

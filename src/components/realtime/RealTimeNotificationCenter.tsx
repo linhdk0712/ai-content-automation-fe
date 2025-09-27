@@ -57,11 +57,11 @@ export const RealTimeNotificationCenter: React.FC<RealTimeNotificationCenterProp
 
   const getPriorityColor = (priority: Notification['priority']) => {
     switch (priority) {
-      case 'urgent':
-        return 'border-red-500 bg-red-50';
       case 'high':
-        return 'border-orange-500 bg-orange-50';
+        return 'border-red-500 bg-red-50';
       case 'medium':
+        return 'border-orange-500 bg-orange-50';
+      case 'low':
         return 'border-blue-500 bg-blue-50';
       default:
         return 'border-gray-300 bg-gray-50';

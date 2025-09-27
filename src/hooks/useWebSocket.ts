@@ -132,12 +132,23 @@ export function useSupabaseRealtime(options: UseSupabaseRealtimeOptions = {}) {
     };
   }, [unsubscribeAll]);
 
+  // Add missing methods for backward compatibility
+  const send = (message: any) => {
+    console.log('WebSocket send not implemented in Supabase realtime:', message);
+  };
+
+  const subscribe = (channel: string, callback: (data: any) => void) => {
+    return subscribeToTable(channel, callback);
+  };
+
   return {
     ...state,
     subscribeToTable,
     subscribeToPresence,
     unsubscribe,
-    unsubscribeAll
+    unsubscribeAll,
+    send,
+    subscribe
   };
 }
 

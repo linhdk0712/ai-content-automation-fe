@@ -27,7 +27,14 @@ export function useNotifications() {
       notificationService.showInfo(message, options),
     remove: (id: string) => notificationService.remove(id),
     clear: () => notificationService.clear(),
-    clearByType: (type: NotificationOptions['type']) => notificationService.clearByType(type)
+    clearByType: (type: NotificationOptions['type']) => notificationService.clearByType(type),
+    markAsRead: (id: string) => notificationService.markAsRead(id),
+    markAllAsRead: () => notificationService.markAllAsRead(),
+    deleteNotification: (id: string) => notificationService.deleteNotification(id),
+    unreadCount: notificationService.unreadCount,
+    updatePreferences: (preferences: any) => notificationService.updatePreferences(preferences),
+    preferences: notificationService.preferences,
+    loading: notificationService.loading
   }
 }
 

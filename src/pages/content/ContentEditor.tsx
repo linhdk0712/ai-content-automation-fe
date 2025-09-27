@@ -199,11 +199,11 @@ const ContentEditor: React.FC = () => {
   useEffect(() => {
     if (id) {
       // Subscribe to channels - handlers will be set up via WebSocket service
-      subscribe('content-updated');
-      subscribe('collaborator-joined');
-      subscribe('collaborator-left');
-      subscribe('cursor-moved');
-      subscribe('comment-added');
+      subscribe('content-updated', (data) => console.log('Content updated:', data));
+      subscribe('collaborator-joined', (data) => console.log('Collaborator joined:', data));
+      subscribe('collaborator-left', (data) => console.log('Collaborator left:', data));
+      subscribe('cursor-moved', (data) => console.log('Cursor moved:', data));
+      subscribe('comment-added', (data) => console.log('Comment added:', data));
 
       return () => {
         unsubscribe('content-updated');

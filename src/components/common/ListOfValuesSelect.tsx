@@ -79,7 +79,7 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
   } = useDropdownWithListOfValues(category, {
     language,
     includeInactive,
-    defaultValue: value,
+    defaultValue: Array.isArray(value) ? value[0] : value,
     multiple,
   })
 

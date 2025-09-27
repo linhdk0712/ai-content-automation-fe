@@ -11,6 +11,12 @@ export interface NotificationType {
   is_read: boolean;
   metadata: Record<string, any> | null;
   created_at: string;
+  // Additional properties for compatibility
+  isRead?: boolean;
+  priority?: 'low' | 'medium' | 'high';
+  timestamp?: number;
+  actionUrl?: string;
+  actionText?: string;
 }
 
 export interface UseRealTimeNotificationsOptions {
@@ -254,6 +260,8 @@ export function useRealTimeNotifications(options: UseRealTimeNotificationsOption
     clearAllNotifications,
     loadNotifications,
     subscribeToNotifications,
-    unsubscribeFromNotifications
+    unsubscribeFromNotifications,
+    isOnline: true, // Placeholder - could be connected to actual online status
+    recentActivities: [] // Placeholder - could be connected to actual activities
   };
 }

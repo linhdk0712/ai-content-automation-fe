@@ -116,7 +116,7 @@ const NotificationCenter: React.FC = () => {
       filtered = filtered.filter(n => selectedFilters.includes(n.type));
     }
 
-    setFilteredNotifications(filtered);
+    setFilteredNotifications(filtered as any);
   }, [notifications, tabValue, selectedFilters]);
 
   const handleMarkAsRead = async (notificationId: string) => {

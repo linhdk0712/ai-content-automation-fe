@@ -1,4 +1,4 @@
-import { ApiResponse } from '../types/api.types'
+import { ApiResponse, ResponseBase } from '../types/api.types'
 import { api, apiRequest, TokenManager } from './api'
 
 // Auth-specific types
@@ -255,11 +255,11 @@ class AuthService {
       const token = this.getAccessToken()
       console.log('getCurrentUser - Token available:', !!token)
       console.log('getCurrentUser - Token preview:', token ? token.substring(0, 30) + '...' : 'null')
-      
+
       if (!token) {
         throw new Error('No access token available')
       }
-      
+
       return await apiRequest.get<UserProfile>('/auth/me')
     } catch (error) {
       console.error('Failed to get current user:', error)

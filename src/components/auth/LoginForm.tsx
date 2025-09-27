@@ -36,10 +36,7 @@ const loginSchema = yup.object({
     .min(8, 'Password must be at least 8 characters'),
 });
 
-interface LoginFormData {
-  usernameOrEmail: string;
-  password: string;
-}
+type LoginFormData = yup.InferType<typeof loginSchema>;
 
 interface LoginFormProps {
   onSuccess?: () => void;

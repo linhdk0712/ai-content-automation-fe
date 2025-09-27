@@ -67,15 +67,7 @@ const registerSchema = yup.object({
     .max(20, 'Phone number must not exceed 20 characters'),
 });
 
-interface RegisterFormData {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName?: string;
-  phoneNumber?: string;
-}
+type RegisterFormData = yup.InferType<typeof registerSchema>;
 
 interface RegisterFormProps {
   onSuccess?: () => void;

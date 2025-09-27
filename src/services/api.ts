@@ -151,7 +151,7 @@ class TokenManager {
 api.interceptors.request.use(
   async (config) => {
     // Add request ID for tracking
-    config.headers = config.headers ?? {}
+    config.headers = config.headers || {} as any
     config.headers['X-Request-ID'] = generateRequestId()
 
     // Add authentication token

@@ -44,6 +44,7 @@ export const EnhancedContentCreator: React.FC<EnhancedContentCreatorProps> = ({ 
     applyTextOperation
   } = useRealTimeCollaboration({
     contentId: selectedContent?.id?.toString() || '',
+    workspaceId: selectedContent?.workspaceId?.toString() || '1',
     autoJoin: !!selectedContent
   })
 

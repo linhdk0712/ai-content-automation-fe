@@ -55,8 +55,8 @@ export const useTemplates = () => {
     setError(null);
 
     try {
-      const results = await templateService.searchTemplates(searchRequest);
-      setTemplates(results);
+      const results = await templateService.searchTemplates(searchRequest as any);
+      setTemplates(results as any);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to search templates';
       setError(errorMessage);
@@ -85,8 +85,8 @@ export const useTemplates = () => {
         sortOrder: 'desc'
       };
 
-      const results = await templateService.searchTemplates(searchRequest);
-      setTemplates(results);
+      const results = await templateService.searchTemplates(searchRequest as any);
+      setTemplates(results as any);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load templates';
       setError(errorMessage);
@@ -98,7 +98,7 @@ export const useTemplates = () => {
   const getCategories = useCallback(async () => {
     try {
       const categoriesData = await templateService.getCategories();
-      setCategories(categoriesData);
+      setCategories(categoriesData as any);
     } catch (err: any) {
       console.error('Failed to load categories:', err);
     }
@@ -107,7 +107,7 @@ export const useTemplates = () => {
   const getFavoriteTemplates = useCallback(async () => {
     try {
       const favorites = await templateService.getFavoriteTemplates();
-      setFavoriteTemplates(favorites);
+      setFavoriteTemplates(favorites as any);
     } catch (err: any) {
       console.error('Failed to load favorite templates:', err);
     }
@@ -116,7 +116,7 @@ export const useTemplates = () => {
   const getPopularTemplates = useCallback(async (limit: number = 10) => {
     try {
       const popular = await templateService.getPopularTemplates(limit);
-      setPopularTemplates(popular);
+      setPopularTemplates(popular as any);
     } catch (err: any) {
       console.error('Failed to load popular templates:', err);
     }
@@ -125,7 +125,7 @@ export const useTemplates = () => {
   const getUserTemplates = useCallback(async (page: number = 0, size: number = 20) => {
     try {
       const userTemplatesData = await templateService.getUserTemplates(page, size);
-      setUserTemplates(userTemplatesData);
+      setUserTemplates(userTemplatesData as any);
     } catch (err: any) {
       console.error('Failed to load user templates:', err);
     }
@@ -133,7 +133,7 @@ export const useTemplates = () => {
 
   const getTemplateById = useCallback(async (templateId: string) => {
     try {
-      return await templateService.getTemplateById(templateId);
+      return await templateService.getTemplateById(parseInt(templateId));
     } catch (err: any) {
       console.error('Failed to load template:', err);
       return null;
@@ -152,10 +152,14 @@ export const useTemplates = () => {
     isPublic?: boolean;
   }) => {
     try {
-      const newTemplate = await templateService.createTemplate(templateData);
+      const newTemplate = await templateService.createTemplate({
+        ...templateData,
+        promptTemplate: templateData.content, // Use content as promptTemplate
+        category: templateData.category as any
+      });
       
       // Add to user templates
-      setUserTemplates(prev => [newTemplate, ...prev]);
+      setUserTemplates(prev => [newTemplate as any, ...prev]);
       
       return newTemplate;
     } catch (err: any) {
@@ -176,12 +180,15 @@ export const useTemplates = () => {
     isPublic?: boolean;
   }) => {
     try {
-      const updatedTemplate = await templateService.updateTemplate(templateId, templateData);
+      const updatedTemplate = await templateService.updateTemplate(parseInt(templateId), {
+        ...templateData,
+        category: templateData.category as any
+      });
       
       // Update in user templates
       setUserTemplates(prev => 
         prev.map(template => 
-          template.id === templateId ? updatedTemplate : template
+          template.id.toString() === templateId ? updatedTemplate as any : template
         )
       );
       
@@ -194,7 +201,7 @@ export const useTemplates = () => {
 
   const deleteTemplate = useCallback(async (templateId: string) => {
     try {
-      await templateService.deleteTemplate(templateId);
+      await templateService.deleteTemplate(parseInt(templateId));
       
       // Remove from user templates
       setUserTemplates(prev => prev.filter(template => template.id !== templateId));
@@ -209,7 +216,7 @@ export const useTemplates = () => {
 
   const addToFavorites = useCallback(async (templateId: string) => {
     try {
-      await templateService.addToFavorites(templateId);
+      await templateService.addToFavorites(parseInt(templateId));
       
       // Find template and add to favorites
       const template = templates.find(t => t.id === templateId) ||
@@ -227,7 +234,7 @@ export const useTemplates = () => {
 
   const removeFromFavorites = useCallback(async (templateId: string) => {
     try {
-      await templateService.removeFromFavorites(templateId);
+      await templateService.removeFromFavorites(parseInt(templateId));
       
       // Remove from favorites
       setFavoriteTemplates(prev => prev.filter(template => template.id !== templateId));
@@ -239,7 +246,7 @@ export const useTemplates = () => {
 
   const rateTemplate = useCallback(async (templateId: string, rating: number) => {
     try {
-      await templateService.rateTemplate(templateId, rating);
+      await templateService.rateTemplate(parseInt(templateId), rating);
       
       // Update template rating in all lists
       const updateRating = (template: Template) => 

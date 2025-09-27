@@ -43,7 +43,7 @@ export function useListOfValues(
     queryFn: () => ListOfValuesService.getListOfValues(category, language, includeInactive),
     enabled,
     staleTime,
-    cacheTime,
+    gcTime: cacheTime,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
@@ -69,7 +69,7 @@ export function useBulkListOfValues(
     queryFn: () => ListOfValuesService.getBulkListOfValues(categories, language, includeInactive),
     enabled: enabled && categories.length > 0,
     staleTime,
-    cacheTime,
+    gcTime: cacheTime,
     retry: 2,
   })
 }
@@ -94,7 +94,7 @@ export function useSearchListOfValues(
     queryFn: () => ListOfValuesService.searchListOfValues(query, category, language),
     enabled: enabled && query.length >= 2, // Only search with 2+ characters
     staleTime,
-    cacheTime,
+    gcTime: cacheTime,
     retry: 1,
   })
 }
@@ -114,7 +114,7 @@ export function useAvailableCategories(options: UseListOfValuesOptions = {}) {
     queryFn: () => ListOfValuesService.getAvailableCategories(),
     enabled,
     staleTime,
-    cacheTime,
+    gcTime: cacheTime,
     retry: 2,
   })
 }

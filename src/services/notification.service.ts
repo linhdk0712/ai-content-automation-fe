@@ -18,6 +18,8 @@ export interface NotificationAction {
 export interface Notification extends NotificationOptions {
   id: string
   timestamp: Date
+  isRead?: boolean
+  priority?: 'low' | 'medium' | 'high'
 }
 
 class NotificationService {
@@ -164,6 +166,51 @@ class NotificationService {
   clearByType(type: NotificationOptions['type']): void {
     this.notifications = this.notifications.filter(n => n.type !== type)
     this.notifyListeners()
+  }
+
+  // Mark notification as read (for persistent notifications)
+  markAsRead(id: string): void {
+    const notification = this.notifications.find(n => n.id === id)
+    if (notification) {
+      // For now, just remove it. In a real app, you might want to keep it but mark as read
+      this.remove(id)
+    }
+  }
+
+  // Mark all notifications as read
+  markAllAsRead(): void {
+    this.notifications = []
+    this.notifyListeners()
+  }
+
+  // Delete notification (alias for remove)
+  deleteNotification(id: string): void {
+    this.remove(id)
+  }
+
+  // Get unread count
+  get unreadCount(): number {
+    return this.notifications.length
+  }
+
+  // Update preferences (placeholder for future implementation)
+  updatePreferences(preferences: any): void {
+    // Placeholder for notification preferences
+    console.log('Notification preferences updated:', preferences)
+  }
+
+  // Get preferences (placeholder for future implementation)
+  get preferences(): any {
+    return {
+      enableSound: true,
+      enableDesktop: true,
+      enableEmail: false
+    }
+  }
+
+  // Loading state (placeholder)
+  get loading(): boolean {
+    return false
   }
 
   // Get all notifications

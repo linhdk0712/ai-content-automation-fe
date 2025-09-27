@@ -48,14 +48,8 @@ const resetPasswordSchema = yup.object({
     .oneOf([yup.ref('newPassword')], 'Passwords must match'),
 });
 
-interface ForgotPasswordData {
-  email: string;
-}
-
-interface ResetPasswordData {
-  newPassword: string;
-  confirmPassword: string;
-}
+type ForgotPasswordData = yup.InferType<typeof forgotPasswordSchema>;
+type ResetPasswordData = yup.InferType<typeof resetPasswordSchema>;
 
 const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();
