@@ -59,48 +59,52 @@ interface NavigationItem {
   children?: NavigationItem[]
   badge?: number
   role?: string[]
+  enabled?: boolean // Thêm thuộc tính để bật/tắt menu
 }
 
 const navigationItems: NavigationItem[] = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', enabled: true },
   {
     text: 'Content',
     icon: <CreateIcon />,
+    enabled: true, // Đã triển khai
     children: [
-      { text: 'Create Content', icon: <AutoAwesome />, path: '/content/create' },
-      { text: 'Content Library', icon: <Description />, path: '/content/library' },
-      { text: 'Templates', icon: <Description />, path: '/templates' },
-      { text: 'Version History', icon: <History />, path: '/content/versions' },
-      { text: 'Workflow', icon: <Group />, path: '/content/workflow' },
-      { text: 'Export', icon: <CloudUpload />, path: '/content/export' }
+      { text: 'Create Content', icon: <AutoAwesome />, path: '/content/create', enabled: true },
+      { text: 'Content Library', icon: <Description />, path: '/content/library', enabled: true },
+      { text: 'Templates', icon: <Description />, path: '/templates', enabled: true },
+      { text: 'Version History', icon: <History />, path: '/content/versions', enabled: false },
+      { text: 'Workflow', icon: <Group />, path: '/content/workflow', enabled: false },
+      { text: 'Export', icon: <CloudUpload />, path: '/content/export', enabled: false }
     ]
   },
   {
     text: 'Social Media',
     icon: <Share />,
+    enabled: false, // Chưa triển khai - ẩn toàn bộ menu này
     children: [
-      { text: 'Accounts', icon: <AccountCircle />, path: '/social/accounts' },
-      { text: 'Publishing Queue', icon: <Schedule />, path: '/social/queue', badge: 5 },
-      { text: 'Calendar', icon: <CalendarToday />, path: '/social/calendar' },
-      { text: 'Analytics', icon: <TrendingUp />, path: '/social/analytics' },
-      { text: 'Platform Settings', icon: <Settings />, path: '/social/settings' },
-      { text: 'Content Optimization', icon: <BarChart />, path: '/social/optimization' }
+      { text: 'Accounts', icon: <AccountCircle />, path: '/social/accounts', enabled: false },
+      { text: 'Publishing Queue', icon: <Schedule />, path: '/social/queue', badge: 5, enabled: false },
+      { text: 'Calendar', icon: <CalendarToday />, path: '/social/calendar', enabled: false },
+      { text: 'Analytics', icon: <TrendingUp />, path: '/social/analytics', enabled: false },
+      { text: 'Platform Settings', icon: <Settings />, path: '/social/settings', enabled: false },
+      { text: 'Content Optimization', icon: <BarChart />, path: '/social/optimization', enabled: false }
     ]
   },
   {
     text: 'Media & Assets',
     icon: <Image />,
+    enabled: false, // Chưa triển khai - ẩn toàn bộ menu này
     children: [
-      { text: 'Media Library', icon: <Folder />, path: '/media/library' },
-      { text: 'Image Generator', icon: <Palette />, path: '/media/generator' },
-      { text: 'Brand Kit', icon: <Palette />, path: '/media/brandkit' },
-      { text: 'Asset Editor', icon: <Image />, path: '/media/editor' },
-      { text: 'Video Processor', icon: <VideoFile />, path: '/media/video' },
-      { text: 'Asset Analytics', icon: <AnalyticsIcon />, path: '/media/analytics' }
+      { text: 'Media Library', icon: <Folder />, path: '/media/library', enabled: false },
+      { text: 'Image Generator', icon: <Palette />, path: '/media/generator', enabled: false },
+      { text: 'Brand Kit', icon: <Palette />, path: '/media/brandkit', enabled: false },
+      { text: 'Asset Editor', icon: <Image />, path: '/media/editor', enabled: false },
+      { text: 'Video Processor', icon: <VideoFile />, path: '/media/video', enabled: false },
+      { text: 'Asset Analytics', icon: <AnalyticsIcon />, path: '/media/analytics', enabled: false }
     ]
   },
-  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-  { text: 'Team', icon: <Group />, path: '/team', role: ['admin', 'manager'] }
+  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', enabled: false }, // Chưa triển khai
+  { text: 'Team', icon: <Group />, path: '/team', role: ['admin', 'manager'], enabled: false } // Chưa triển khai
 ]
 
 const secondaryItems: NavigationItem[] = [
@@ -117,8 +121,8 @@ interface SidebarProps {
   onMobileClose?: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  collapsed = false, 
+const Sidebar: React.FC<SidebarProps> = ({
+  collapsed = false,
   onToggleCollapse,
   mobileOpen = false,
   onMobileClose
@@ -126,8 +130,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate()
   const location = useLocation()
   const theme = useTheme()
-  
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Content', 'Social Media'])
+
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Content'])
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleNavigation = (path: string) => {
@@ -148,20 +152,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   }
 
   const handleExpandClick = (itemText: string) => {
-    setExpandedItems(prev => 
-      prev.includes(itemText) 
+    setExpandedItems(prev =>
+      prev.includes(itemText)
         ? prev.filter(item => item !== itemText)
         : [...prev, itemText]
     )
   }
 
   const filterItems = (items: NavigationItem[]): NavigationItem[] => {
-    if (!searchQuery) return items
-    
-    return items.filter(item => {
+    // Lọc theo enabled trước
+    const enabledItems = items.filter(item => item.enabled !== false)
+
+    if (!searchQuery) return enabledItems
+
+    return enabledItems.filter(item => {
       const matchesSearch = item.text.toLowerCase().includes(searchQuery.toLowerCase())
-      const hasMatchingChildren = item.children?.some(child => 
-        child.text.toLowerCase().includes(searchQuery.toLowerCase())
+      const hasMatchingChildren = item.children?.some(child =>
+        child.enabled !== false && child.text.toLowerCase().includes(searchQuery.toLowerCase())
       )
       return matchesSearch || hasMatchingChildren
     })
@@ -205,10 +212,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {React.cloneElement(item.icon, { fontSize: 'small' })}
               </Badge>
             </ListItemIcon>
-            
+
             {!collapsed && (
               <>
-                <ListItemText 
+                <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
                     fontSize: level > 0 ? '0.75rem' : '0.85rem',
@@ -224,11 +231,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </ListItemButton>
         </ListItem>
-        
+
         {hasChildren && !collapsed && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {item.children?.map(child => renderNavigationItem(child, level + 1))}
+              {item.children?.filter(child => child.enabled !== false).map(child => renderNavigationItem(child, level + 1))}
             </List>
           </Collapse>
         )}
@@ -257,7 +264,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </IconButton>
         )}
       </Toolbar>
-      
+
       {!collapsed && (
         <Box sx={{ p: 1.5 }}>
           <TextField
@@ -286,13 +293,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           />
         </Box>
       )}
-      
+
       <List sx={{ flexGrow: 1, px: 0.5 }}>
         {filterItems(navigationItems).map(item => renderNavigationItem(item))}
       </List>
-      
+
       <Divider />
-      
+
       <List sx={{ px: 0.5 }}>
         {filterItems(secondaryItems).map(item => renderNavigationItem(item))}
       </List>
@@ -322,7 +329,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         {drawerContent}
       </Drawer>
-      
+
       {/* Desktop drawer - Fixed position to not affect main content layout */}
       <Drawer
         variant="permanent"

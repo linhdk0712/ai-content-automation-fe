@@ -15,13 +15,10 @@ export interface ListOfValuesResponse {
   language?: string
 }
 
-export interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data?: T
-  error?: string
-  timestamp?: string
-  path?: string
+export interface ResponseBase<T> {
+  errorCode: string
+  errorMessage: string
+  data: T
 }
 
 /**
@@ -44,11 +41,11 @@ export class ListOfValuesService {
         includeInactive: includeInactive.toString()
       })
 
-      const response = await apiRequest.get<ApiResponse<ListOfValuesResponse[]>>(
+      const response = await apiRequest.get<ListOfValuesResponse[]>(
         `${this.BASE_URL}/${category}?${params.toString()}`
       )
 
-      return response.data || []
+      return response || []
     } catch (error) {
       console.error(`Failed to get list of values for category ${category}:`, error)
       throw error
@@ -60,8 +57,8 @@ export class ListOfValuesService {
    */
   static async getAvailableCategories(): Promise<string[]> {
     try {
-      const response = await apiRequest.get<ApiResponse<string[]>>(this.BASE_URL)
-      return response.data || []
+      const response = await apiRequest.get<string[]>(this.BASE_URL)
+      return response || []
     } catch (error) {
       console.error('Failed to get available categories:', error)
       throw error
@@ -83,11 +80,11 @@ export class ListOfValuesService {
         includeInactive: includeInactive.toString()
       })
 
-      const response = await apiRequest.get<ApiResponse<Record<string, ListOfValuesResponse[]>>>(
+      const response = await apiRequest.get<Record<string, ListOfValuesResponse[]>>(
         `${this.BASE_URL}/bulk?${params.toString()}`
       )
 
-      return response.data || {}
+      return response || {}
     } catch (error) {
       console.error('Failed to get bulk list of values:', error)
       throw error
@@ -112,11 +109,11 @@ export class ListOfValuesService {
         params.append('category', category)
       }
 
-      const response = await apiRequest.get<ApiResponse<Record<string, ListOfValuesResponse[]>>>(
+      const response = await apiRequest.get<Record<string, ListOfValuesResponse[]>>(
         `${this.BASE_URL}/search?${params.toString()}`
       )
 
-      return response.data || {}
+      return response || {}
     } catch (error) {
       console.error('Failed to search list of values:', error)
       throw error

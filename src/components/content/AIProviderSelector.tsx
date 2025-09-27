@@ -232,7 +232,7 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
   if (isLoading) {
     return (
       <Box sx={sx}>
-        <Typography variant="subtitle2" gutterBottom>
+        <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
           AI Provider Selection
         </Typography>
         <Grid container spacing={2}>
@@ -266,11 +266,22 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
   return (
     <Box sx={sx}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+        <Typography variant="body2" sx={{ flexGrow: 1, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
           AI Provider Selection
         </Typography>
-        <Tooltip title="Provider information and real-time status">
-          <IconButton size="small" onClick={() => setShowDetails(!showDetails)}>
+        <Tooltip title="Show provider details and real-time status">
+          <IconButton 
+            size="small" 
+            onClick={() => setShowDetails(!showDetails)}
+            sx={{
+              bgcolor: showDetails ? 'primary.50' : 'transparent',
+              color: showDetails ? 'primary.main' : 'text.secondary',
+              '&:hover': {
+                bgcolor: 'primary.50',
+                color: 'primary.main',
+              }
+            }}
+          >
             <Info />
           </IconButton>
         </Tooltip>
@@ -278,23 +289,97 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
 
       {/* Quick Selection Dropdown */}
       <FormControl fullWidth sx={{ mb: 2 }}>
-        <InputLabel>Select Provider</InputLabel>
         <Select
           value={selectedProvider}
           onChange={(e) => onProviderSelect(e.target.value)}
-          label="Select Provider"
+          displayEmpty
+          sx={{ 
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: 'background.paper',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+              },
+              '&.Mui-focused': {
+                backgroundColor: 'background.paper',
+                boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+              },
+            }
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                borderRadius: 2,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                border: '1px solid',
+                borderColor: 'divider',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                  borderRadius: 1,
+                  mx: 0.5,
+                  my: 0.25,
+                  minHeight: 48,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                },
+              },
+            },
+          }}
         >
-          <MenuItem value="">
-            <em>Auto-select (Recommended)</em>
+          <MenuItem value="" disabled>
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              Select AI provider
+            </Typography>
           </MenuItem>
-          {providers.map((provider) => (
-            <MenuItem key={provider.name} value={provider.name}>
-              {provider.name}
-              {Array.isArray(recommendations) && recommendations.some(rec => rec.providerName === provider.name) && (
-                <Chip label="★" size="small" sx={{ ml: 1 }} />
-              )}
-            </MenuItem>
-          ))}
+          <MenuItem value="">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Star sx={{ color: 'primary.main', fontSize: 20 }} />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Auto-select (Recommended)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Choose optimal provider automatically
+                </Typography>
+              </Box>
+            </Box>
+          </MenuItem>
+          {providers.map((provider) => {
+            const status = providerStatuses[provider.name];
+            const isRecommended = Array.isArray(recommendations) && 
+              recommendations.some(rec => rec.providerName === provider.name);
+            
+            return (
+              <MenuItem key={provider.name} value={provider.name}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                  {getStatusIcon(status)}
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {provider.name}
+                      </Typography>
+                      {isRecommended && (
+                        <Chip 
+                          label="★" 
+                          size="small" 
+                          color="primary"
+                          sx={{ 
+                            height: 20,
+                            fontSize: '0.7rem',
+                            fontWeight: 600
+                          }} 
+                        />
+                      )}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Quality: {provider.qualityScore}/10 • {formatCost(provider.costPer1KTokens)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </MenuItem>
+            );
+          })}
         </Select>
       </FormControl>
 
@@ -311,19 +396,33 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
 
       {/* Recommendations */}
       {Array.isArray(recommendations) && recommendations.length > 0 && !showDetails && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-            Recommended for {optimizationCriteria.toLowerCase()} optimization:
+        <Box sx={{ 
+          mt: 2, 
+          p: 2, 
+          bgcolor: 'primary.50', 
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'primary.100'
+        }}>
+          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: 'primary.main' }}>
+            💡 Recommended for {optimizationCriteria.toLowerCase()} optimization:
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {recommendations.slice(0, 3).map((rec) => (
-              <Tooltip key={rec.providerName} title={rec.reason}>
+              <Tooltip key={rec.providerName} title={rec.reason} arrow>
                 <Chip
                   label={`${rec.providerName} (${Math.round(rec.score)}%)`}
                   onClick={() => onProviderSelect(rec.providerName)}
                   color={selectedProvider === rec.providerName ? 'primary' : 'default'}
                   variant={selectedProvider === rec.providerName ? 'filled' : 'outlined'}
                   size="small"
+                  sx={{
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: selectedProvider === rec.providerName ? 'primary.dark' : 'primary.100',
+                    }
+                  }}
                 />
               </Tooltip>
             ))}
@@ -333,8 +432,19 @@ const AIProviderSelector: React.FC<AIProviderSelectorProps> = ({
 
       {/* Auto-selection Info */}
       {!selectedProvider && (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          Auto-selection will choose the optimal provider based on your optimization criteria and current availability.
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mt: 2,
+            borderRadius: 2,
+            '& .MuiAlert-icon': {
+              color: 'info.main'
+            }
+          }}
+        >
+          <Typography variant="body2">
+            <strong>Auto-selection enabled:</strong> The optimal provider will be chosen automatically based on your optimization criteria and current availability.
+          </Typography>
         </Alert>
       )}
     </Box>

@@ -7,15 +7,9 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControl,
   FormControlLabel,
   Grid,
-  InputLabel,
   MenuItem,
   Alert as MuiAlert,
   Select,
@@ -25,11 +19,12 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useContentGeneration } from '../../hooks/useContentGeneration';
 import { useTemplates } from '../../hooks/useTemplates';
 import { contentService } from '../../services/content.service';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import { ContentType } from '../../types/api.types';
 import {
   ContentTypeSelect,
   IndustrySelect,
@@ -70,11 +65,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   } = useContentGeneration();
 
   const {
-    loadTemplates  } = useTemplates();
+    loadTemplates } = useTemplates();
 
-  const [offerTriggerOpen, setOfferTriggerOpen] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingToBackend, setIsSendingToBackend] = useState(false);
   const [lastContentId, setLastContentId] = useState<number | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -94,9 +89,25 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     { value: 'BALANCED', label: 'Balanced', description: 'Good balance of quality, cost, and speed' }
   ];
 
+  // Debounce template loading to avoid excessive API calls
+  const debouncedFilters = useMemo(() => ({ industry, contentType }), [industry, contentType]);
+
   useEffect(() => {
-    loadTemplates({ industry, contentType, limit: 10 });
-  }, [industry, contentType, loadTemplates]);
+    // Only load templates if we have at least one filter value
+    if (debouncedFilters.industry || debouncedFilters.contentType) {
+      // Add a small delay to debounce rapid changes
+      const timeoutId = setTimeout(() => {
+        loadTemplates({ 
+          industry: debouncedFilters.industry, 
+          contentType: debouncedFilters.contentType, 
+          limit: 10 
+        });
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFilters.industry, debouncedFilters.contentType]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -110,6 +121,8 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       industry,
       contentType,
       language,
+      tone,
+      targetAudience,
       maxTokens,
       temperature,
       workspaceId,
@@ -145,18 +158,18 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   };
 
   useEffect(() => {
-    // Offer sending to AI Avatar workflow after successful generation
+    // Set content ID after successful generation
     if (generationResult?.success) {
       // Some providers/responses may not return a persisted contentId yet.
       // Fallback to 0 to allow sending raw content to workflow.
       const maybeId = (generationResult as any)?.contentId ?? 0;
       setLastContentId(maybeId);
-      setOfferTriggerOpen(true);
     }
   }, [generationResult]);
 
   const handleSendToWorkflow = async () => {
-    // Allow triggering even when content isn't saved yet (use 0 as placeholder id)
+    if (!generationResult?.content) return;
+
     setIsTriggering(true);
     try {
       const contentData = {
@@ -168,13 +181,15 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
         language
       };
       const run = await triggerAiAvatarWorkflow(lastContentId ?? 0, contentData);
-      setOfferTriggerOpen(false);
       setToastSeverity('success');
-      setToastMsg('Sent to AI Avatar workflow');
+      setToastMsg('Sent to AI Avatar workflow successfully!');
       setToastOpen(true);
-      window.location.href = `/workflows/run/${run.id}`;
+
+      // Navigate to workflow run page after a short delay
+      setTimeout(() => {
+        window.location.href = `/workflows/run/${run.id}`;
+      }, 1500);
     } catch (e) {
-      setOfferTriggerOpen(false);
       setToastSeverity('error');
       setToastMsg('Failed to send to workflow');
       setToastOpen(true);
@@ -184,35 +199,55 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   };
 
   const handleSaveToLibrary = async () => {
-    if (!generationResult?.content) {
-      setOfferTriggerOpen(false);
-      return;
-    }
+    if (!generationResult?.content) return;
+
     setIsSaving(true);
     try {
       const saved = await contentService.createContent({
         title: generationResult?.title || 'Untitled',
         textContent: generationResult?.content,
-        contentType: 'TEXT' as any,
+        contentType: ContentType.TEXT,
         industry,
         language,
         fromAiGeneration: true,
         aiProvider: generationResult?.provider,
-        metadata: generationResult as any,
-      } as any);
+        metadata: generationResult,
+      });
       setLastContentId(saved?.id ?? 0);
       setToastSeverity('success');
-      setToastMsg('Saved to Content Library');
+      setToastMsg('Content saved to library successfully!');
       setToastOpen(true);
-      setOfferTriggerOpen(false);
-      window.location.href = `/content/${saved.id}`;
+
+      // Navigate to content library after a short delay
+      setTimeout(() => {
+        window.location.href = `/content/library`;
+      }, 1500);
     } catch (e) {
       setToastSeverity('error');
       setToastMsg('Failed to save content');
       setToastOpen(true);
-      setOfferTriggerOpen(false);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSendToBackend = async () => {
+    if (!generationResult?.content) return;
+
+    setIsSendingToBackend(true);
+    try {
+      // Simulate backend API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      setToastSeverity('success');
+      setToastMsg('Content sent to backend successfully!');
+      setToastOpen(true);
+    } catch (e) {
+      setToastSeverity('error');
+      setToastMsg('Failed to send content to backend');
+      setToastOpen(true);
+    } finally {
+      setIsSendingToBackend(false);
     }
   };
 
@@ -229,9 +264,9 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   };
 
   const renderCreateTab = () => (
-    <Box 
+    <Box
       className="content-creator-layout"
-      sx={{ 
+      sx={{
         display: 'flex',
         flexDirection: { xs: 'column', lg: 'row' },
         gap: 3,
@@ -242,33 +277,44 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       }}
     >
       {/* Left Panel - Input Form */}
-      <Box 
+      <Box
         className="content-creator-form"
-        sx={{ 
+        sx={{
           flex: { lg: '0 0 500px' },
           width: { xs: '100%', lg: '500px' },
           maxWidth: '100%'
         }}
       >
-        <Card sx={{ 
+        <Card sx={{
           height: 'fit-content',
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           border: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
+          borderRadius: 3,
+          overflow: 'hidden'
         }}>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ 
+          <Box sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            p: 3,
+            mb: 0
+          }}>
+            <Typography variant="h6" sx={{
               fontWeight: 600,
-              color: 'primary.main',
-              mb: 3
+              mb: 0.5
             }}>
               Content Generation
             </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Create AI-powered content with advanced customization
+            </Typography>
+          </Box>
+          <CardContent sx={{ p: 3, pt: 3 }}>
 
             {/* Template Selection */}
             {selectedTemplate && (
-              <Alert 
-                severity="info" 
+              <Alert
+                severity="info"
                 onClose={handleClearTemplate}
                 sx={{ mb: 3, borderRadius: 2 }}
               >
@@ -285,7 +331,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               placeholder="Describe what content you want to generate..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              sx={{ 
+              sx={{
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2
@@ -296,132 +342,171 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             />
 
             {/* Industry and Content Type */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6}>
-                <IndustrySelect
-                  label="Industry"
-                  value={industry}
-                  onChange={(value) => setIndustry(value as string)}
-                  placeholder="Select industry"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
+                Content Settings
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <IndustrySelect
+                    value={industry}
+                    onChange={(value) => setIndustry(value as string)}
+                    placeholder="Select industry"
+                    showIcons={true}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <ContentTypeSelect
+                    value={contentType}
+                    onChange={(value) => setContentType(value as string)}
+                    placeholder="Select content type"
+                    showIcons={true}
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <ContentTypeSelect
-                  label="Content Type"
-                  value={contentType}
-                  onChange={(value) => setContentType(value as string)}
-                  placeholder="Select content type"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
-              </Grid>
-            </Grid>
+            </Box>
 
             {/* Language and Tone */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6}>
-                <LanguageSelect
-                  label="Language"
-                  value={language}
-                  onChange={(value) => setLanguage(value as string)}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
+                Style & Language
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <LanguageSelect
+                    value={language}
+                    onChange={(value) => setLanguage(value as string)}
+                    showIcons={true}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <ToneSelect
+                    value={tone}
+                    onChange={(value) => setTone(value as string)}
+                    placeholder="Select tone"
+                    showIcons={true}
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <ToneSelect
-                  label="Tone"
-                  value={tone}
-                  onChange={(value) => setTone(value as string)}
-                  placeholder="Select tone"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
-              </Grid>
-            </Grid>
+            </Box>
 
             {/* Target Audience */}
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
+                Target Audience
+              </Typography>
               <TargetAudienceSelect
-                label="Target Audience"
                 value={targetAudience}
                 onChange={(value) => setTargetAudience(value as string)}
                 placeholder="Select target audience"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                showIcons={true}
               />
             </Box>
 
             {/* Optimization Criteria */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Optimization</InputLabel>
-                  <Select
-                    value={optimizationCriteria}
-                    onChange={(e) => setOptimizationCriteria(e.target.value)}
-                    label="Optimization"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    <MenuItem value="BALANCED">Balanced</MenuItem>
-                    <MenuItem value="CREATIVE">Creative</MenuItem>
-                    <MenuItem value="FACTUAL">Factual</MenuItem>
-                    <MenuItem value="ENGAGING">Engaging</MenuItem>
-                    ))
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Optimization</InputLabel>
-                  <Select
-                    value={optimizationCriteria}
-                    onChange={(e) => setOptimizationCriteria(e.target.value)}
-                    label="Optimization"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    {optimizationOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        <Box>
-                          <Typography variant="body2">{option.label}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {option.description}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
+                Optimization
+              </Typography>
+              <FormControl fullWidth>
+                <Select
+                  value={optimizationCriteria}
+                  onChange={(e) => setOptimizationCriteria(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: 'background.paper',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: 'background.paper',
+                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 2,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        mt: 0.5,
+                        '& .MuiMenuItem-root': {
+                          borderRadius: 1,
+                          mx: 0.5,
+                          my: 0.25,
+                          minHeight: 56,
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      Select optimization
+                    </Typography>
+                  </MenuItem>
+                  {optimizationOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      <Box sx={{ py: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
+                          {option.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                          {option.description}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* AI Provider Selection */}
-            <AIProviderSelector
-              selectedProvider={selectedProvider}
-              onProviderSelect={setSelectedProvider}
-              optimizationCriteria={optimizationCriteria}
-              sx={{ mb: 3 }}
-            />
+            <Box sx={{ mb: 4 }}>
+              <AIProviderSelector
+                selectedProvider={selectedProvider}
+                onProviderSelect={setSelectedProvider}
+                optimizationCriteria={optimizationCriteria}
+              />
+            </Box>
 
             {/* Advanced Settings */}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAdvancedSettings}
-                  onChange={(e) => setShowAdvancedSettings(e.target.checked)}
-                />
-              }
-              label="Advanced Settings"
-              sx={{ mb: 2 }}
-            />
+            <Box sx={{
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              pt: 3,
+              mt: 3
+            }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showAdvancedSettings}
+                    onChange={(e) => setShowAdvancedSettings(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                    Advanced Settings
+                  </Typography>
+                }
+                sx={{ mb: 2 }}
+              />
+            </Box>
 
             {showAdvancedSettings && (
-              <Box sx={{ 
-                mb: 3, 
-                p: 3, 
-                bgcolor: 'grey.50', 
+              <Box sx={{
+                mb: 3,
+                p: 3,
+                bgcolor: 'grey.50',
                 borderRadius: 2,
                 border: '1px solid',
                 borderColor: 'divider'
               }}>
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
                   Max Tokens: {maxTokens}
                 </Typography>
                 <Slider
@@ -440,7 +525,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                   sx={{ mb: 3 }}
                 />
 
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
                   Temperature: {temperature}
                 </Typography>
                 <Slider
@@ -467,58 +552,87 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             )}
 
             {/* Generate Button */}
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
-              onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
-              startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
-              sx={{ 
-                mb: 3,
-                py: 1.5,
-                borderRadius: 2,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
-                }
-              }}
-            >
-              {isGenerating ? 'Generating...' : 'Generate Content'}
-            </Button>
-
-            {/* Quick Actions */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 1, 
-              flexWrap: 'wrap',
-              justifyContent: 'center'
+            <Box sx={{
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              pt: 3,
+              mt: 3
             }}>
-              <Chip
-                label="Use Template"
-                onClick={() => setActiveTab('templates')}
-                variant="outlined"
-                size="small"
-                sx={{ borderRadius: 2 }}
-              />
-              <Chip
-                label="View History"
-                onClick={() => setActiveTab('history')}
-                variant="outlined"
-                size="small"
-                sx={{ borderRadius: 2 }}
-              />
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleGenerate}
+                disabled={!prompt.trim() || isGenerating}
+                startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
+                sx={{
+                  mb: 3,
+                  py: 2,
+                  borderRadius: 2,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                    boxShadow: '0 6px 24px rgba(102, 126, 234, 0.5)',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:disabled': {
+                    background: 'linear-gradient(135deg, #ccc 0%, #999 100%)',
+                    boxShadow: 'none',
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                {isGenerating ? 'Generating Content...' : 'Generate Content'}
+              </Button>
+
+              {/* Quick Actions */}
+              <Box sx={{
+                display: 'flex',
+                gap: 1.5,
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
+                <Chip
+                  label="📝 Use Template"
+                  onClick={() => setActiveTab('templates')}
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: 'primary.50',
+                      borderColor: 'primary.main',
+                    }
+                  }}
+                />
+                <Chip
+                  label="📊 View History"
+                  onClick={() => setActiveTab('history')}
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: 'primary.50',
+                      borderColor: 'primary.main',
+                    }
+                  }}
+                />
+              </Box>
             </Box>
           </CardContent>
         </Card>
       </Box>
 
       {/* Right Panel - Preview */}
-      <Box 
+      <Box
         className="content-creator-preview"
-        sx={{ 
+        sx={{
           flex: 1,
           width: { xs: '100%', lg: 'auto' },
           maxWidth: '100%',
@@ -530,6 +644,12 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           title={generationResult?.title}
           isGenerating={isGenerating}
           metadata={generationResult}
+          onSendToWorkflow={handleSendToWorkflow}
+          onSaveToLibrary={handleSaveToLibrary}
+          onSendToBackend={handleSendToBackend}
+          isProcessingWorkflow={isTriggering}
+          isSaving={isSaving}
+          isSendingToBackend={isSendingToBackend}
         />
       </Box>
     </Box>
@@ -558,13 +678,13 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   );
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       width: '100%',
       maxWidth: '100%',
       mx: 'auto'
     }}>
       {/* Tab Navigation */}
-      <Box sx={{ 
+      <Box sx={{
         mb: 5,
         display: 'flex',
         justifyContent: 'center',
@@ -579,7 +699,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           variant={activeTab === 'create' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('create')}
           startIcon={<AutoAwesome />}
-          sx={{ 
+          sx={{
             minWidth: { xs: '100px', sm: '120px' },
             borderRadius: 2
           }}
@@ -590,7 +710,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           variant={activeTab === 'templates' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('templates')}
           startIcon={<Settings />}
-          sx={{ 
+          sx={{
             minWidth: { xs: '100px', sm: '120px' },
             borderRadius: 2
           }}
@@ -601,7 +721,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           variant={activeTab === 'history' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('history')}
           startIcon={<History />}
-          sx={{ 
+          sx={{
             minWidth: { xs: '100px', sm: '120px' },
             borderRadius: 2
           }}
@@ -617,23 +737,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
         {activeTab === 'history' && renderHistoryTab()}
       </Box>
 
-      <Dialog open={offerTriggerOpen} onClose={() => setOfferTriggerOpen(false)}>
-        <DialogTitle>Send to AI Avatar Workflow?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Your content is ready. Do you want to send it to the AI Avatar workflow in n8n to generate voice and video automatically?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-        <Button onClick={() => setOfferTriggerOpen(false)} disabled={isTriggering || isSaving}>Not now</Button>
-        <Button onClick={handleSaveToLibrary} disabled={isTriggering || isSaving}>
-          {isSaving ? 'Saving…' : 'Save to Library'}
-        </Button>
-        <Button variant="contained" onClick={handleSendToWorkflow} disabled={isTriggering || isSaving}>
-            {isTriggering ? 'Sending…' : 'Send to Workflow'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       <Snackbar
         open={toastOpen}

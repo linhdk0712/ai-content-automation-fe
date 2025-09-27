@@ -30,7 +30,10 @@ import {
   Timer,
   MonetizationOn,
   Psychology,
-  TrendingUp
+  TrendingUp,
+  Send,
+  Save,
+  CloudUpload
 } from '@mui/icons-material';
 import { useContentPreview } from '../../hooks/useContentPreview';
 
@@ -41,6 +44,13 @@ interface ContentPreviewProps {
   metadata?: any;
   onContentChange?: (content: string) => void;
   onRegenerate?: () => void;
+  // Thêm props cho action buttons
+  onSendToWorkflow?: () => void;
+  onSaveToLibrary?: () => void;
+  onSendToBackend?: () => void;
+  isProcessingWorkflow?: boolean;
+  isSaving?: boolean;
+  isSendingToBackend?: boolean;
 }
 
 const ContentPreview: React.FC<ContentPreviewProps> = ({
@@ -49,7 +59,13 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   isGenerating,
   metadata,
   onContentChange,
-  onRegenerate
+  onRegenerate,
+  onSendToWorkflow,
+  onSaveToLibrary,
+  onSendToBackend,
+  isProcessingWorkflow,
+  isSaving,
+  isSendingToBackend
 }) => {
   const [editableContent, setEditableContent] = useState(content || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -574,6 +590,104 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
               </Box>
             )}
           </Box>
+        )}
+
+        {/* Action Buttons - Hiển thị khi có nội dung */}
+        {content && !isGenerating && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ 
+                fontWeight: 600,
+                color: 'primary.main',
+                mb: 2
+              }}>
+                Next Actions
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    startIcon={isProcessingWorkflow ? <CircularProgress size={20} /> : <Send />}
+                    onClick={onSendToWorkflow}
+                    disabled={isProcessingWorkflow || isSaving || isSendingToBackend}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      bgcolor: 'primary.main',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      }
+                    }}
+                  >
+                    {isProcessingWorkflow ? 'Sending...' : 'Send to Workflow'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    Generate AI avatar video
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="large"
+                    startIcon={isSaving ? <CircularProgress size={20} /> : <Save />}
+                    onClick={onSaveToLibrary}
+                    disabled={isProcessingWorkflow || isSaving || isSendingToBackend}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      borderColor: 'success.main',
+                      color: 'success.main',
+                      '&:hover': {
+                        borderColor: 'success.dark',
+                        color: 'success.dark',
+                        bgcolor: 'success.50'
+                      }
+                    }}
+                  >
+                    {isSaving ? 'Saving...' : 'Save to Library'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    Store in content library
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="large"
+                    startIcon={isSendingToBackend ? <CircularProgress size={20} /> : <CloudUpload />}
+                    onClick={onSendToBackend}
+                    disabled={isProcessingWorkflow || isSaving || isSendingToBackend}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      borderColor: 'info.main',
+                      color: 'info.main',
+                      '&:hover': {
+                        borderColor: 'info.dark',
+                        color: 'info.dark',
+                        bgcolor: 'info.50'
+                      }
+                    }}
+                  >
+                    {isSendingToBackend ? 'Sending...' : 'Send to Backend'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    Process with backend API
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Box>
+          </>
         )}
 
         {/* Actions Menu */}
