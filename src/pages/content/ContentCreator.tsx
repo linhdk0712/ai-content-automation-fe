@@ -4,11 +4,11 @@ import ContentCreator from '../../components/content/ContentCreator'
 import PageHeader from '../../components/common/PageHeader'
 
 const ContentCreatorPage: React.FC = () => {
-  const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Content', href: '/content' },
-    { label: 'Create' }
-  ]
+  // const breadcrumbs = [
+  //   { label: 'Dashboard', href: '/dashboard' },
+  //   { label: 'Content', href: '/content' },
+  //   { label: 'Create' }
+  // ]
 
   return (
     <Box sx={{ 
@@ -17,12 +17,12 @@ const ContentCreatorPage: React.FC = () => {
       flexDirection: 'column',
       gap: 3
     }}>
-      <PageHeader
+      {/* <PageHeader
         title="AI Content Creator"
         subtitle="Generate high-quality content using advanced AI models"
         breadcrumbs={breadcrumbs}
         centered
-      />
+      /> */}
       <ContentCreator />
     </Box>
   )

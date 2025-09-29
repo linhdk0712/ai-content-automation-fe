@@ -13,6 +13,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
 import { useNotification } from '../../contexts/NotificationContext'
 import { useAuth } from '../../hooks/useAuth'
+import { useToast } from '../../hooks/useToast'
 import { RegisterRequest } from '../../types/auth'
 
 const schema = yup.object({
@@ -29,6 +30,7 @@ type RegisterFormData = yup.InferType<typeof schema>
 const Register: React.FC = () => {
   const { register: registerUser } = useAuth()
   const { showError, showSuccess } = useNotification()
+  const toast = useToast()
   const navigate = useNavigate()
 
   const {
@@ -40,20 +42,32 @@ const Register: React.FC = () => {
   })
 
   const onSubmit = async (data: RegisterFormData) => {
-    try {
-      const { confirmPassword, ...registerData } = data
-      await registerUser({
+    const { confirmPassword, ...registerData } = data
+    
+    // Use promise toast for better UX
+    toast.promise(
+      registerUser({
         username: registerData.username || '',
         email: registerData.email || '',
         password: registerData.password || '',
         firstName: registerData.firstName || '',
         lastName: registerData.lastName,
-      })
-      showSuccess('Registration successful! Please check your email for verification.')
-      navigate('/dashboard')
-    } catch (error: any) {
-      showError(error.response?.data?.message || 'Registration failed')
-    }
+      }),
+      {
+        pending: 'Đang tạo tài khoản...',
+        success: 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+        error: (error: any) => {
+          console.error('Registration failed:', error)
+          return error?.response?.data?.message || error?.message || 'Đăng ký thất bại. Vui lòng thử lại.'
+        }
+      }
+    ).then(() => {
+      // Navigate to dashboard after successful registration
+      setTimeout(() => navigate('/dashboard'), 2000)
+    }).catch((error) => {
+      // Error is already handled by toast.promise
+      console.error('Registration error handled by toast:', error)
+    })
   }
 
   return (

@@ -33,6 +33,7 @@ import {
   UpdateContentRequest
 } from '../types/api.types'
 import { apiRequest } from './api'
+import { toastService } from './toast.service'
 
 // Loading state management
 export interface LoadingState {
@@ -67,9 +68,25 @@ export class ContentService {
   // Basic CRUD Operations with enhanced error handling and loading states
   async createContent(request: CreateContentRequest): Promise<ContentResponse> {
     try {
-      return await apiRequest.post<ContentResponse>('/content', request)
+      const result = await apiRequest.post<ContentResponse>('/content', request)
+      
+      // Show success toast
+      toastService.success('Content created successfully!', {
+        title: 'Content Created'
+      })
+      
+      return result
     } catch (error) {
       console.error('Failed to create content:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to create content. Please try again.',
+        {
+          title: 'Create Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -91,9 +108,25 @@ export class ContentService {
 
   async updateContent(id: number, request: UpdateContentRequest): Promise<ContentResponse> {
     try {
-      return await apiRequest.put<ContentResponse>(`/content/${id}`, request)
+      const result = await apiRequest.put<ContentResponse>(`/content/${id}`, request)
+      
+      // Show success toast
+      toastService.success('Content updated successfully!', {
+        title: 'Content Updated'
+      })
+      
+      return result
     } catch (error) {
       console.error(`Failed to update content ${id}:`, error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to update content. Please try again.',
+        {
+          title: 'Update Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -107,8 +140,22 @@ export class ContentService {
       
       const url = `/content/${id}${params.toString() ? `?${params.toString()}` : ''}`
       await apiRequest.delete<void>(url)
+      
+      // Show success toast
+      toastService.success('Content deleted successfully!', {
+        title: 'Content Deleted'
+      })
     } catch (error) {
       console.error(`Failed to delete content ${id}:`, error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to delete content. Please try again.',
+        {
+          title: 'Delete Failed'
+        }
+      )
+      
       throw error
     }
   }

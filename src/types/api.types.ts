@@ -39,10 +39,18 @@ export interface PaginatedResponse<T> {
 
 // Content Types
 export enum ContentType {
-  TEXT = 'TEXT',
-  IMAGE = 'IMAGE', 
-  VIDEO = 'VIDEO',
-  MIXED = 'MIXED'
+  BLOG_POST = 'BLOG_POST',
+  SOCIAL_MEDIA_POST = 'SOCIAL_MEDIA_POST',
+  EMAIL = 'EMAIL',
+  ARTICLE = 'ARTICLE',
+  PRODUCT_DESCRIPTION = 'PRODUCT_DESCRIPTION',
+  AD_COPY = 'AD_COPY',
+  PRESS_RELEASE = 'PRESS_RELEASE',
+  NEWSLETTER = 'NEWSLETTER',
+  LANDING_PAGE = 'LANDING_PAGE',
+  VIDEO_SCRIPT = 'VIDEO_SCRIPT',
+  PODCAST_SCRIPT = 'PODCAST_SCRIPT',
+  OTHER = 'OTHER'
 }
 
 export enum ContentStatus {

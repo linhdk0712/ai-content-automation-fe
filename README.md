@@ -40,6 +40,7 @@ A modern, responsive React frontend application for AI-powered content automatio
 - **React Big Calendar** - Calendar and scheduling components
 - **Recharts** - Data visualization and charts
 - **TinyMCE** - Rich text editor integration
+- **React-Toastify** - Modern toast notifications with advanced features
 
 ### Development Tools
 - **ESLint** - Code linting and formatting
@@ -230,6 +231,67 @@ npm run test:performance
 - **Caching Strategy** - Network-first for API, cache-first for assets
 - **Background Sync** - Sync data when connection is restored
 - **Update Management** - Automatic updates with user notification
+
+## 🔔 Notification System (React-Toastify)
+
+### Toast Notifications
+The application uses React-Toastify for a unified notification system with advanced features:
+
+- **Unified Interface** - Consistent styling and behavior across the app
+- **Advanced Features** - Loading states, actions, persistent notifications
+- **Responsive Design** - Mobile-optimized with touch gestures
+- **Accessibility** - Screen reader support and keyboard navigation
+- **Backward Compatibility** - Seamless migration from old notification systems
+
+### Usage Examples
+```typescript
+import { useToast } from './hooks/useToast'
+
+function MyComponent() {
+  const toast = useToast()
+
+  const handleSave = async () => {
+    try {
+      await saveData()
+      toast.saveSuccess('Document')
+    } catch (error) {
+      toast.saveError('Failed to save document')
+    }
+  }
+
+  // Promise-based toasts
+  const handleAsyncOperation = () => {
+    toast.promise(
+      fetchData(),
+      {
+        pending: 'Loading...',
+        success: 'Data loaded successfully!',
+        error: 'Failed to load data'
+      }
+    )
+  }
+}
+```
+
+### Quick Access Patterns
+```typescript
+import { quickToast } from './utils/toast'
+
+// Authentication
+quickToast.loginSuccess()
+quickToast.registerError('Email already exists')
+
+// Content operations
+quickToast.contentCreated()
+quickToast.contentPublished()
+
+// File operations
+quickToast.fileUploaded()
+quickToast.fileUploadError('File too large')
+```
+
+### Demo & Testing
+Visit `/toast-demo` in the application to test all notification features and patterns.
 
 ## 🌐 Internationalization
 

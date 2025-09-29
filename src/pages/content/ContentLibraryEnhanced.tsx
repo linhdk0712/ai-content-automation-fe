@@ -1,42 +1,42 @@
 import {
-    Add,
-    Analytics,
-    Archive,
-    Delete,
-    Edit,
-    MoreVert,
-    Refresh,
-    Search,
-    Star,
-    StarBorder,
-    ViewList,
-    ViewModule
+  Add,
+  Analytics,
+  Archive,
+  Delete,
+  Edit,
+  MoreVert,
+  Refresh,
+  Search,
+  Star,
+  StarBorder,
+  ViewList,
+  ViewModule
 } from '@mui/icons-material';
 import {
-    Alert,
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardActions,
-    CardContent,
-    Checkbox,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    FormControl,
-    Grid,
-    IconButton,
-    InputLabel,
-    Menu,
-    MenuItem,
-    Pagination,
-    Select,
-    Skeleton,
-    TextField,
-    Typography
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  Menu,
+  MenuItem,
+  Pagination,
+  Select,
+  Skeleton,
+  TextField,
+  Typography
 } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -61,7 +61,7 @@ const ContentLibrary: React.FC = () => {
     bulkDelete  } = useContentLibrary();
 
   // State management
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterType, setFilterType] = useState<string>('ALL');
@@ -227,10 +227,18 @@ const ContentLibrary: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'TEXT': return '📝';
-      case 'IMAGE': return '🖼️';
-      case 'VIDEO': return '🎥';
-      case 'MIXED': return '📄';
+      case 'BLOG_POST': return '📝';
+      case 'SOCIAL_MEDIA_POST': return '📱';
+      case 'EMAIL': return '📧';
+      case 'ARTICLE': return '📄';
+      case 'PRODUCT_DESCRIPTION': return '🛍️';
+      case 'AD_COPY': return '📢';
+      case 'PRESS_RELEASE': return '📰';
+      case 'NEWSLETTER': return '📬';
+      case 'LANDING_PAGE': return '🌐';
+      case 'VIDEO_SCRIPT': return '🎥';
+      case 'PODCAST_SCRIPT': return '🎙️';
+      case 'OTHER': return '📄';
       default: return '📄';
     }
   };
@@ -316,10 +324,18 @@ const ContentLibrary: React.FC = () => {
                 label="Type"
               >
                 <MenuItem value="ALL">All Types</MenuItem>
-                <MenuItem value="TEXT">Text</MenuItem>
-                <MenuItem value="IMAGE">Image</MenuItem>
-                <MenuItem value="VIDEO">Video</MenuItem>
-                <MenuItem value="MIXED">Mixed</MenuItem>
+                <MenuItem value="BLOG_POST">Blog Post</MenuItem>
+                <MenuItem value="SOCIAL_MEDIA_POST">Social Media Post</MenuItem>
+                <MenuItem value="EMAIL">Email</MenuItem>
+                <MenuItem value="ARTICLE">Article</MenuItem>
+                <MenuItem value="PRODUCT_DESCRIPTION">Product Description</MenuItem>
+                <MenuItem value="AD_COPY">Ad Copy</MenuItem>
+                <MenuItem value="PRESS_RELEASE">Press Release</MenuItem>
+                <MenuItem value="NEWSLETTER">Newsletter</MenuItem>
+                <MenuItem value="LANDING_PAGE">Landing Page</MenuItem>
+                <MenuItem value="VIDEO_SCRIPT">Video Script</MenuItem>
+                <MenuItem value="PODCAST_SCRIPT">Podcast Script</MenuItem>
+                <MenuItem value="OTHER">Other</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -482,9 +498,6 @@ const ContentLibrary: React.FC = () => {
                         onChange={() => handleSelectItem(item.id)}
                       />
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" component="h3">
-                          {item.title}
-                        </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {item.textContent?.substring(0, 200)}...
                         </Typography>

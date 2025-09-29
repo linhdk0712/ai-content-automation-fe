@@ -29,7 +29,7 @@ export const EnhancedContentCreator: React.FC<EnhancedContentCreatorProps> = ({ 
   const [contentForm, setContentForm] = useState<Partial<CreateContentRequest>>({
     title: '',
     textContent: '',
-    contentType: ContentType.TEXT
+    contentType: ContentType.ARTICLE
   })
   const [isTyping, setIsTyping] = useState(false)
 
@@ -86,7 +86,7 @@ export const EnhancedContentCreator: React.FC<EnhancedContentCreatorProps> = ({ 
       setContentForm({
         title: '',
         textContent: '',
-        contentType: ContentType.TEXT
+        contentType: ContentType.ARTICLE
       })
     },
     onError: (error) => {

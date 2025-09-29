@@ -1,5 +1,6 @@
 import { ApiResponse, ResponseBase } from '../types/api.types'
 import { api, apiRequest, TokenManager } from './api'
+import { toastService } from './toast.service'
 
 // Auth-specific types
 export interface LoginRequest {
@@ -145,11 +146,22 @@ class AuthService {
             errorCode: responseBase.errorCode,
             errorMessage: responseBase.errorMessage
           })
+          
+          // Show error toast
+          toastService.error(responseBase.errorMessage || 'Login failed', {
+            title: 'Login Failed'
+          })
+          
           throw new Error(responseBase.errorMessage || 'Login failed')
         } else {
           console.log('Login success:', {
             errorCode: responseBase.errorCode,
             errorMessage: responseBase.errorMessage
+          })
+          
+          // Show success toast
+          toastService.success('Welcome back!', {
+            title: 'Login Successful'
           })
         }
 
@@ -157,6 +169,11 @@ class AuthService {
       } else {
         console.log('Direct format detected')
         authData = responseData as AuthResponse
+        
+        // Show success toast for direct format
+        toastService.success('Welcome back!', {
+          title: 'Login Successful'
+        })
       }
 
       console.log('Login response received:', authData)
@@ -177,12 +194,23 @@ class AuthService {
         })
       } else {
         console.error('Invalid auth data received:', authData)
+        toastService.error('Invalid authentication response', {
+          title: 'Login Failed'
+        })
         throw new Error('Invalid authentication response')
       }
 
       return authData
     } catch (error) {
       console.error('Login failed:', error)
+      
+      // Show error toast if not already shown
+      if (error instanceof Error && !error.message.includes('Login failed')) {
+        toastService.error(error.message || 'An unexpected error occurred during login', {
+          title: 'Login Failed'
+        })
+      }
+      
       throw error
     }
   }
@@ -190,9 +218,26 @@ class AuthService {
   // Enhanced registration with validation
   async register(request: RegisterRequest): Promise<string> {
     try {
-      return await apiRequest.post<string>('/auth/register', request)
+      const result = await apiRequest.post<string>('/auth/register', request)
+      
+      // Show success toast
+      toastService.success('Account created successfully! Please check your email to verify your account.', {
+        title: 'Registration Successful',
+        autoClose: 8000
+      })
+      
+      return result
     } catch (error) {
       console.error('Registration failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Registration failed. Please try again.',
+        {
+          title: 'Registration Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -202,9 +247,19 @@ class AuthService {
     try {
       // Call logout endpoint to invalidate server-side session
       await apiRequest.post('/auth/logout')
+      
+      // Show success toast
+      toastService.info('You have been logged out successfully', {
+        title: 'Logged Out'
+      })
     } catch (error) {
       // Continue with logout even if API call fails
       console.warn('Logout API call failed:', error)
+      
+      // Show warning toast
+      toastService.warning('Logged out locally. Some server-side cleanup may have failed.', {
+        title: 'Logout Warning'
+      })
     } finally {
       // Always clear local tokens
       TokenManager.clearTokens()
@@ -271,9 +326,25 @@ class AuthService {
   async verifyEmail(token: string): Promise<string> {
     try {
       const request: EmailVerificationRequest = { token }
-      return await apiRequest.post<string>('/auth/verify-email', request)
+      const result = await apiRequest.post<string>('/auth/verify-email', request)
+      
+      // Show success toast
+      toastService.success('Email verified successfully! You can now access all features.', {
+        title: 'Email Verified'
+      })
+      
+      return result
     } catch (error) {
       console.error('Email verification failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Email verification failed. Please try again or request a new verification link.',
+        {
+          title: 'Verification Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -281,9 +352,26 @@ class AuthService {
   async resendVerification(email: string): Promise<string> {
     try {
       const request: ResendVerificationRequest = { email }
-      return await apiRequest.post<string>('/auth/resend-verification', request)
+      const result = await apiRequest.post<string>('/auth/resend-verification', request)
+      
+      // Show success toast
+      toastService.success('Verification email sent! Please check your inbox and spam folder.', {
+        title: 'Verification Email Sent',
+        autoClose: 8000
+      })
+      
+      return result
     } catch (error) {
       console.error('Failed to resend verification:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to send verification email. Please try again.',
+        {
+          title: 'Send Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -292,9 +380,26 @@ class AuthService {
   async forgotPassword(email: string): Promise<string> {
     try {
       const request: ForgotPasswordRequest = { email }
-      return await apiRequest.post<string>('/auth/forgot-password', request)
+      const result = await apiRequest.post<string>('/auth/forgot-password', request)
+      
+      // Show success toast
+      toastService.success('Password reset instructions sent to your email. Please check your inbox and spam folder.', {
+        title: 'Reset Email Sent',
+        autoClose: 8000
+      })
+      
+      return result
     } catch (error) {
       console.error('Forgot password request failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to send password reset email. Please try again.',
+        {
+          title: 'Reset Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -302,9 +407,25 @@ class AuthService {
   async resetPassword(token: string, newPassword: string): Promise<string> {
     try {
       const request: ResetPasswordRequest = { token, newPassword }
-      return await apiRequest.post<string>('/auth/reset-password', request)
+      const result = await apiRequest.post<string>('/auth/reset-password', request)
+      
+      // Show success toast
+      toastService.success('Password reset successfully! You can now log in with your new password.', {
+        title: 'Password Reset'
+      })
+      
+      return result
     } catch (error) {
       console.error('Password reset failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Password reset failed. Please try again or request a new reset link.',
+        {
+          title: 'Reset Failed'
+        }
+      )
+      
       throw error
     }
   }
@@ -316,19 +437,49 @@ class AuthService {
 
       // Clear user cache to force refresh
       this.clearUserCache()
+      
+      // Show success toast
+      toastService.success('Profile updated successfully!', {
+        title: 'Profile Updated'
+      })
 
       return response
     } catch (error) {
       console.error('Profile update failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to update profile. Please try again.',
+        {
+          title: 'Update Failed'
+        }
+      )
+      
       throw error
     }
   }
 
   async changePassword(request: ChangePasswordRequest): Promise<ApiResponse> {
     try {
-      return await apiRequest.post<ApiResponse>('/auth/change-password', request)
+      const result = await apiRequest.post<ApiResponse>('/auth/change-password', request)
+      
+      // Show success toast
+      toastService.success('Password changed successfully!', {
+        title: 'Password Updated'
+      })
+      
+      return result
     } catch (error) {
       console.error('Password change failed:', error)
+      
+      // Show error toast
+      toastService.error(
+        error instanceof Error ? error.message : 'Failed to change password. Please check your current password and try again.',
+        {
+          title: 'Password Change Failed'
+        }
+      )
+      
       throw error
     }
   }

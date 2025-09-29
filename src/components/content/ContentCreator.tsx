@@ -74,6 +74,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info'>('info');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // // Removed hardcoded arrays - now using List of Values system
   //   { value: 'de', label: 'German' },
@@ -97,10 +98,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     if (debouncedFilters.industry || debouncedFilters.contentType) {
       // Add a small delay to debounce rapid changes
       const timeoutId = setTimeout(() => {
-        loadTemplates({ 
-          industry: debouncedFilters.industry, 
-          contentType: debouncedFilters.contentType, 
-          limit: 10 
+        loadTemplates({
+          industry: debouncedFilters.industry,
+          contentType: debouncedFilters.contentType,
+          limit: 10
         });
       }, 300);
 
@@ -109,8 +110,61 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedFilters.industry, debouncedFilters.contentType]);
 
-  const handleGenerate = async () => {
+  // Validation function
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Required fields validation
     if (!prompt.trim()) {
+      errors.prompt = 'Content prompt is required';
+    }
+
+    if (!industry.trim()) {
+      errors.industry = 'Industry selection is required';
+    }
+
+    if (!contentType.trim()) {
+      errors.contentType = 'Content type selection is required';
+    }
+
+    if (!language.trim()) {
+      errors.language = 'Language selection is required';
+    }
+
+    if (!tone.trim()) {
+      errors.tone = 'Tone/style selection is required';
+    }
+
+    if (!targetAudience.trim()) {
+      errors.targetAudience = 'Target audience selection is required';
+    }
+
+    if (!optimizationCriteria.trim()) {
+      errors.optimizationCriteria = 'AI provider optimization is required';
+    }
+
+    // Optional: Validate prompt length
+    if (prompt.trim() && prompt.trim().length < 10) {
+      errors.prompt = 'Content prompt must be at least 10 characters long';
+    }
+
+    if (prompt.trim() && prompt.trim().length > 2000) {
+      errors.prompt = 'Content prompt must not exceed 2000 characters';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleGenerate = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      setToastSeverity('error');
+      setToastMsg('Please fill in all required fields before generating content');
+      setToastOpen(true);
       return;
     }
 
@@ -126,7 +180,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       maxTokens,
       temperature,
       workspaceId,
-      preferredProvider: selectedProvider || undefined,
+      preferredProvider: selectedProvider && selectedProvider.trim() !== '' ? selectedProvider : null,
       optimizationCriteria,
       templateId: selectedTemplate?.id,
       templateVariables: selectedTemplate?.variables,
@@ -146,8 +200,8 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       templateSeoTitle: selectedTemplate?.seoTitle,
       templateSeoDescription: selectedTemplate?.seoDescription,
       templateKeywords: selectedTemplate?.keywords,
-      aiProvider: selectedProvider,
-      aiModel: selectedProvider,
+      aiProvider: selectedProvider && selectedProvider.trim() !== '' ? selectedProvider : undefined,
+      aiModel: null, // Let backend auto-select the model
       aiParameters: {
         temperature: temperature,
         maxTokens: maxTokens
@@ -206,12 +260,12 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       const saved = await contentService.createContent({
         title: generationResult?.title || 'Untitled',
         textContent: generationResult?.content,
-        contentType: ContentType.TEXT,
+        contentType: ContentType.ARTICLE,
         industry,
         language,
         fromAiGeneration: true,
         aiProvider: generationResult?.provider,
-        metadata: generationResult,
+        metadata: generationResult ? { ...generationResult } as Record<string, unknown> : undefined,
       });
       setLastContentId(saved?.id ?? 0);
       setToastSeverity('success');
@@ -327,41 +381,72 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               fullWidth
               multiline
               rows={4}
-              label="Content Prompt"
+              label="Content Prompt *"
               placeholder="Describe what content you want to generate..."
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                setPrompt(e.target.value);
+                // Clear validation error when user starts typing
+                if (validationErrors.prompt) {
+                  setValidationErrors(prev => ({ ...prev, prompt: '' }));
+                }
+              }}
+              error={!!validationErrors.prompt}
+              helperText={validationErrors.prompt || `${prompt.length}/2000 characters`}
               sx={{
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2
                 }
               }}
-              helperText={`${prompt.length}/2000 characters`}
               inputProps={{ maxLength: 2000 }}
             />
 
             {/* Industry and Content Type */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Content Settings
+                Content Settings *
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <IndustrySelect
-                    value={industry}
-                    onChange={(value) => setIndustry(value as string)}
-                    placeholder="Select industry"
-                    showIcons={true}
-                  />
+                  <Box>
+                    <IndustrySelect
+                      value={industry}
+                      onChange={(value) => {
+                        setIndustry(value as string);
+                        if (validationErrors.industry) {
+                          setValidationErrors(prev => ({ ...prev, industry: '' }));
+                        }
+                      }}
+                      placeholder="Select industry *"
+                      showIcons={true}
+                    />
+                    {validationErrors.industry && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {validationErrors.industry}
+                      </Typography>
+                    )}
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <ContentTypeSelect
-                    value={contentType}
-                    onChange={(value) => setContentType(value as string)}
-                    placeholder="Select content type"
-                    showIcons={true}
-                  />
+                  <Box>
+                    <ContentTypeSelect
+                      value={contentType}
+                      onChange={(value) => {
+                        setContentType(value as string);
+                        if (validationErrors.contentType) {
+                          setValidationErrors(prev => ({ ...prev, contentType: '' }));
+                        }
+                      }}
+                      placeholder="Select content type *"
+                      showIcons={true}
+                    />
+                    {validationErrors.contentType && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {validationErrors.contentType}
+                      </Typography>
+                    )}
+                  </Box>
                 </Grid>
               </Grid>
             </Box>
@@ -369,23 +454,47 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Language and Tone */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Style & Language
+                Style & Language *
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <LanguageSelect
-                    value={language}
-                    onChange={(value) => setLanguage(value as string)}
-                    showIcons={true}
-                  />
+                  <Box>
+                    <LanguageSelect
+                      value={language}
+                      onChange={(value) => {
+                        setLanguage(value as string);
+                        if (validationErrors.language) {
+                          setValidationErrors(prev => ({ ...prev, language: '' }));
+                        }
+                      }}
+                      showIcons={true}
+                    />
+                    {validationErrors.language && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {validationErrors.language}
+                      </Typography>
+                    )}
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <ToneSelect
-                    value={tone}
-                    onChange={(value) => setTone(value as string)}
-                    placeholder="Select tone"
-                    showIcons={true}
-                  />
+                  <Box>
+                    <ToneSelect
+                      value={tone}
+                      onChange={(value) => {
+                        setTone(value as string);
+                        if (validationErrors.tone) {
+                          setValidationErrors(prev => ({ ...prev, tone: '' }));
+                        }
+                      }}
+                      placeholder="Select tone *"
+                      showIcons={true}
+                    />
+                    {validationErrors.tone && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {validationErrors.tone}
+                      </Typography>
+                    )}
+                  </Box>
                 </Grid>
               </Grid>
             </Box>
@@ -393,25 +502,40 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Target Audience */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Target Audience
+                Target Audience *
               </Typography>
               <TargetAudienceSelect
                 value={targetAudience}
-                onChange={(value) => setTargetAudience(value as string)}
-                placeholder="Select target audience"
+                onChange={(value) => {
+                  setTargetAudience(value as string);
+                  if (validationErrors.targetAudience) {
+                    setValidationErrors(prev => ({ ...prev, targetAudience: '' }));
+                  }
+                }}
+                placeholder="Select target audience *"
                 showIcons={true}
               />
+              {validationErrors.targetAudience && (
+                <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                  {validationErrors.targetAudience}
+                </Typography>
+              )}
             </Box>
 
             {/* Optimization Criteria */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Optimization
+                Optimization *
               </Typography>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!validationErrors.optimizationCriteria}>
                 <Select
                   value={optimizationCriteria}
-                  onChange={(e) => setOptimizationCriteria(e.target.value)}
+                  onChange={(e) => {
+                    setOptimizationCriteria(e.target.value);
+                    if (validationErrors.optimizationCriteria) {
+                      setValidationErrors(prev => ({ ...prev, optimizationCriteria: '' }));
+                    }
+                  }}
                   displayEmpty
                   sx={{
                     borderRadius: 2,
@@ -445,7 +569,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 >
                   <MenuItem value="" disabled>
                     <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      Select optimization
+                      Select optimization *
                     </Typography>
                   </MenuItem>
                   {optimizationOptions.map((option) => (
@@ -461,6 +585,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                     </MenuItem>
                   ))}
                 </Select>
+                {validationErrors.optimizationCriteria && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                    {validationErrors.optimizationCriteria}
+                  </Typography>
+                )}
               </FormControl>
             </Box>
 
@@ -544,6 +673,24 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               </Box>
             )}
 
+            {/* Validation Errors Summary */}
+            {Object.keys(validationErrors).length > 0 && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Please complete the following required fields:
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                  {Object.entries(validationErrors).map(([field, error]) => (
+                    error && (
+                      <Typography component="li" variant="body2" key={field} sx={{ mb: 0.5 }}>
+                        {error}
+                      </Typography>
+                    )
+                  ))}
+                </Box>
+              </Alert>
+            )}
+
             {/* Error Display */}
             {generationError && (
               <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -563,7 +710,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 variant="contained"
                 size="large"
                 onClick={handleGenerate}
-                disabled={!prompt.trim() || isGenerating}
+                disabled={isGenerating || Object.keys(validationErrors).length > 0}
                 startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
                 sx={{
                   mb: 3,

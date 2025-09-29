@@ -255,11 +255,50 @@ export function useErrorHandler() {
   }
 
   const showUserError = (error: ProcessedError) => {
-    // This would integrate with your notification system
-    console.error('User Error:', error.userMessage)
-    
-    // You could dispatch to a global error state or show a toast notification
-    // Example: dispatch(showNotification({ type: 'error', message: error.userMessage }))
+    // Import toast service dynamically to avoid circular dependencies
+    import('../services/toast.service').then(({ toastService }) => {
+      const options = {
+        title: error.type !== ErrorType.UNKNOWN ? error.type : undefined,
+        persistent: error.type === ErrorType.SERVER,
+        actions: error.retryable ? [{
+          label: 'Retry',
+          action: () => window.location.reload(),
+          style: 'primary' as const
+        }] : undefined
+      }
+
+      if (error.type === ErrorType.AUTHENTICATION) {
+        toastService.error(error.userMessage, {
+          ...options,
+          title: 'Authentication Required',
+          actions: [{
+            label: 'Login',
+            action: () => {
+              localStorage.removeItem('accessToken')
+              window.location.href = '/login'
+            },
+            style: 'primary' as const
+          }]
+        })
+      } else if (error.type === ErrorType.AUTHORIZATION) {
+        toastService.error(error.userMessage, {
+          ...options,
+          title: 'Access Denied'
+        })
+      } else if (error.type === ErrorType.VALIDATION) {
+        toastService.warning(error.userMessage, {
+          ...options,
+          title: 'Validation Error'
+        })
+      } else if (error.type === ErrorType.NETWORK) {
+        toastService.error(error.userMessage, {
+          ...options,
+          title: 'Connection Error'
+        })
+      } else {
+        toastService.error(error.userMessage, options)
+      }
+    })
   }
 
   return {

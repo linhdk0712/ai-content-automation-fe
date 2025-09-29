@@ -12,7 +12,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
 import { useNotification } from '../../contexts/NotificationContext'
 import { useAuth } from '../../hooks/useAuth'
-import { LoginRequest } from '../../types/auth'
+import { useToast } from '../../hooks/useToast'
 
 const schema = yup.object({
   usernameOrEmail: yup.string().required('Username or email is required'),
@@ -24,6 +24,7 @@ type LoginFormData = yup.InferType<typeof schema>
 const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth()
   const { showError, showSuccess } = useNotification()
+  const toast = useToast()
   const navigate = useNavigate()
 
   // Redirect if already authenticated
@@ -43,16 +44,24 @@ const Login: React.FC = () => {
   })
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      console.log('Login form submitted:', data.usernameOrEmail)
-      await login(data.usernameOrEmail, data.password)
-      console.log('Login successful, showing success message')
-      showSuccess('Login successful!')
-      // Don't navigate here - let useEffect handle it
-    } catch (error: any) {
-      console.error('Login failed:', error)
-      showError(error.response?.data?.message || 'Login failed')
-    }
+    // Use promise toast for better UX
+    toast.promise(
+      login(data.usernameOrEmail, data.password),
+      {
+        pending: 'Đang đăng nhập...',
+        success: 'Đăng nhập thành công! Chào mừng bạn trở lại.',
+        error: (error: any) => {
+          console.error('Login failed:', error)
+          return error?.response?.data?.message || error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
+        }
+      }
+    ).then(() => {
+      // Navigation will be handled by useEffect when isAuthenticated changes
+      console.log('Login successful, navigation will be handled by useEffect')
+    }).catch((error) => {
+      // Error is already handled by toast.promise
+      console.error('Login error handled by toast:', error)
+    })
   }
 
   return (

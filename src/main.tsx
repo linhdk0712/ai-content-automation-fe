@@ -7,6 +7,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
 
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
@@ -16,6 +17,8 @@ import './styles/improvements.css'
 import './styles/layout-fixes.css'
 import './styles/auth.css'
 import './styles/dashboard.css'
+import 'react-toastify/dist/ReactToastify.css'
+import './styles/toast.css'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -35,21 +38,33 @@ const queryClient = new QueryClient({
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider theme={theme}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <CssBaseline />
-            <AuthProvider>
-              <NotificationProvider>
-                <App />
-              </NotificationProvider>
-            </AuthProvider>
-          </LocalizationProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  </React.StrictMode>,
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <ThemeProvider theme={theme}>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <CssBaseline />
+          <AuthProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </AuthProvider>
+        </LocalizationProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+    <ReactQueryDevtools initialIsOpen={false} />
+    <ToastContainer
+      position="top-right"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
+      toastClassName="custom-toast"
+      progressClassName="custom-toast-progress"
+    />
+  </QueryClientProvider>,
 )

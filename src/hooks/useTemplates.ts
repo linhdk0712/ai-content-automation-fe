@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { templateService } from '../services/template.service';
 
 interface Template {
@@ -56,7 +56,7 @@ export const useTemplates = () => {
 
     try {
       const results = await templateService.searchTemplates(searchRequest as any);
-      setTemplates(results as any);
+      setTemplates(results.templates as any);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to search templates';
       setError(errorMessage);
@@ -86,7 +86,7 @@ export const useTemplates = () => {
       };
 
       const results = await templateService.searchTemplates(searchRequest as any);
-      setTemplates(results as any);
+      setTemplates(results.templates as any);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load templates';
       setError(errorMessage);
@@ -125,7 +125,7 @@ export const useTemplates = () => {
   const getUserTemplates = useCallback(async (page: number = 0, size: number = 20) => {
     try {
       const userTemplatesData = await templateService.getUserTemplates(page, size);
-      setUserTemplates(userTemplatesData as any);
+      setUserTemplates(userTemplatesData.templates as any);
     } catch (err: any) {
       console.error('Failed to load user templates:', err);
     }

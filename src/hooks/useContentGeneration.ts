@@ -4,7 +4,7 @@ import { contentService } from '../services/content.service';
 
 interface ContentGenerationRequest {
   prompt: string;
-  aiProvider: string;
+  aiProvider?: string;
   contentType: string;
   industry?: string;
   language?: string;

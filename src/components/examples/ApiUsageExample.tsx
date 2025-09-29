@@ -19,7 +19,7 @@ const ApiUsageExample: React.FC = () => {
       const request: CreateContentRequest = {
         title: 'Test Content',
         textContent: 'This is a test content',
-        contentType: ContentType.TEXT
+        contentType: ContentType.ARTICLE
       }
 
       // This will automatically show loading, success, and error notifications

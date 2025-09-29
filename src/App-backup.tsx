@@ -1,0 +1,1 @@
+// Backup của App.tsx hiện tại để có thể rollback nếu cần

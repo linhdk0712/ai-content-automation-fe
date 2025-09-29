@@ -22,11 +22,14 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  console.log('🔧 AuthProvider: Initializing...');
+  
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    console.log('🔧 AuthProvider: useEffect triggered, checking auth status...');
     checkAuthStatus();
   }, []);
 
@@ -146,6 +149,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     loginWithFacebook,
   };
+
+  console.log('🔧 AuthProvider: Providing context value:', { 
+    hasUser: !!user, 
+    isLoading, 
+    isAuthenticated 
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

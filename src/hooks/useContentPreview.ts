@@ -27,7 +27,7 @@ export const useContentPreview = () => {
     setError(null);
 
     try {
-      const analysis = await contentService.analyzeContent(content as unknown as number);
+      const analysis = await contentService.analyzeText(content);
       setPreviewData(analysis as unknown as ContentPreviewData);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to analyze content';

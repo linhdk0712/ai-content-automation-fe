@@ -20,6 +20,9 @@ if (import.meta.env.DEV) {
   import('./utils/response-debug')
 }
 
+// Import Dashboard directly for debugging
+import Dashboard from './pages/Dashboard'
+
 // Enhanced lazy loading with route-based code splitting
 const Login = createRouteComponent(
   () => import('./pages/auth/Login'),
@@ -29,11 +32,6 @@ const Login = createRouteComponent(
 const Register = createRouteComponent(
   () => import('./pages/auth/Register'),
   'Register'
-)
-
-const Dashboard = createRouteComponent(
-  () => import('./pages/Dashboard'),
-  'Dashboard'
 )
 
 const ContentCreator = createRouteComponent(
@@ -106,6 +104,26 @@ const AuthDebug = createRouteComponent(
   'Auth Debug'
 )
 
+const ToastDemo = createRouteComponent(
+  () => import('./components/demo/ToastDemo'),
+  'Toast Demo'
+)
+
+const AuthContextDebug = createRouteComponent(
+  () => import('./components/debug/AuthContextDebug'),
+  'Auth Context Debug'
+)
+
+const SimpleAuthTest = createRouteComponent(
+  () => import('./components/debug/SimpleAuthTest'),
+  'Simple Auth Test'
+)
+
+const ContentLibraryTest = createRouteComponent(
+  () => import('./components/debug/ContentLibraryTest'),
+  'Content Library Test'
+)
+
 // Preload critical components
 ComponentPreloader.preload('Dashboard', () => import('./pages/Dashboard'))
 ComponentPreloader.preload('ContentCreator', () => import('./pages/content/ContentCreator'))
@@ -120,7 +138,7 @@ function AppContent() {
   // Measure app initialization time
   React.useEffect(() => {
     startMeasure('app-initialization')
-    
+
     return () => {
       endMeasure('app-initialization')
     }
@@ -152,45 +170,49 @@ function AppContent() {
       >
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
           <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/pricing" element={<Pricing />} />
-          
-          {/* Payment routes */}
-          <Route path="/payment/success" element={<PaymentSuccess />} />
-          <Route path="/payment/failure" element={<PaymentFailure />} />
-          
-          {/* Protected routes */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="content/create" element={<ContentCreator />} />
-            <Route path="content/library" element={<ContentLibrary />} />
-            <Route path="content/edit/:id" element={<ContentCreator />} />
-            <Route path="templates" element={<Templates />} />
-            <Route path="templates/new" element={<TemplateEditor />} />
-            <Route path="templates/:id" element={<TemplateViewer />} />
-            <Route path="templates/:id/edit" element={<TemplateEditor />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="workflows/run/:runId" element={<RunViewer />} />
-            <Route path="realtime-test" element={<RealtimeEventsTest />} />
-            <Route path="env-test" element={<EnvTest />} />
-            <Route path="auth-debug" element={<AuthDebug />} />
-          </Route>
-          
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/pricing" element={<Pricing />} />
+
+            {/* Payment routes */}
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/failure" element={<PaymentFailure />} />
+
+            {/* Protected routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="content/create" element={<ContentCreator />} />
+              <Route path="content/library" element={<ContentLibrary />} />
+              <Route path="content/edit/:id" element={<ContentCreator />} />
+              <Route path="templates" element={<Templates />} />
+              <Route path="templates/new" element={<TemplateEditor />} />
+              <Route path="templates/:id" element={<TemplateViewer />} />
+              <Route path="templates/:id/edit" element={<TemplateEditor />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="workflows/run/:runId" element={<RunViewer />} />
+              <Route path="realtime-test" element={<RealtimeEventsTest />} />
+              <Route path="env-test" element={<EnvTest />} />
+              <Route path="auth-debug" element={<AuthDebug />} />
+              <Route path="auth-context-debug" element={<AuthContextDebug />} />
+              <Route path="simple-auth-test" element={<SimpleAuthTest />} />
+              <Route path="content-library-test" element={<ContentLibraryTest />} />
+              <Route path="toast-demo" element={<ToastDemo />} />
+            </Route>
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-          
+
           {/* Accessibility toolbar */}
           <AccessibilityToolbarComponent />
-          
+
           {/* Notification container for ResponseBase notifications */}
           <NotificationContainer />
         </Box>
