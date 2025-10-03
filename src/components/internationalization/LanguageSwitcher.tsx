@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { i18nManager, Language } from '../../utils/internationalization/i18nManager';
-import { accessibilityManager } from '../../utils/accessibility/AccessibilityManager';
+import './LanguageSwitcher.css';
 
 interface LanguageSwitcherProps {
   className?: string;
@@ -65,14 +65,10 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       // Announce language change
       const newLangInfo = supportedLanguages.find(lang => lang.code === languageCode);
       if (newLangInfo) {
-        accessibilityManager.announce(
-          `Language changed to ${newLangInfo.name}`,
-          'assertive'
-        );
+        console.log(`Language changed to ${newLangInfo.name}`);
       }
     } catch (error) {
       console.error('Failed to change language:', error);
-      accessibilityManager.announce('Failed to change language', 'assertive');
       setIsChanging(false);
     }
   };

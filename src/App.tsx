@@ -10,9 +10,10 @@ import NotificationContainer from './components/common/NotificationContainer'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import { SupabaseProvider } from './contexts/RealTimeContext'
 import { useAuth } from './hooks/useAuth'
-import { useUserPresence } from './hooks/useUserPresence'
+// import { useUserPresence } from './hooks/useUserPresence' // deprecated realtime hook
 import { ComponentPreloader, createRouteComponent } from './utils/codeSplitting'
 import { usePerformanceMonitor } from './utils/performance'
+import { i18nManager } from './utils/internationalization/i18nManager'
 
 // Import debug utilities in development
 if (import.meta.env.DEV) {
@@ -69,10 +70,6 @@ const Settings = createRouteComponent(
   'Settings'
 )
 
-const RunViewer = createRouteComponent(
-  () => import('./pages/workflows/RunViewer'),
-  'Workflow Run'
-)
 
 const Pricing = createRouteComponent(
   () => import('./pages/pricing/Pricing'),
@@ -88,40 +85,14 @@ const PaymentFailure = createRouteComponent(
   () => import('./pages/payment/PaymentFailure'),
   'Payment Failure'
 )
-
-const RealtimeEventsTest = createRouteComponent(
-  () => import('./components/realtime/RealtimeEventsTest').then(m => ({ default: m.RealtimeEventsTest })),
-  'Realtime Events Test'
+const ContentWorkflow = createRouteComponent(
+  () => import('./pages/content/ContentWorkflow'),
+  'Content Workflow'
 )
 
-const EnvTest = createRouteComponent(
-  () => import('./components/debug/EnvTest').then(m => ({ default: m.EnvTest })),
-  'Environment Test'
-)
-
-const AuthDebug = createRouteComponent(
-  () => import('./components/debug/AuthDebug'),
-  'Auth Debug'
-)
-
-const ToastDemo = createRouteComponent(
-  () => import('./components/demo/ToastDemo'),
-  'Toast Demo'
-)
-
-const AuthContextDebug = createRouteComponent(
-  () => import('./components/debug/AuthContextDebug'),
-  'Auth Context Debug'
-)
-
-const SimpleAuthTest = createRouteComponent(
-  () => import('./components/debug/SimpleAuthTest'),
-  'Simple Auth Test'
-)
-
-const ContentLibraryTest = createRouteComponent(
-  () => import('./components/debug/ContentLibraryTest'),
-  'Content Library Test'
+const LanguageDemo = createRouteComponent(
+  () => import('./components/demo/LanguageDemo'),
+  'Language Demo'
 )
 
 // Preload critical components
@@ -133,7 +104,20 @@ ComponentPreloader.preload('ContentCreator', () => import('./pages/content/Conte
 function AppContent() {
   const { isLoading, user } = useAuth()
   const { startMeasure, endMeasure } = usePerformanceMonitor()
-  const { initializeUser } = useUserPresence({ autoInitialize: false })
+  // const { initializeUser } = useUserPresence({ autoInitialize: false }) // deprecated realtime hook
+
+  // Initialize i18n
+  React.useEffect(() => {
+    const initializeI18n = async () => {
+      try {
+        await i18nManager.loadLanguage(i18nManager.getCurrentLanguage())
+      } catch (error) {
+        console.error('Failed to initialize i18n:', error)
+      }
+    }
+    
+    initializeI18n()
+  }, [])
 
   // Measure app initialization time
   React.useEffect(() => {
@@ -147,14 +131,15 @@ function AppContent() {
   // Initialize real-time features when user is authenticated
   React.useEffect(() => {
     if (user && !isLoading) {
-      // Initialize user presence
-      initializeUser({
-        userId: user.id?.toString() || 'anonymous',
-        username: user.username || user.email || 'Anonymous User',
-        avatar: (user as any).avatar || (user as any).profilePictureUrl || undefined
-      })
+      // Initialize user presence - deprecated, to be replaced with new realtime technology
+      // initializeUser({
+      //   userId: user.id?.toString() || 'anonymous',
+      //   username: user.username || user.email || 'Anonymous User',
+      //   avatar: (user as any).avatar || (user as any).profilePictureUrl || undefined
+      // })
+      console.log('User authenticated:', user.email, '- Real-time features disabled pending new implementation')
     }
-  }, [user, isLoading, initializeUser])
+  }, [user, isLoading])
 
   if (isLoading) {
     return <LoadingSpinner fullScreen message="Loading application..." />
@@ -187,6 +172,7 @@ function AppContent() {
             }>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="content/workflow" element={<ContentWorkflow />} />
               <Route path="content/create" element={<ContentCreator />} />
               <Route path="content/library" element={<ContentLibrary />} />
               <Route path="content/edit/:id" element={<ContentCreator />} />
@@ -196,14 +182,8 @@ function AppContent() {
               <Route path="templates/:id/edit" element={<TemplateEditor />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
-              <Route path="workflows/run/:runId" element={<RunViewer />} />
-              <Route path="realtime-test" element={<RealtimeEventsTest />} />
-              <Route path="env-test" element={<EnvTest />} />
-              <Route path="auth-debug" element={<AuthDebug />} />
-              <Route path="auth-context-debug" element={<AuthContextDebug />} />
-              <Route path="simple-auth-test" element={<SimpleAuthTest />} />
-              <Route path="content-library-test" element={<ContentLibraryTest />} />
-              <Route path="toast-demo" element={<ToastDemo />} />
+              <Route path="demo/language" element={<LanguageDemo />} />
+             
             </Route>
 
             {/* Catch all route */}

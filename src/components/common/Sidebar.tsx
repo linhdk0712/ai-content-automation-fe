@@ -1,53 +1,55 @@
-import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
 import {
+  AccountCircle,
+  Analytics as AnalyticsIcon,
+  AutoAwesome,
+  BarChart,
+  Build,
+  CalendarToday,
+  ChevronLeft,
+  ChevronRight,
+  CloudUpload,
+  Create as CreateIcon,
+  Dashboard as DashboardIcon,
+  Description,
+  ExpandLess,
+  ExpandMore,
+  Folder,
+  Group,
+  Help,
+  History,
+  Image,
+  Notifications,
+  Palette,
+  Payment as PaymentIcon,
+  Schedule,
+  Search,
+  Settings as SettingsIcon,
+  Share,
+  TrendingUp,
+  VideoFile
+} from '@mui/icons-material'
+import {
+  Badge,
+  Box,
+  Collapse,
+  Divider,
   Drawer,
+  IconButton,
+  InputAdornment,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
-  Divider,
-  Collapse,
-  IconButton,
   TextField,
-  InputAdornment,
-  Box,
+  Toolbar,
   Typography,
-  Badge,
   useTheme
 } from '@mui/material'
-import {
-  Dashboard as DashboardIcon,
-  Create as CreateIcon,
-  Analytics as AnalyticsIcon,
-  Settings as SettingsIcon,
-  Payment as PaymentIcon,
-  ExpandLess,
-  ExpandMore,
-  Search,
-  Folder,
-  Schedule,
-  Image,
-  VideoFile,
-  Share,
-  Group,
-  Notifications,
-  Help,
-  ChevronLeft,
-  ChevronRight,
-  Description,
-  AutoAwesome,
-  CalendarToday,
-  Palette,
-  CloudUpload,
-  BarChart,
-  TrendingUp,
-  AccountCircle,
-  History
-} from '@mui/icons-material'
 import { Settings } from 'lucide-react'
+import React, { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useI18n } from '../../hooks/useI18n'
 
 const drawerWidth = 240
 const collapsedWidth = 56
@@ -59,60 +61,9 @@ interface NavigationItem {
   children?: NavigationItem[]
   badge?: number
   role?: string[]
-  enabled?: boolean // Thêm thuộc tính để bật/tắt menu
+  enabled?: boolean
+  key?: string
 }
-
-const navigationItems: NavigationItem[] = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', enabled: true },
-  {
-    text: 'Content',
-    icon: <CreateIcon />,
-    enabled: true, // Đã triển khai
-    children: [
-      { text: 'Create Content', icon: <AutoAwesome />, path: '/content/create', enabled: true },
-      { text: 'Content Library', icon: <Description />, path: '/content/library', enabled: true },
-      { text: 'Templates', icon: <Description />, path: '/templates', enabled: true },
-      { text: 'Version History', icon: <History />, path: '/content/versions', enabled: false },
-      { text: 'Workflow', icon: <Group />, path: '/content/workflow', enabled: false },
-      { text: 'Export', icon: <CloudUpload />, path: '/content/export', enabled: false }
-    ]
-  },
-  {
-    text: 'Social Media',
-    icon: <Share />,
-    enabled: false, // Chưa triển khai - ẩn toàn bộ menu này
-    children: [
-      { text: 'Accounts', icon: <AccountCircle />, path: '/social/accounts', enabled: false },
-      { text: 'Publishing Queue', icon: <Schedule />, path: '/social/queue', badge: 5, enabled: false },
-      { text: 'Calendar', icon: <CalendarToday />, path: '/social/calendar', enabled: false },
-      { text: 'Analytics', icon: <TrendingUp />, path: '/social/analytics', enabled: false },
-      { text: 'Platform Settings', icon: <Settings />, path: '/social/settings', enabled: false },
-      { text: 'Content Optimization', icon: <BarChart />, path: '/social/optimization', enabled: false }
-    ]
-  },
-  {
-    text: 'Media & Assets',
-    icon: <Image />,
-    enabled: false, // Chưa triển khai - ẩn toàn bộ menu này
-    children: [
-      { text: 'Media Library', icon: <Folder />, path: '/media/library', enabled: false },
-      { text: 'Image Generator', icon: <Palette />, path: '/media/generator', enabled: false },
-      { text: 'Brand Kit', icon: <Palette />, path: '/media/brandkit', enabled: false },
-      { text: 'Asset Editor', icon: <Image />, path: '/media/editor', enabled: false },
-      { text: 'Video Processor', icon: <VideoFile />, path: '/media/video', enabled: false },
-      { text: 'Asset Analytics', icon: <AnalyticsIcon />, path: '/media/analytics', enabled: false }
-    ]
-  },
-  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', enabled: false }, // Chưa triển khai
-  { text: 'Team', icon: <Group />, path: '/team', role: ['admin', 'manager'], enabled: false } // Chưa triển khai
-]
-
-const secondaryItems: NavigationItem[] = [
-  { text: 'Notifications', icon: <Notifications />, path: '/notifications', badge: 3 },
-  { text: 'Pricing', icon: <PaymentIcon />, path: '/pricing' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-  { text: 'Help & Support', icon: <Help />, path: '/help' }
-]
 
 interface SidebarProps {
   collapsed?: boolean
@@ -130,13 +81,69 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate()
   const location = useLocation()
   const theme = useTheme()
+  const { t } = useI18n()
 
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Content'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['content'])
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Generate navigation items with translations
+  const getNavigationItems = (): NavigationItem[] => [
+    { key: 'dashboard', text: t('sidebar.dashboard'), icon: <DashboardIcon />, path: '/dashboard', enabled: true },
+    {
+      key: 'content',
+      text: t('sidebar.content'),
+      icon: <CreateIcon />,
+      enabled: true,
+      children: [
+        { key: 'createContent', text: t('sidebar.createContent'), icon: <AutoAwesome />, path: '/content/create', enabled: true },
+        { key: 'workflow', text: t('sidebar.workflow'), icon: <Build />, path: '/content/workflow', enabled: false },
+        { key: 'contentLibrary', text: t('sidebar.contentLibrary'), icon: <Description />, path: '/content/library', enabled: true },
+        { key: 'templates', text: t('sidebar.templates'), icon: <Description />, path: '/templates', enabled: false },
+        { key: 'versionHistory', text: t('sidebar.versionHistory'), icon: <History />, path: '/content/versions', enabled: false },
+        { key: 'export', text: t('sidebar.export'), icon: <CloudUpload />, path: '/content/export', enabled: false }
+      ]
+    },
+    {
+      key: 'socialMedia',
+      text: t('sidebar.socialMedia'),
+      icon: <Share />,
+      enabled: false,
+      children: [
+        { key: 'accounts', text: t('sidebar.accounts'), icon: <AccountCircle />, path: '/social/accounts', enabled: false },
+        { key: 'publishingQueue', text: t('sidebar.publishingQueue'), icon: <Schedule />, path: '/social/queue', badge: 5, enabled: false },
+        { key: 'calendar', text: t('sidebar.calendar'), icon: <CalendarToday />, path: '/social/calendar', enabled: false },
+        { key: 'socialAnalytics', text: t('sidebar.analytics'), icon: <TrendingUp />, path: '/social/analytics', enabled: false },
+        { key: 'platformSettings', text: t('sidebar.platformSettings'), icon: <Settings />, path: '/social/settings', enabled: false },
+        { key: 'contentOptimization', text: t('sidebar.contentOptimization'), icon: <BarChart />, path: '/social/optimization', enabled: false }
+      ]
+    },
+    {
+      key: 'mediaAssets',
+      text: t('sidebar.mediaAssets'),
+      icon: <Image />,
+      enabled: false,
+      children: [
+        { key: 'mediaLibrary', text: t('sidebar.mediaLibrary'), icon: <Folder />, path: '/media/library', enabled: false },
+        { key: 'imageGenerator', text: t('sidebar.imageGenerator'), icon: <Palette />, path: '/media/generator', enabled: false },
+        { key: 'brandKit', text: t('sidebar.brandKit'), icon: <Palette />, path: '/media/brandkit', enabled: false },
+        { key: 'assetEditor', text: t('sidebar.assetEditor'), icon: <Image />, path: '/media/editor', enabled: false },
+        { key: 'videoProcessor', text: t('sidebar.videoProcessor'), icon: <VideoFile />, path: '/media/video', enabled: false },
+        { key: 'assetAnalytics', text: t('sidebar.assetAnalytics'), icon: <AnalyticsIcon />, path: '/media/analytics', enabled: false }
+      ]
+    },
+    { key: 'analytics', text: t('sidebar.analytics'), icon: <AnalyticsIcon />, path: '/analytics', enabled: false },
+    { key: 'team', text: t('sidebar.team'), icon: <Group />, path: '/team', role: ['admin', 'manager'], enabled: false }
+  ]
+
+  const getSecondaryItems = (): NavigationItem[] => [
+    { key: 'notifications', text: t('sidebar.notifications'), icon: <Notifications />, path: '/notifications', badge: 3 },
+    { key: 'pricing', text: t('sidebar.pricing'), icon: <PaymentIcon />, path: '/pricing' },
+    { key: 'settings', text: t('sidebar.settings'), icon: <SettingsIcon />, path: '/settings' },
+    { key: 'helpSupport', text: t('sidebar.helpSupport'), icon: <Help />, path: '/help' }
+  ]
 
   const handleNavigation = (path: string) => {
     navigate(path)
-    // Close mobile drawer when navigating
     if (onMobileClose) {
       onMobileClose()
     }
@@ -151,16 +158,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     return item.children?.some(child => child.path && isActive(child.path)) || false
   }
 
-  const handleExpandClick = (itemText: string) => {
+  const handleExpandClick = (itemKey: string) => {
     setExpandedItems(prev =>
-      prev.includes(itemText)
-        ? prev.filter(item => item !== itemText)
-        : [...prev, itemText]
+      prev.includes(itemKey)
+        ? prev.filter(item => item !== itemKey)
+        : [...prev, itemKey]
     )
   }
 
   const filterItems = (items: NavigationItem[]): NavigationItem[] => {
-    // Lọc theo enabled trước
     const enabledItems = items.filter(item => item.enabled !== false)
 
     if (!searchQuery) return enabledItems
@@ -176,17 +182,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const renderNavigationItem = (item: NavigationItem, level = 0) => {
     const hasChildren = item.children && item.children.length > 0
-    const isExpanded = expandedItems.includes(item.text)
+    const isExpanded = expandedItems.includes(item.key || item.text)
     const active = isParentActive(item)
 
     return (
-      <React.Fragment key={item.text}>
+      <React.Fragment key={item.key || item.text}>
         <ListItem disablePadding>
           <ListItemButton
             selected={active}
             onClick={() => {
               if (hasChildren) {
-                handleExpandClick(item.text)
+                handleExpandClick(item.key || item.text)
               } else if (item.path) {
                 handleNavigation(item.path)
               }
@@ -249,7 +255,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {!collapsed && (
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <Typography variant="subtitle1" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 700, fontSize: '0.95rem' }}>
-              AI Content Pro
+              {t('sidebar.appTitle')}
             </Typography>
             {onToggleCollapse && (
               <IconButton onClick={onToggleCollapse} size="small">
@@ -270,7 +276,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <TextField
             fullWidth
             size="small"
-            placeholder="Search..."
+            placeholder={t('sidebar.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -295,13 +301,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <List sx={{ flexGrow: 1, px: 0.5 }}>
-        {filterItems(navigationItems).map(item => renderNavigationItem(item))}
+        {filterItems(getNavigationItems()).map(item => renderNavigationItem(item))}
       </List>
 
       <Divider />
 
       <List sx={{ px: 0.5 }}>
-        {filterItems(secondaryItems).map(item => renderNavigationItem(item))}
+        {filterItems(getSecondaryItems()).map(item => renderNavigationItem(item))}
       </List>
     </>
   )
@@ -314,7 +320,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         open={mobileOpen}
         onClose={onMobileClose}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
         }}
         sx={{
           display: { xs: 'block', md: 'none' },
@@ -330,7 +336,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {drawerContent}
       </Drawer>
 
-      {/* Desktop drawer - Fixed position to not affect main content layout */}
+      {/* Desktop drawer */}
       <Drawer
         variant="permanent"
         sx={{

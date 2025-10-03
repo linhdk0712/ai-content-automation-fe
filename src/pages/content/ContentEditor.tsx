@@ -1,6 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useContent } from '@/hooks/useContent';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import { ContentStatus } from '@/types/api.types';
 import {
   AutoAwesome,
@@ -12,8 +11,6 @@ import {
   FormatListBulleted,
   FormatListNumbered,
   FormatUnderlined,
-  Group,
-  Image,
   Link,
   Publish,
   Save,
@@ -101,7 +98,7 @@ interface Collaborator {
 const ContentEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  useAuth();
   const {
     content,
     loading,
@@ -109,8 +106,6 @@ const ContentEditor: React.FC = () => {
     loadContent
   } = useContent();
 
-  // WebSocket for real-time collaboration
-  const { send, subscribe, unsubscribe, isConnected } = useWebSocket();
 
   // Refs
   const editorRef = useRef<HTMLDivElement>(null);
@@ -160,7 +155,7 @@ const ContentEditor: React.FC = () => {
       loadContent(parseInt(id));
       loadVersionHistory();
       loadComments();
-      joinCollaborationSession();
+    
     }
   }, [id]);
 
@@ -195,25 +190,6 @@ const ContentEditor: React.FC = () => {
     };
   }, [title, textContent, tags, hasUnsavedChanges, autoSaveEnabled, isSaving]);
 
-  // Real-time collaboration setup
-  useEffect(() => {
-    if (id) {
-      // Subscribe to channels - handlers will be set up via WebSocket service
-      subscribe('content-updated', (data) => console.log('Content updated:', data));
-      subscribe('collaborator-joined', (data) => console.log('Collaborator joined:', data));
-      subscribe('collaborator-left', (data) => console.log('Collaborator left:', data));
-      subscribe('cursor-moved', (data) => console.log('Cursor moved:', data));
-      subscribe('comment-added', (data) => console.log('Comment added:', data));
-
-      return () => {
-        unsubscribe('content-updated');
-        unsubscribe('collaborator-joined');
-        unsubscribe('collaborator-left');
-        unsubscribe('cursor-moved');
-        unsubscribe('comment-added');
-      };
-    }
-  }, [id]);
 
   const loadVersionHistory = async () => {
     // Version history loading would be implemented here
@@ -224,18 +200,7 @@ const ContentEditor: React.FC = () => {
     // This would be implemented in the useContent hook
   };
 
-  const joinCollaborationSession = () => {
-    if (id) {
-      send({
-        type: 'join_collaboration',
-        data: {
-          contentId: id,
-          userId: user?.id,
-          userName: user?.username
-        }
-      });
-    }
-  };
+  
 
   const handleContentChange = (field: string, value: any) => {
     setHasUnsavedChanges(true);
@@ -249,15 +214,6 @@ const ContentEditor: React.FC = () => {
         // Emit cursor position for real-time collaboration
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          send({
-            type: 'cursor_moved',
-            data: {
-              contentId: id,
-              position: range.startOffset,
-              userId: user?.id
-            }
-          });
         }
         break;
       case 'tags':
@@ -748,13 +704,7 @@ const ContentEditor: React.FC = () => {
               size="small"
             />
             
-            {isConnected && (
-              <Tooltip title="Real-time collaboration active">
-                <Badge color="success" variant="dot">
-                  <Group fontSize="small" />
-                </Badge>
-              </Tooltip>
-            )}
+            {/* Real-time collaboration status - to be implemented with new technology */}
           </Box>
         </Box>
 

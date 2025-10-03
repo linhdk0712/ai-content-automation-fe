@@ -308,14 +308,85 @@ export class I18nManager {
    * Fetch translations from server or local files
    */
   private async fetchTranslations(languageCode: string): Promise<Translations> {
-    // In a real application, this would fetch from your API or CDN
-    const response = await fetch(`/locales/${languageCode}.json`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch translations: ${response.status}`);
-    }
+    try {
+      // In a real application, this would fetch from your API or CDN
+      const response = await fetch(`/locales/${languageCode}.json`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch translations: ${response.status}`);
+      }
 
-    return await response.json();
+      return await response.json();
+    } catch (error) {
+      // Fallback to basic translations if file doesn't exist
+      console.warn(`Translation file for ${languageCode} not found, using fallback`);
+      return this.getFallbackTranslations(languageCode);
+    }
+  }
+
+  /**
+   * Get fallback translations for unsupported languages
+   */
+  private getFallbackTranslations(languageCode: string): Translations {
+    // Basic fallback translations
+    return {
+      common: {
+        dashboard: "Dashboard",
+        content: "Content",
+        create: "Create",
+        library: "Library",
+        templates: "Templates",
+        social: "Social Media",
+        accounts: "Accounts",
+        queue: "Publishing Queue",
+        calendar: "Calendar",
+        analytics: "Analytics",
+        media: "Media & Assets",
+        generator: "Image Generator",
+        brandkit: "Brand Kit",
+        settings: "Settings",
+        team: "Team",
+        profile: "Profile",
+        logout: "Logout",
+        help: "Help & Support",
+        feedback: "Send Feedback",
+        notifications: "Notifications",
+        search: "Search...",
+        loading: "Loading...",
+        save: "Save",
+        cancel: "Cancel",
+        delete: "Delete",
+        edit: "Edit",
+        view: "View",
+        close: "Close"
+      },
+      header: {
+        appTitle: "AI Content Pro",
+        createContent: "Create Content",
+        schedulePost: "Schedule Post",
+        viewAnalytics: "View Analytics",
+        switchToDarkMode: "Switch to Dark Mode",
+        switchToLightMode: "Switch to Light Mode",
+        account: "Account",
+        viewAllNotifications: "View all notifications"
+      },
+      language: {
+        switcherLabel: "Change language",
+        changing: "Changing language...",
+        availableLanguages: "Available languages"
+      },
+      time: {
+        now: "now",
+        in_hours: "in {{hours}} hours",
+        hours_ago: "{{hours}} hours ago"
+      },
+      notifications: {
+        postPublished: "Post published successfully",
+        contentGenerated: "Content generation completed",
+        postFailed: "Scheduled post failed",
+        teamMemberJoined: "New team member joined"
+      }
+    };
   }
 
   /**

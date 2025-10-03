@@ -42,9 +42,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContentLibrary } from '../../hooks/useContentLibrary';
 import { ContentResponse, ContentStatus, ContentType } from '../../types/api.types';
+import { useI18n } from '../../hooks/useI18n';
 
 const ContentLibrary: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   
   const {
     content,
@@ -258,7 +260,7 @@ const ContentLibrary: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" component="h1">
-            Content Library
+            {t('contentLibrary.title')}
           </Typography>
           {stats && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -273,14 +275,14 @@ const ContentLibrary: React.FC = () => {
             onClick={() => loadStats()}
             disabled={statsLoading}
           >
-            Analytics
+            {t('common.analytics')}
           </Button>
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={() => navigate('/content/create')}
           >
-            Create Content
+            {t('contentCreator.generateContent')}
           </Button>
         </Box>
       </Box>
@@ -291,7 +293,7 @@ const ContentLibrary: React.FC = () => {
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              placeholder="Search content..."
+              placeholder={t('contentLibrary.searchContent')}
               value={searchQuery}
               onChange={handleSearchChange}
               InputProps={{
@@ -301,27 +303,27 @@ const ContentLibrary: React.FC = () => {
           </Grid>
           <Grid item xs={12} md={2}>
             <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
+              <InputLabel>{t('contentLibrary.filterByStatus')}</InputLabel>
               <Select
                 value={filterStatus}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                label="Status"
+                label={t('contentLibrary.filterByStatus')}
               >
-                <MenuItem value="ALL">All Status</MenuItem>
-                <MenuItem value="DRAFT">Draft</MenuItem>
-                <MenuItem value="PUBLISHED">Published</MenuItem>
-                <MenuItem value="ARCHIVED">Archived</MenuItem>
+                <MenuItem value="ALL">{t('contentLibrary.allContent')}</MenuItem>
+                <MenuItem value="DRAFT">{t('contentLibrary.drafts')}</MenuItem>
+                <MenuItem value="PUBLISHED">{t('contentLibrary.published')}</MenuItem>
+                <MenuItem value="ARCHIVED">{t('contentLibrary.archived')}</MenuItem>
                 <MenuItem value="SCHEDULED">Scheduled</MenuItem>
               </Select>
             </FormControl>
           </Grid>
           <Grid item xs={12} md={2}>
             <FormControl fullWidth>
-              <InputLabel>Type</InputLabel>
+              <InputLabel>{t('contentLibrary.filterByType')}</InputLabel>
               <Select
                 value={filterType}
                 onChange={(e) => handleFilterChange('type', e.target.value)}
-                label="Type"
+                label={t('contentLibrary.filterByType')}
               >
                 <MenuItem value="ALL">All Types</MenuItem>
                 <MenuItem value="BLOG_POST">Blog Post</MenuItem>
@@ -341,15 +343,15 @@ const ContentLibrary: React.FC = () => {
           </Grid>
           <Grid item xs={12} md={2}>
             <FormControl fullWidth>
-              <InputLabel>Sort By</InputLabel>
+              <InputLabel>{t('contentLibrary.sortBy')}</InputLabel>
               <Select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                label="Sort By"
+                label={t('contentLibrary.sortBy')}
               >
-                <MenuItem value="updatedAt">Last Updated</MenuItem>
-                <MenuItem value="createdAt">Created Date</MenuItem>
-                <MenuItem value="title">Title</MenuItem>
+                <MenuItem value="updatedAt">{t('contentLibrary.modifiedDate')}</MenuItem>
+                <MenuItem value="createdAt">{t('contentLibrary.createdDate')}</MenuItem>
+                <MenuItem value="title">{t('contentLibrary.title')}</MenuItem>
                 <MenuItem value="performanceScore">Performance</MenuItem>
               </Select>
             </FormControl>

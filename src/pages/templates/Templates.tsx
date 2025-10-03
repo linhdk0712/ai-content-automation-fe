@@ -63,6 +63,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { templateService } from '../../services/template.service';
+import { useI18n } from '../../hooks/useI18n';
 import {
   CreateTemplateRequest,
   Template,
@@ -119,6 +120,7 @@ const industryIcons: Record<TemplateIndustry, React.ReactElement> = {
 const Templates: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   
   // State management
   const [templates, setTemplates] = useState<Template[]>([]);

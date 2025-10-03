@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   AppBar,
   Toolbar,
@@ -38,6 +38,8 @@ import {
   Analytics} from '@mui/icons-material'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { LanguageSwitcher } from '../internationalization/LanguageSwitcher'
+import { useI18n } from '../../hooks/useI18n'
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -59,6 +61,7 @@ const Header: React.FC<HeaderProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const { t } = useI18n()
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -105,20 +108,20 @@ const Header: React.FC<HeaderProps> = ({
       
       // Map path segments to readable names
       const segmentMap: Record<string, string> = {
-        'content': 'Content',
-        'create': 'Create',
-        'library': 'Library',
-        'templates': 'Templates',
-        'social': 'Social Media',
-        'accounts': 'Accounts',
-        'queue': 'Publishing Queue',
-        'calendar': 'Calendar',
-        'analytics': 'Analytics',
-        'media': 'Media & Assets',
-        'generator': 'Image Generator',
-        'brandkit': 'Brand Kit',
-        'settings': 'Settings',
-        'team': 'Team'
+        'content': t('common.content'),
+        'create': t('common.create'),
+        'library': t('common.library'),
+        'templates': t('common.templates'),
+        'social': t('common.social'),
+        'accounts': t('common.accounts'),
+        'queue': t('common.queue'),
+        'calendar': t('common.calendar'),
+        'analytics': t('common.analytics'),
+        'media': t('common.media'),
+        'generator': t('common.generator'),
+        'brandkit': t('common.brandkit'),
+        'settings': t('common.settings'),
+        'team': t('common.team')
       }
 
       const label = segmentMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
@@ -133,12 +136,12 @@ const Header: React.FC<HeaderProps> = ({
 
   const breadcrumbs = generateBreadcrumbs()
 
-  // Mock notifications
+  // Mock notifications with translations
   const notifications = [
-    { id: 1, title: 'Post published successfully', time: '2 min ago', type: 'success' },
-    { id: 2, title: 'Content generation completed', time: '5 min ago', type: 'info' },
-    { id: 3, title: 'Scheduled post failed', time: '10 min ago', type: 'error' },
-    { id: 4, title: 'New team member joined', time: '1 hour ago', type: 'info' }
+    { id: 1, title: t('notifications.postPublished'), time: '2 min ago', type: 'success' },
+    { id: 2, title: t('notifications.contentGenerated'), time: '5 min ago', type: 'info' },
+    { id: 3, title: t('notifications.postFailed'), time: '10 min ago', type: 'error' },
+    { id: 4, title: t('notifications.teamMemberJoined'), time: '1 hour ago', type: 'info' }
   ]
 
   return (
@@ -181,7 +184,7 @@ const Header: React.FC<HeaderProps> = ({
               WebkitTextFillColor: 'transparent',
             }}
           >
-            AI Content Pro
+            {t('header.appTitle')}
           </Typography>
         </Box>
 
@@ -223,7 +226,7 @@ const Header: React.FC<HeaderProps> = ({
           <Box sx={{ mr: 2 }}>
             <TextField
               size="small"
-              placeholder="Search..."
+              placeholder={t('common.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ 
@@ -251,7 +254,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* Quick Actions */}
           {!isMobile && (
             <>
-              <Tooltip title="Create Content">
+              <Tooltip title={t('header.createContent')}>
                 <IconButton 
                   color="primary"
                   onClick={() => navigate('/content/create')}
@@ -260,7 +263,7 @@ const Header: React.FC<HeaderProps> = ({
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="Schedule Post">
+              <Tooltip title={t('header.schedulePost')}>
                 <IconButton 
                   color="primary"
                   onClick={() => navigate('/social/calendar')}
@@ -269,7 +272,7 @@ const Header: React.FC<HeaderProps> = ({
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="View Analytics">
+              <Tooltip title={t('header.viewAnalytics')}>
                 <IconButton 
                   color="primary"
                   onClick={() => navigate('/analytics')}
@@ -280,15 +283,20 @@ const Header: React.FC<HeaderProps> = ({
             </>
           )}
 
+          {/* Language Switcher */}
+          <Box sx={{ mr: 1 }}>
+            <LanguageSwitcher compact={isMobile} showFlags={!isMobile} />
+          </Box>
+
           {/* Theme Toggle */}
-          <Tooltip title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+          <Tooltip title={isDarkMode ? t('header.switchToLightMode') : t('header.switchToDarkMode')}>
             <IconButton onClick={onToggleTheme} color="inherit">
               {isDarkMode ? <LightMode /> : <DarkMode />}
             </IconButton>
           </Tooltip>
 
           {/* Notifications */}
-          <Tooltip title="Notifications">
+          <Tooltip title={t('common.notifications')}>
             <IconButton 
               color="inherit"
               onClick={handleNotificationMenu}
@@ -300,7 +308,7 @@ const Header: React.FC<HeaderProps> = ({
           </Tooltip>
 
           {/* User Menu */}
-          <Tooltip title="Account">
+          <Tooltip title={t('header.account')}>
             <IconButton
               size="large"
               aria-label="account of current user"
@@ -334,7 +342,7 @@ const Header: React.FC<HeaderProps> = ({
           }}
         >
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography variant="h6">Notifications</Typography>
+            <Typography variant="h6">{t('common.notifications')}</Typography>
           </Box>
           
           {notifications.map((notification) => (
@@ -353,7 +361,7 @@ const Header: React.FC<HeaderProps> = ({
           <Divider />
           <MenuItem onClick={() => navigate('/notifications')}>
             <Typography variant="body2" color="primary">
-              View all notifications
+              {t('header.viewAllNotifications')}
             </Typography>
           </MenuItem>
         </Menu>
@@ -401,28 +409,28 @@ const Header: React.FC<HeaderProps> = ({
             <ListItemIcon>
               <Person fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Profile</ListItemText>
+            <ListItemText>{t('common.profile')}</ListItemText>
           </MenuItem>
           
           <MenuItem onClick={handleSettings}>
             <ListItemIcon>
               <Settings fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
+            <ListItemText>{t('common.settings')}</ListItemText>
           </MenuItem>
           
           <MenuItem onClick={() => navigate('/help')}>
             <ListItemIcon>
               <Help fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Help & Support</ListItemText>
+            <ListItemText>{t('common.help')}</ListItemText>
           </MenuItem>
           
           <MenuItem onClick={() => navigate('/feedback')}>
             <ListItemIcon>
               <Feedback fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Send Feedback</ListItemText>
+            <ListItemText>{t('common.feedback')}</ListItemText>
           </MenuItem>
           
           <Divider />
@@ -431,7 +439,7 @@ const Header: React.FC<HeaderProps> = ({
             <ListItemIcon>
               <Logout fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Logout</ListItemText>
+            <ListItemText>{t('common.logout')}</ListItemText>
           </MenuItem>
         </Menu>
       </Toolbar>

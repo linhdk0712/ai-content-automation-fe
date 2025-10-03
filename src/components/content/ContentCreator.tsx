@@ -19,12 +19,13 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useContentGeneration } from '../../hooks/useContentGeneration';
 import { useTemplates } from '../../hooks/useTemplates';
 import { contentService } from '../../services/content.service';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
 import { ContentType } from '../../types/api.types';
+import { useI18n } from '../../hooks/useI18n';
 import {
   ContentTypeSelect,
   IndustrySelect,
@@ -42,6 +43,7 @@ interface ContentCreatorProps {
 }
 
 const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
+  const { t } = useI18n();
   const [prompt, setPrompt] = useState('');
   const [industry, setIndustry] = useState('');
   const [contentType, setContentType] = useState('');
@@ -84,10 +86,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   // ];
 
   const optimizationOptions = [
-    { value: 'QUALITY', label: 'Highest Quality', description: 'Best AI models for premium results' },
-    { value: 'COST', label: 'Cost Effective', description: 'Optimize for lowest cost' },
-    { value: 'SPEED', label: 'Fastest Response', description: 'Prioritize quick generation' },
-    { value: 'BALANCED', label: 'Balanced', description: 'Good balance of quality, cost, and speed' }
+    { value: 'QUALITY', label: t('contentCreator.highestQuality'), description: t('contentCreator.bestAiModels') },
+    { value: 'COST', label: t('contentCreator.costEffective'), description: t('contentCreator.optimizeLowestCost') },
+    { value: 'SPEED', label: t('contentCreator.fastestResponse'), description: t('contentCreator.prioritizeQuickGeneration') },
+    { value: 'BALANCED', label: t('contentCreator.balanced'), description: t('contentCreator.goodBalance') }
   ];
 
   // Debounce template loading to avoid excessive API calls
@@ -116,40 +118,40 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
 
     // Required fields validation
     if (!prompt.trim()) {
-      errors.prompt = 'Content prompt is required';
+      errors.prompt = t('contentCreator.contentPromptRequired');
     }
 
     if (!industry.trim()) {
-      errors.industry = 'Industry selection is required';
+      errors.industry = t('contentCreator.industryRequired');
     }
 
     if (!contentType.trim()) {
-      errors.contentType = 'Content type selection is required';
+      errors.contentType = t('contentCreator.contentTypeRequired');
     }
 
     if (!language.trim()) {
-      errors.language = 'Language selection is required';
+      errors.language = t('contentCreator.languageRequired');
     }
 
     if (!tone.trim()) {
-      errors.tone = 'Tone/style selection is required';
+      errors.tone = t('contentCreator.toneRequired');
     }
 
     if (!targetAudience.trim()) {
-      errors.targetAudience = 'Target audience selection is required';
+      errors.targetAudience = t('contentCreator.targetAudienceRequired');
     }
 
     if (!optimizationCriteria.trim()) {
-      errors.optimizationCriteria = 'AI provider optimization is required';
+      errors.optimizationCriteria = t('contentCreator.optimizationRequired');
     }
 
     // Optional: Validate prompt length
     if (prompt.trim() && prompt.trim().length < 10) {
-      errors.prompt = 'Content prompt must be at least 10 characters long';
+      errors.prompt = t('contentCreator.promptTooShort');
     }
 
     if (prompt.trim() && prompt.trim().length > 2000) {
-      errors.prompt = 'Content prompt must not exceed 2000 characters';
+      errors.prompt = t('contentCreator.promptTooLong');
     }
 
     setValidationErrors(errors);
@@ -163,7 +165,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     // Validate form
     if (!validateForm()) {
       setToastSeverity('error');
-      setToastMsg('Please fill in all required fields before generating content');
+      setToastMsg(t('contentCreator.fillRequiredFields'));
       setToastOpen(true);
       return;
     }
@@ -227,16 +229,19 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
     setIsTriggering(true);
     try {
       const contentData = {
-        title: generationResult?.title,
-        content: generationResult?.content,
-        metadata: generationResult,
-        industry,
-        contentType,
-        language
+        title: generationResult.title,
+        input: generationResult.content,
+        metadata: {
+          industry: industry,
+          contentType: contentType,
+          language: language,
+          tone: tone,
+          targetAudience: targetAudience
+        }
       };
       const run = await triggerAiAvatarWorkflow(lastContentId ?? 0, contentData);
       setToastSeverity('success');
-      setToastMsg('Sent to AI Avatar workflow successfully!');
+      setToastMsg(t('contentCreator.sentToWorkflow'));
       setToastOpen(true);
 
       // Navigate to workflow run page after a short delay
@@ -245,7 +250,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       }, 1500);
     } catch (e) {
       setToastSeverity('error');
-      setToastMsg('Failed to send to workflow');
+      setToastMsg(t('contentCreator.failedToSendWorkflow'));
       setToastOpen(true);
     } finally {
       setIsTriggering(false);
@@ -269,7 +274,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       });
       setLastContentId(saved?.id ?? 0);
       setToastSeverity('success');
-      setToastMsg('Content saved to library successfully!');
+      setToastMsg(t('contentCreator.savedToLibrary'));
       setToastOpen(true);
 
       // Navigate to content library after a short delay
@@ -278,7 +283,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       }, 1500);
     } catch (e) {
       setToastSeverity('error');
-      setToastMsg('Failed to save content');
+      setToastMsg(t('contentCreator.failedToSave'));
       setToastOpen(true);
     } finally {
       setIsSaving(false);
@@ -294,11 +299,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       setToastSeverity('success');
-      setToastMsg('Content sent to backend successfully!');
+      setToastMsg(t('contentCreator.sentToBackend'));
       setToastOpen(true);
     } catch (e) {
       setToastSeverity('error');
-      setToastMsg('Failed to send content to backend');
+      setToastMsg(t('contentCreator.failedToSendBackend'));
       setToastOpen(true);
     } finally {
       setIsSendingToBackend(false);
@@ -357,10 +362,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               fontWeight: 600,
               mb: 0.5
             }}>
-              Content Generation
+              {t('contentCreator.contentGeneration')}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Create AI-powered content with advanced customization
+              {t('contentCreator.createAiPoweredContent')}
             </Typography>
           </Box>
           <CardContent sx={{ p: 3, pt: 3 }}>
@@ -372,7 +377,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 onClose={handleClearTemplate}
                 sx={{ mb: 3, borderRadius: 2 }}
               >
-                Using template: <strong>{selectedTemplate.name}</strong>
+                {t('contentCreator.usingTemplate')}: <strong>{selectedTemplate.name}</strong>
               </Alert>
             )}
 
@@ -381,8 +386,8 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               fullWidth
               multiline
               rows={4}
-              label="Content Prompt *"
-              placeholder="Describe what content you want to generate..."
+              label={t('contentCreator.contentPrompt')}
+              placeholder={t('contentCreator.contentPromptPlaceholder')}
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);
@@ -405,7 +410,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Industry and Content Type */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Content Settings *
+                {t('contentCreator.contentSettings')}
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -418,7 +423,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                           setValidationErrors(prev => ({ ...prev, industry: '' }));
                         }
                       }}
-                      placeholder="Select industry *"
+                      placeholder={t('contentCreator.selectIndustry')}
                       showIcons={true}
                     />
                     {validationErrors.industry && (
@@ -438,7 +443,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                           setValidationErrors(prev => ({ ...prev, contentType: '' }));
                         }
                       }}
-                      placeholder="Select content type *"
+                      placeholder={t('contentCreator.selectContentType')}
                       showIcons={true}
                     />
                     {validationErrors.contentType && (
@@ -454,7 +459,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Language and Tone */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Style & Language *
+                {t('contentCreator.styleAndLanguage')}
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -486,7 +491,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                           setValidationErrors(prev => ({ ...prev, tone: '' }));
                         }
                       }}
-                      placeholder="Select tone *"
+                      placeholder={t('contentCreator.selectTone')}
                       showIcons={true}
                     />
                     {validationErrors.tone && (
@@ -502,7 +507,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Target Audience */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Target Audience *
+                {t('contentCreator.targetAudience')}
               </Typography>
               <TargetAudienceSelect
                 value={targetAudience}
@@ -512,7 +517,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                     setValidationErrors(prev => ({ ...prev, targetAudience: '' }));
                   }
                 }}
-                placeholder="Select target audience *"
+                placeholder={t('contentCreator.selectTargetAudience')}
                 showIcons={true}
               />
               {validationErrors.targetAudience && (
@@ -525,7 +530,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {/* Optimization Criteria */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                Optimization *
+                {t('contentCreator.optimization')}
               </Typography>
               <FormControl fullWidth error={!!validationErrors.optimizationCriteria}>
                 <Select
@@ -569,7 +574,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 >
                   <MenuItem value="" disabled>
                     <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      Select optimization *
+                      {t('contentCreator.selectOptimization')}
                     </Typography>
                   </MenuItem>
                   {optimizationOptions.map((option) => (
@@ -619,7 +624,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 }
                 label={
                   <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                    Advanced Settings
+                    {t('contentCreator.advancedSettings')}
                   </Typography>
                 }
                 sx={{ mb: 2 }}
@@ -636,7 +641,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 borderColor: 'divider'
               }}>
                 <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                  Max Tokens: {maxTokens}
+                  {t('contentCreator.maxTokens')}: {maxTokens}
                 </Typography>
                 <Slider
                   value={maxTokens}
@@ -655,7 +660,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 />
 
                 <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                  Temperature: {temperature}
+                  {t('contentCreator.temperature')}: {temperature}
                 </Typography>
                 <Slider
                   value={temperature}
@@ -664,10 +669,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                   max={2}
                   step={0.1}
                   marks={[
-                    { value: 0, label: 'Focused' },
-                    { value: 0.7, label: 'Balanced' },
-                    { value: 1.5, label: 'Creative' },
-                    { value: 2, label: 'Random' }
+                    { value: 0, label: t('contentCreator.focused') },
+                    { value: 0.7, label: t('contentCreator.balanced') },
+                    { value: 1.5, label: t('contentCreator.creative') },
+                    { value: 2, label: t('contentCreator.random') }
                   ]}
                 />
               </Box>
@@ -677,7 +682,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             {Object.keys(validationErrors).length > 0 && (
               <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Please complete the following required fields:
+                  {t('contentCreator.completeRequiredFields')}
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2 }}>
                   {Object.entries(validationErrors).map(([field, error]) => (
@@ -732,7 +737,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                   transition: 'all 0.2s ease-in-out'
                 }}
               >
-                {isGenerating ? 'Generating Content...' : 'Generate Content'}
+                {isGenerating ? t('contentCreator.generatingContent') : t('contentCreator.generateContent')}
               </Button>
 
               {/* Quick Actions */}
@@ -743,7 +748,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 justifyContent: 'center'
               }}>
                 <Chip
-                  label="📝 Use Template"
+                  label={t('contentCreator.useTemplate')}
                   onClick={() => setActiveTab('templates')}
                   variant="outlined"
                   size="medium"
@@ -757,7 +762,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                   }}
                 />
                 <Chip
-                  label="📊 View History"
+                  label={t('contentCreator.viewHistory')}
                   onClick={() => setActiveTab('history')}
                   variant="outlined"
                   size="medium"
@@ -851,7 +856,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             borderRadius: 2
           }}
         >
-          Create
+          {t('contentCreator.create')}
         </Button>
         <Button
           variant={activeTab === 'templates' ? 'contained' : 'outlined'}
@@ -862,7 +867,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             borderRadius: 2
           }}
         >
-          Templates
+          {t('contentCreator.templates')}
         </Button>
         <Button
           variant={activeTab === 'history' ? 'contained' : 'outlined'}
@@ -873,7 +878,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
             borderRadius: 2
           }}
         >
-          History
+          {t('contentCreator.history')}
         </Button>
       </Box>
 
