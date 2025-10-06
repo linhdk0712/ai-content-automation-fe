@@ -17,7 +17,7 @@ export interface UseWorkflowRunsReturn {
     runs: WorkflowRunWithSSE[];
     loading: boolean;
     error: string | null;
-    refreshRuns: () => Promise<void>;
+    refreshRuns: (silent?: boolean) => Promise<void>;
     connectToRun: (runId: string) => void;
     disconnectFromRun: () => void;
     connectedRunId: string | null;
@@ -34,6 +34,7 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
 
     const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastRefreshRef = useRef<Date | null>(null);
+    const isRefreshingRef = useRef<boolean>(false);
 
     // SSE connection for real-time updates
     const {
@@ -64,9 +65,20 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
     });
 
     // Load all workflow runs from database
-    const refreshRuns = useCallback(async () => {
+    const refreshRuns = useCallback(async (silent = false) => {
+        // Prevent concurrent refreshes
+        if (isRefreshingRef.current) {
+            console.log('Refresh already in progress, skipping...');
+            return;
+        }
+
         try {
-            setLoading(true);
+            isRefreshingRef.current = true;
+
+            // Only show loading spinner for initial load or manual refresh
+            if (!silent) {
+                setLoading(true);
+            }
             setError(null);
 
             const fetchedRuns = await fetchAllWorkflowRuns();
@@ -78,20 +90,31 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                 lastUpdated: new Date()
             }));
 
-            setRuns(runsWithSSE);
+            setRuns(prevRuns => {
+                // Only update if there are actual changes to minimize re-renders
+                if (JSON.stringify(prevRuns.map(r => ({ id: r.id, status: r.status, finishedAt: r.finishedAt }))) ===
+                    JSON.stringify(runsWithSSE.map(r => ({ id: r.id, status: r.status, finishedAt: r.finishedAt })))) {
+                    return prevRuns; // No significant changes
+                }
+                return runsWithSSE;
+            });
+
             lastRefreshRef.current = new Date();
 
-            console.log(`Loaded ${fetchedRuns.length} workflow runs`);
+            console.log(`${silent ? 'Silent' : 'Manual'} loaded ${fetchedRuns.length} workflow runs`);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to load workflow runs';
             setError(errorMessage);
             console.error('Error loading workflow runs:', err);
         } finally {
-            setLoading(false);
+            isRefreshingRef.current = false;
+            if (!silent) {
+                setLoading(false);
+            }
         }
     }, [connectedRunId, sseConnected]);
 
-    // Update a specific run in the list
+    // Update a specific run in the list (smooth update without flickering)
     const updateRunInList = useCallback((updatedRun: N8nWorkflowRunDto) => {
         setRuns(prevRuns => {
             const runIndex = prevRuns.findIndex(run =>
@@ -99,9 +122,22 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
             );
 
             if (runIndex >= 0) {
+                const existingRun = prevRuns[runIndex];
+
+                // Only update if there are actual changes to avoid unnecessary re-renders
+                const hasChanges =
+                    existingRun.status !== updatedRun.status ||
+                    existingRun.finishedAt !== updatedRun.finishedAt ||
+                    existingRun.output !== updatedRun.output ||
+                    existingRun.errorMessage !== updatedRun.errorMessage;
+
+                if (!hasChanges) {
+                    return prevRuns; // No changes, return same reference
+                }
+
                 const newRuns = [...prevRuns];
                 newRuns[runIndex] = {
-                    ...newRuns[runIndex],
+                    ...existingRun,
                     ...updatedRun,
                     isLive: true,
                     lastUpdated: new Date()
@@ -177,17 +213,39 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
         );
     }, [sseDisconnect]);
 
-    // Auto-refresh logic
+    // Auto-refresh logic - Fallback when SSE is not available
     useEffect(() => {
+        // Clear any existing interval
+        if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+            refreshIntervalRef.current = null;
+        }
+
         if (autoRefresh && !sseConnected) {
+            console.log('SSE not connected, starting fallback refresh interval');
+
             refreshIntervalRef.current = setInterval(() => {
                 // Only refresh if we're not getting live updates
                 const hasRunningRuns = runs.some(run => run.status === 'RUNNING');
-                if (hasRunningRuns || !lastRefreshRef.current ||
-                    Date.now() - lastRefreshRef.current.getTime() > refreshInterval) {
-                    refreshRuns();
+                const timeSinceLastRefresh = lastRefreshRef.current
+                    ? Date.now() - lastRefreshRef.current.getTime()
+                    : Infinity;
+
+                // More conservative refresh strategy:
+                // 1. Only refresh if there are running workflows AND it's been a while
+                // 2. Or if it's been a very long time (safety net)
+                const needsRefresh =
+                    (hasRunningRuns && timeSinceLastRefresh > refreshInterval) ||
+                    timeSinceLastRefresh > refreshInterval * 3; // Safety net: 90 seconds
+
+                if (needsRefresh && !isRefreshingRef.current) {
+                    console.log('Silent fallback refresh triggered - SSE unavailable');
+                    // Use silent refresh to avoid UI flickering
+                    refreshRuns(true);
                 }
             }, refreshInterval);
+        } else if (sseConnected) {
+            console.log('SSE connected, disabling fallback refresh interval');
         }
 
         return () => {

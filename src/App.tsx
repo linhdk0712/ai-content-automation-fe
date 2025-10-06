@@ -110,6 +110,11 @@ const RunViewer = createRouteComponent(
   'Run Viewer'
 )
 
+const ContentWorkflowPage = createRouteComponent(
+  () => import('./pages/workflows/ContentWorkflowPage'),
+  'Content Workflow Monitor'
+)
+
 // Preload critical components
 ComponentPreloader.preload('Dashboard', () => import('./pages/Dashboard'))
 ComponentPreloader.preload('ContentCreator', () => import('./pages/content/ContentCreator'))
@@ -199,6 +204,7 @@ function AppContent() {
               <Route path="settings" element={<Settings />} />
               <Route path="workflows" element={<WorkflowRunsPage />} />
               <Route path="workflows/runs/:runId" element={<RunViewer />} />
+              <Route path="workflows/content" element={<ContentWorkflowPage />} />
               <Route path="demo/language" element={<LanguageDemo />} />
               <Route path="demo/workflow" element={<WorkflowDemo />} />
              

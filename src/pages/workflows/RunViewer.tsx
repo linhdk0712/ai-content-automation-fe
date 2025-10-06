@@ -1,8 +1,9 @@
-import { Box, Chip, CircularProgress, Container, Alert as MuiAlert, Snackbar, Typography } from '@mui/material'
+import { Box, Chip, CircularProgress, Container, Alert as MuiAlert, Snackbar, Typography, Card, CardContent, Grid, Divider } from '@mui/material'
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import type { N8nWorkflowRunDto } from '../../services/n8n.service'
+import ContentWorkflowStatus from '../../components/ContentWorkflowStatus'
 import styles from './RunViewer.module.css'
 
 const POLL_INTERVAL_MS = 3000
@@ -20,9 +21,15 @@ const statusColor = (status?: string) => {
 
 const RunViewer: React.FC = () => {
   const { runId } = useParams<{ runId: string }>()
+  const [searchParams] = useSearchParams()
+  const contentId = searchParams.get('contentId')
+  
   const [run, setRun] = useState<N8nWorkflowRunDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  
+  // Mock user ID - in real app, get from auth context
+  const userId = 1
 
   useEffect(() => {
     let timer: number | undefined
@@ -50,41 +57,152 @@ const RunViewer: React.FC = () => {
   }, [runId])
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box sx={{ py: 3 }}>
-        <Typography variant="h5" gutterBottom>Workflow Run</Typography>
+        <Typography variant="h4" gutterBottom>
+          Workflow Run Details
+        </Typography>
+        
         {loading && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CircularProgress size={20} />
             <Typography>Loading...</Typography>
           </Box>
         )}
+        
         {!loading && run && (
-          <Box>
-            <Typography variant="subtitle1">Run ID: {run.id}</Typography>
-            <Typography variant="subtitle1">Workflow: {run.workflowKey}</Typography>
-            <Box sx={{ my: 1 }}>
-              <Chip label={run.status} color={statusColor(run.status) as any} />
-            </Box>
-            <Typography variant="body2">Started: {run.startedAt}</Typography>
-            {run.finishedAt && <Typography variant="body2">Finished: {run.finishedAt}</Typography>}
+          <Grid container spacing={3}>
+            {/* Content Workflow Status (if contentId is available) */}
+            {contentId && (
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Content Workflow Overview
+                </Typography>
+                <ContentWorkflowStatus
+                  contentId={parseInt(contentId)}
+                  userId={userId}
+                  showDetails={true}
+                />
+                <Divider sx={{ my: 3 }} />
+              </Grid>
+            )}
+            
+            {/* Run Details */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Run Information
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="body2">
+                      <strong>Run ID:</strong> {run.id}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Workflow:</strong> {run.workflowKey}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>External Run ID:</strong> {run.runId || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Content ID:</strong> {run.contentId || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>User ID:</strong> {run.userId || 'N/A'}
+                    </Typography>
+                    <Box sx={{ my: 1 }}>
+                      <Chip label={run.status} color={statusColor(run.status) as any} />
+                    </Box>
+                    <Typography variant="body2">
+                      <strong>Started:</strong> {new Date(run.startedAt).toLocaleString()}
+                    </Typography>
+                    {run.finishedAt && (
+                      <Typography variant="body2">
+                        <strong>Finished:</strong> {new Date(run.finishedAt).toLocaleString()}
+                      </Typography>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Input Data */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Input Data
+                  </Typography>
+                  <Box
+                    component="pre"
+                    className={styles.preOutput}
+                    sx={{
+                      maxHeight: 300,
+                      overflow: 'auto',
+                      backgroundColor: 'grey.100',
+                      p: 2,
+                      borderRadius: 1,
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {run.input ? JSON.stringify(JSON.parse(run.input), null, 2) : 'No input data'}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Error Message */}
             {run.errorMessage && (
-              <Box sx={{ mt: 2 }}>
-                <Typography color="error">Error: {run.errorMessage}</Typography>
-              </Box>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" color="error" gutterBottom>
+                      Error Details
+                    </Typography>
+                    <Typography color="error" variant="body2">
+                      {run.errorMessage}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
             )}
+            
+            {/* Output Data */}
             {run.output && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2">Output</Typography>
-                <pre className={styles.preOutput}>
-{JSON.stringify(JSON.parse(run.output), null, 2)}
-                </pre>
-              </Box>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Output Data
+                    </Typography>
+                    <Box
+                      component="pre"
+                      className={styles.preOutput}
+                      sx={{
+                        maxHeight: 400,
+                        overflow: 'auto',
+                        backgroundColor: 'grey.100',
+                        p: 2,
+                        borderRadius: 1,
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      {JSON.stringify(JSON.parse(run.output), null, 2)}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             )}
-          </Box>
+          </Grid>
         )}
       </Box>
-      <Snackbar open={!!errorMsg} autoHideDuration={3000} onClose={() => setErrorMsg(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      
+      <Snackbar 
+        open={!!errorMsg} 
+        autoHideDuration={3000} 
+        onClose={() => setErrorMsg(null)} 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
         <MuiAlert elevation={6} variant="filled" severity="error" onClose={() => setErrorMsg(null)}>
           {errorMsg}
         </MuiAlert>

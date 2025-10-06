@@ -170,7 +170,7 @@ const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={refreshRuns}
+            onClick={() => refreshRuns()}
             disabled={loading}
           >
             {t('common.refresh')}
