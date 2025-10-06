@@ -10,7 +10,6 @@ import React, { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
-import { useNotification } from '../../contexts/NotificationContext'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from '../../hooks/useToast'
 
@@ -23,7 +22,6 @@ type LoginFormData = yup.InferType<typeof schema>
 
 const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth()
-  const { showError, showSuccess } = useNotification()
   const toast = useToast()
   const navigate = useNavigate()
 

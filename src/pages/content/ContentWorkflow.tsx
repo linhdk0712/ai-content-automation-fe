@@ -33,7 +33,10 @@ import {
 } from '../../components/common/ListOfValuesSelect';
 import { useWorkflow } from '../../hooks/useWorkflow';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import { generateContentId } from '../../utils/uuid';
 import { useI18n } from '../../hooks/useI18n';
+import { useErrorHandler } from '../../utils/error-handler';
+import { useRunSSE } from '../../hooks/useSSE';
 
 interface ContentData {
   title: string;
@@ -62,11 +65,14 @@ const ContentWorkflow: React.FC = () => {
   const { t } = useI18n();
   const {
     loading,
-    error,
+    error: workflowError,
     loadWorkflows,
     loadWorkflow,
     addComment
   } = useWorkflow();
+
+  // Error handling through toast
+  const { handleError, showUserError } = useErrorHandler();
 
   // Content input state
   const [contentData, setContentData] = useState<ContentData>({
@@ -82,11 +88,23 @@ const ContentWorkflow: React.FC = () => {
   // Workflow execution state
   const [isTriggering, setIsTriggering] = useState(false);
   const [workflowProgress, setWorkflowProgress] = useState<WorkflowProgress | null>(null);
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null);
+  const [currentUserId] = useState<number>(1); // TODO: Get from auth context
 
   // Dialog state
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState('');
+
+  // SSE connection for real-time updates
+  const {
+    isConnected: sseConnected,
+    runData,
+    nodeUpdates,
+    connectToRun,
+    disconnect: disconnectSSE,
+    error: sseError
+  } = useRunSSE(currentRunId || '', currentUserId, false); // Don't auto-connect
 
   // Load data on mount
   useEffect(() => {
@@ -97,12 +115,100 @@ const ContentWorkflow: React.FC = () => {
     }
   }, [id]);
 
+  // Handle SSE updates
+  useEffect(() => {
+    if (runData) {
+      console.log('Received run data from SSE:', runData);
+      
+      // Update workflow progress based on SSE data
+      setWorkflowProgress(prev => ({
+        id: runData.id?.toString() || prev?.id || 'unknown',
+        status: mapBackendStatusToFrontend(runData.status),
+        currentStep: extractCurrentStep(runData),
+        progress: calculateProgress(runData),
+        message: extractMessage(runData),
+        startedAt: runData.startedAt || prev?.startedAt || new Date().toISOString(),
+        finishedAt: runData.finishedAt || prev?.finishedAt,
+        errorMessage: runData.errorMessage || prev?.errorMessage
+      }));
+    }
+  }, [runData]);
+
+  // Handle node updates
+  useEffect(() => {
+    if (nodeUpdates.length > 0) {
+      const latestNodeUpdate = nodeUpdates[nodeUpdates.length - 1];
+      console.log('Latest node update:', latestNodeUpdate);
+      
+      // Update progress based on node completion
+      setWorkflowProgress(prev => prev ? {
+        ...prev,
+        currentStep: latestNodeUpdate.nodeName || prev.currentStep,
+        message: `Processing: ${latestNodeUpdate.nodeName}`,
+        progress: Math.min((prev.progress || 0) + 10, 90) // Increment progress
+      } : null);
+    }
+  }, [nodeUpdates]);
+
+  // Handle SSE connection errors
+  useEffect(() => {
+    if (sseError) {
+      console.error('SSE connection error:', sseError);
+      const processedError = handleError(new Error('Real-time connection lost. Updates may be delayed.'), 'sse_connection');
+      showUserError(processedError);
+    }
+  }, [sseError, showUserError]);
+
+  // Cleanup SSE connection on unmount
+  useEffect(() => {
+    return () => {
+      disconnectSSE();
+    };
+  }, [disconnectSSE]);
+
   // Handle content input changes
   const handleContentChange = (field: keyof ContentData, value: string) => {
     setContentData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  // Helper functions for SSE data processing
+  const mapBackendStatusToFrontend = (backendStatus: string): WorkflowProgress['status'] => {
+    switch (backendStatus?.toUpperCase()) {
+      case 'RUNNING': return 'RUNNING';
+      case 'COMPLETED': return 'COMPLETED';
+      case 'FAILED': return 'FAILED';
+      case 'CANCELLED': return 'CANCELLED';
+      default: return 'QUEUED';
+    }
+  };
+
+  const extractCurrentStep = (runData: any): string => {
+    if (runData.output) {
+      try {
+        const output = typeof runData.output === 'string' ? JSON.parse(runData.output) : runData.output;
+        return output.currentNode || 'Processing';
+      } catch {
+        return 'Processing';
+      }
+    }
+    return 'Processing';
+  };
+
+  const calculateProgress = (runData: any): number => {
+    if (runData.status === 'COMPLETED') return 100;
+    if (runData.status === 'FAILED') return 0;
+    if (runData.status === 'RUNNING') return 50; // Default progress for running
+    return 0;
+  };
+
+  const extractMessage = (runData: any): string => {
+    if (runData.status === 'COMPLETED') return t('workflow.workflowCompleted');
+    if (runData.status === 'FAILED') return runData.errorMessage || t('workflow.workflowFailed');
+    if (runData.status === 'RUNNING') return t('workflow.processingContent');
+    return t('workflow.initializingWorkflow');
   };
 
   // Handle sending content to n8n workflow
@@ -135,19 +241,36 @@ const ContentWorkflow: React.FC = () => {
         }
       };
 
-      const run = await triggerAiAvatarWorkflow(0, workflowData);
+      // Generate a unique content ID for this workflow run
+      const contentId = generateContentId();
+      console.log('Generated content ID for workflow:', contentId);
+      
+      const run = await triggerAiAvatarWorkflow(contentId, workflowData);
+      console.log('Workflow triggered successfully:', run);
+
+      // Set the run ID and connect to SSE
+      if (run.runId) {
+        setCurrentRunId(run.runId);
+        connectToRun(run.runId);
+        console.log('Connected to SSE for run:', run.runId);
+      }
 
       setWorkflowProgress(prev => prev ? {
         ...prev,
+        id: run.id?.toString() || prev.id,
         status: 'RUNNING',
         currentStep: 'Processing Content',
         progress: 25,
         message: t('workflow.processingContent')
       } : null);
 
-      console.log('Workflow triggered successfully:', run);
     } catch (error) {
       console.error('Failed to trigger workflow:', error);
+
+      // Show error via toast
+      const processedError = handleError(error, 'workflow_trigger');
+      showUserError(processedError);
+
       setWorkflowProgress(prev => prev ? {
         ...prev,
         status: 'FAILED',
@@ -176,6 +299,8 @@ const ContentWorkflow: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to add comment:', error);
+        const processedError = handleError(error, 'add_comment');
+        showUserError(processedError);
       }
     }
   };
@@ -404,6 +529,15 @@ const ContentWorkflow: React.FC = () => {
               color={getStatusColor(workflowProgress.status) as any}
               size="small"
             />
+            {/* SSE Connection Status */}
+            {currentRunId && (
+              <Chip
+                label={sseConnected ? 'Live' : 'Offline'}
+                color={sseConnected ? 'success' : 'default'}
+                size="small"
+                variant="outlined"
+              />
+            )}
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -452,11 +586,11 @@ const ContentWorkflow: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (workflowError) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {workflowError}
         </Alert>
         <Button onClick={() => navigate('/content')}>
           {t('workflow.backToContent')}
@@ -476,6 +610,8 @@ const ContentWorkflow: React.FC = () => {
           {t('workflow.description')}
         </Typography>
       </Box>
+
+
 
       {/* Content Input Form */}
       {renderContentForm()}

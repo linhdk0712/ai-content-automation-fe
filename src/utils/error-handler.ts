@@ -80,16 +80,51 @@ export class ErrorHandler {
       type,
       message: error.message,
       userMessage,
-      code: error.code,
-      details: error.details,
+      code: error.errorCode,
+      details: {
+        ...error.details,
+        validationErrors: error.validationErrors,
+        suggestions: error.suggestions,
+        documentationUrl: error.documentationUrl,
+        traceId: error.traceId,
+        originalError: error.error
+      },
       retryable: this.isRetryable(error.status),
-      timestamp
+      timestamp: error.timestamp || timestamp
     }
   }
 
   private static processHttpError(error: any, timestamp: string): ProcessedError {
     const status = error.response?.status || 0
-    const message = error.response?.data?.message || error.message || 'Request failed'
+    const responseData = error.response?.data
+    
+    // Check if it's new ErrorResponse format
+    if (responseData && typeof responseData === 'object' && 
+        'timestamp' in responseData && 'error' in responseData && 'message' in responseData) {
+      const errorResponse = responseData as ApiError
+      const type = this.categorizeErrorByStatus(status)
+      const userMessage = this.getUserMessage(status, errorResponse.message)
+      
+      return {
+        type,
+        message: errorResponse.message,
+        userMessage,
+        code: errorResponse.errorCode,
+        details: {
+          ...errorResponse.details,
+          validationErrors: errorResponse.validationErrors,
+          suggestions: errorResponse.suggestions,
+          documentationUrl: errorResponse.documentationUrl,
+          traceId: errorResponse.traceId,
+          originalError: errorResponse.error
+        },
+        retryable: this.isRetryable(status),
+        timestamp: errorResponse.timestamp
+      }
+    }
+    
+    // Fallback to legacy format
+    const message = responseData?.message || error.message || 'Request failed'
     const type = this.categorizeErrorByStatus(status)
     const userMessage = this.getUserMessage(status, message)
     
@@ -97,8 +132,8 @@ export class ErrorHandler {
       type,
       message,
       userMessage,
-      code: error.response?.data?.error,
-      details: error.response?.data,
+      code: responseData?.error || responseData?.errorCode,
+      details: responseData,
       retryable: this.isRetryable(status),
       timestamp
     }
@@ -257,46 +292,60 @@ export function useErrorHandler() {
   const showUserError = (error: ProcessedError) => {
     // Import toast service dynamically to avoid circular dependencies
     import('../services/toast.service').then(({ toastService }) => {
-      const options = {
-        title: error.type !== ErrorType.UNKNOWN ? error.type : undefined,
+      const suggestions = ValidationErrorHelper.getSuggestions(error)
+      const fieldErrors = ValidationErrorHelper.extractFieldErrors(error)
+      
+      // Build enhanced message with field errors and suggestions
+      let enhancedMessage = error.userMessage
+      
+      // Add field errors if any
+      if (Object.keys(fieldErrors).length > 0) {
+        enhancedMessage += '\n\nField Errors:\n' + 
+          Object.entries(fieldErrors).map(([field, msg]) => `• ${field}: ${msg}`).join('\n')
+      }
+      
+      // Add suggestions if any
+      if (suggestions.length > 0) {
+        enhancedMessage += '\n\nSuggestions:\n' + suggestions.map(s => `• ${s}`).join('\n')
+      }
+      
+      const baseOptions = {
+        title: error.type !== ErrorType.UNKNOWN ? error.type.replace('_', ' ') : undefined,
         persistent: error.type === ErrorType.SERVER,
-        actions: error.retryable ? [{
-          label: 'Retry',
-          action: () => window.location.reload(),
-          style: 'primary' as const
-        }] : undefined
+        autoClose: error.type === ErrorType.VALIDATION ? 10000 : undefined // Longer for validation errors
       }
 
       if (error.type === ErrorType.AUTHENTICATION) {
-        toastService.error(error.userMessage, {
-          ...options,
+        toastService.error(enhancedMessage, {
+          ...baseOptions,
           title: 'Authentication Required',
-          actions: [{
-            label: 'Login',
-            action: () => {
-              localStorage.removeItem('accessToken')
-              window.location.href = '/login'
-            },
-            style: 'primary' as const
-          }]
+          persistent: true
         })
+        
+        // Auto redirect to login after showing error
+        setTimeout(() => {
+          localStorage.removeItem('accessToken')
+          window.location.href = '/login'
+        }, 3000)
+        
       } else if (error.type === ErrorType.AUTHORIZATION) {
-        toastService.error(error.userMessage, {
-          ...options,
+        toastService.error(enhancedMessage, {
+          ...baseOptions,
           title: 'Access Denied'
         })
       } else if (error.type === ErrorType.VALIDATION) {
-        toastService.warning(error.userMessage, {
-          ...options,
+        toastService.warning(enhancedMessage, {
+          ...baseOptions,
           title: 'Validation Error'
         })
       } else if (error.type === ErrorType.NETWORK) {
-        toastService.error(error.userMessage, {
-          ...options,
-          title: 'Connection Error'
+        toastService.error(enhancedMessage, {
+          ...baseOptions,
+          title: 'Connection Error',
+          persistent: true
         })
       } else {
-        toastService.error(error.userMessage, options)
+        toastService.error(enhancedMessage, baseOptions)
       }
     })
   }
@@ -337,21 +386,27 @@ export class ErrorBoundaryHelper {
 // Validation error helpers
 export class ValidationErrorHelper {
   static extractFieldErrors(error: ProcessedError): Record<string, string> {
-    if (!error.details || !error.details.fieldErrors) {
-      return {}
+    // Check new validationErrors format first
+    if (error.details?.validationErrors && typeof error.details.validationErrors === 'object') {
+      return error.details.validationErrors as Record<string, string>
     }
-
-    const fieldErrors: Record<string, string> = {}
     
-    for (const [field, messages] of Object.entries(error.details.fieldErrors)) {
-      if (Array.isArray(messages) && messages.length > 0) {
-        fieldErrors[field] = messages[0]
-      } else if (typeof messages === 'string') {
-        fieldErrors[field] = messages
+    // Fallback to legacy fieldErrors format
+    if (error.details?.fieldErrors) {
+      const fieldErrors: Record<string, string> = {}
+      
+      for (const [field, messages] of Object.entries(error.details.fieldErrors)) {
+        if (Array.isArray(messages) && messages.length > 0) {
+          fieldErrors[field] = messages[0]
+        } else if (typeof messages === 'string') {
+          fieldErrors[field] = messages
+        }
       }
+      
+      return fieldErrors
     }
 
-    return fieldErrors
+    return {}
   }
 
   static hasFieldError(error: ProcessedError, fieldName: string): boolean {
@@ -362,6 +417,18 @@ export class ValidationErrorHelper {
   static getFieldError(error: ProcessedError, fieldName: string): string | null {
     const fieldErrors = this.extractFieldErrors(error)
     return fieldErrors[fieldName] || null
+  }
+
+  static getSuggestions(error: ProcessedError): string[] {
+    return error.details?.suggestions as string[] || []
+  }
+
+  static getDocumentationUrl(error: ProcessedError): string | null {
+    return error.details?.documentationUrl as string || null
+  }
+
+  static getTraceId(error: ProcessedError): string | null {
+    return error.details?.traceId as string || null
   }
 }
 

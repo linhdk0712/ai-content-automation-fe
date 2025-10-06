@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
-import { notificationService } from './notification.service'
+import { toastService } from './toast.service'
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
@@ -272,11 +272,11 @@ api.interceptors.response.use(
     // Create API error
     const apiError = createApiError(error)
     
-    // Show error notification for non-auth endpoints (to avoid spam during token refresh)
+    // Show error toast for non-auth endpoints (to avoid spam during token refresh)
     if (!originalRequest.url?.includes('/auth/refresh') && 
         !originalRequest.url?.includes('/auth/login') &&
         error.response?.status !== 401) {
-      notificationService.showApiError(apiError)
+      toastService.apiError(apiError)
     }
 
     return Promise.reject(apiError)
@@ -310,21 +310,42 @@ function createApiError(error: AxiosError): ApiError {
 
   if (response) {
     // Server responded with error status
-    const responseData = response.data as ResponseBase<unknown> | ApiResponse<unknown>
+    const responseData = response.data
+    
+    // Check if it's new ErrorResponse format from GlobalExceptionHandler
+    if (responseData && typeof responseData === 'object' && 
+        'timestamp' in responseData && 'status' in responseData && 
+        'error' in responseData && 'message' in responseData && 'path' in responseData) {
+      const errorResponse = responseData as ApiError
+      
+      return {
+        timestamp: errorResponse.timestamp,
+        status: errorResponse.status,
+        error: errorResponse.error,
+        message: errorResponse.message,
+        path: errorResponse.path,
+        errorCode: errorResponse.errorCode,
+        validationErrors: errorResponse.validationErrors,
+        suggestions: errorResponse.suggestions,
+        documentationUrl: errorResponse.documentationUrl,
+        details: errorResponse.details,
+        traceId: errorResponse.traceId
+      }
+    }
     
     // Check if it's ResponseBase format
-    if (responseData && typeof responseData === 'object' && 
+    else if (responseData && typeof responseData === 'object' && 
         ('errorCode' in responseData && 'errorMessage' in responseData)) {
       const responseBase = responseData as ResponseBase<unknown>
       
-      // For ResponseBase, use the specific error message and code
       return {
-        message: responseBase.errorMessage || response.statusText || 'Request failed',
-        status: response.status,
-        code: responseBase.errorCode || undefined,
-        details: responseBase.data as Record<string, unknown> | undefined,
         timestamp: new Date().toISOString(),
-        path: response.config?.url || ''
+        status: response.status,
+        error: 'API Error',
+        message: responseBase.errorMessage || response.statusText || 'Request failed',
+        path: response.config?.url || '',
+        errorCode: responseBase.errorCode,
+        details: responseBase.data as Record<string, unknown> | undefined
       }
     }
     
@@ -332,41 +353,45 @@ function createApiError(error: AxiosError): ApiError {
     else if (responseData && typeof responseData === 'object' && 'message' in responseData) {
       const apiResponse = responseData as ApiResponse<unknown>
       return {
-        message: apiResponse.message || response.statusText || 'Request failed',
-        status: response.status,
-        code: (apiResponse as any).error,
-        details: apiResponse.data as Record<string, unknown> | undefined,
         timestamp: new Date().toISOString(),
-        path: response.config?.url || ''
+        status: response.status,
+        error: 'Request Failed',
+        message: apiResponse.message || response.statusText || 'Request failed',
+        path: response.config?.url || '',
+        errorCode: (apiResponse as any).error,
+        details: apiResponse.data as Record<string, unknown> | undefined
       }
     }
     
     // Fallback for unknown response format
     else {
       return {
-        message: response.statusText || 'Request failed',
-        status: response.status,
         timestamp: new Date().toISOString(),
+        status: response.status,
+        error: response.statusText || 'Request Failed',
+        message: response.statusText || 'Request failed',
         path: response.config?.url || ''
       }
     }
   } else if (request) {
     // Network error
     return {
-      message: 'Network error - please check your connection',
-      status: 0,
-      code: 'NETWORK_ERROR',
       timestamp: new Date().toISOString(),
-      path: error.config?.url || ''
+      status: 0,
+      error: 'Network Error',
+      message: 'Network error - please check your connection',
+      path: error.config?.url || '',
+      errorCode: 'NETWORK_ERROR'
     }
   } else {
     // Request setup error
     return {
-      message: error.message || 'Request configuration error',
-      status: 0,
-      code: 'REQUEST_ERROR',
       timestamp: new Date().toISOString(),
-      path: ''
+      status: 0,
+      error: 'Request Error',
+      message: error.message || 'Request configuration error',
+      path: '',
+      errorCode: 'REQUEST_ERROR'
     }
   }
 }
@@ -447,18 +472,18 @@ function extractResponseData<T = unknown>(
       fullResponse: responseBase
     })
     
-    // Show notification based on response
+    // Show toast based on response
     if (showNotification) {
       try {
-        notificationService.showResponseNotification(
+        toastService.response(
           response.status,
           responseBase.errorCode,
           responseBase.errorMessage,
           response.status >= 200 && response.status < 300 ? 'Operation completed successfully' : undefined
         )
-      } catch (notificationError) {
-        console.error('Notification error:', notificationError)
-        // Don't let notification errors break the API call
+      } catch (toastError) {
+        console.error('Toast error:', toastError)
+        // Don't let toast errors break the API call
       }
     }
     
@@ -492,12 +517,12 @@ function extractResponseData<T = unknown>(
   else if (typeof apiResponse === 'object' && apiResponse !== null && 'success' in apiResponse) {
     const wrappedResponse = apiResponse as ApiResponse<T>
     
-    // Show notification for legacy format
+    // Show toast for legacy format
     if (showNotification) {
       if (wrappedResponse.success) {
-        notificationService.showSuccess(wrappedResponse.message || 'Operation completed successfully')
+        toastService.success(wrappedResponse.message || 'Operation completed successfully')
       } else {
-        notificationService.showError(wrappedResponse.message || 'Request failed')
+        toastService.error(wrappedResponse.message || 'Request failed')
       }
     }
     
@@ -515,9 +540,9 @@ function extractResponseData<T = unknown>(
   else {
     console.log("Treating as direct data response")
     
-    // Show generic success notification for direct data responses
+    // Show generic success toast for direct data responses
     if (showNotification && response.status >= 200 && response.status < 300) {
-      notificationService.showSuccess('Operation completed successfully')
+      toastService.success('Operation completed successfully')
     }
     
     // For login endpoint, if we get an object with accessToken, treat it as AuthResponse

@@ -29,7 +29,7 @@ const RunViewer: React.FC = () => {
     let mounted = true
 
     const fetchRun = async () => {
-      const data = await apiRequest.get<N8nWorkflowRunDto>(`/api/v1/n8n/runs/${runId}`)
+      const data = await apiRequest.get<N8nWorkflowRunDto>(`/n8n/runs/${runId}`)
       if (!mounted) return
       setRun(data)
       setLoading(false)

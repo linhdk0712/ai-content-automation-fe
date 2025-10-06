@@ -154,19 +154,35 @@ class ToastService {
     ) as Promise<T>
   }
 
-  // API Error toast
+  // API Error toast with enhanced formatting
   apiError(error: ApiError | Error, options?: ToastServiceOptions): Id {
-    const message = error.message || 'An unexpected error occurred'
-    const title = 'code' in error && error.code ? `Error: ${error.code}` : 'Error'
+    let message = error.message || 'An unexpected error occurred'
+    let title = 'Error'
+    
+    // Handle new ErrorResponse format
+    if ('errorCode' in error && error.errorCode) {
+      title = `Error: ${error.errorCode}`
+    } else if ('code' in error && error.code) {
+      title = `Error: ${error.code}`
+    }
+    
+    // Add validation errors if present
+    if ('validationErrors' in error && error.validationErrors) {
+      const fieldErrors = Object.entries(error.validationErrors)
+        .map(([field, msg]) => `• ${field}: ${msg}`)
+        .join('\n')
+      message += '\n\nField Errors:\n' + fieldErrors
+    }
+    
+    // Add suggestions if present
+    if ('suggestions' in error && error.suggestions && error.suggestions.length > 0) {
+      message += '\n\nSuggestions:\n' + error.suggestions.map(s => `• ${s}`).join('\n')
+    }
     
     return this.error(message, {
       title,
       persistent: 'status' in error && error.status >= 500,
-      actions: 'status' in error && error.status >= 500 ? [{
-        label: 'Retry',
-        action: () => window.location.reload(),
-        style: 'primary' as const
-      }] : undefined,
+      autoClose: 'validationErrors' in error && error.validationErrors ? 12000 : undefined, // Longer for validation errors
       ...options,
     })
   }

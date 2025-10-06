@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Generate navigation items with translations
   const getNavigationItems = (): NavigationItem[] => [
-    { key: 'dashboard', text: t('sidebar.dashboard'), icon: <DashboardIcon />, path: '/dashboard', enabled: true },
+    { key: 'dashboard', text: t('sidebar.dashboard'), icon: <DashboardIcon />, path: '/dashboard', enabled: false },
     {
       key: 'content',
       text: t('sidebar.content'),
@@ -96,8 +96,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       enabled: true,
       children: [
         { key: 'createContent', text: t('sidebar.createContent'), icon: <AutoAwesome />, path: '/content/create', enabled: true },
-        { key: 'workflow', text: t('sidebar.workflow'), icon: <Build />, path: '/content/workflow', enabled: false },
-        { key: 'contentLibrary', text: t('sidebar.contentLibrary'), icon: <Description />, path: '/content/library', enabled: true },
+        { key: 'workflow', text: t('sidebar.workflow'), icon: <Build />, path: '/content/workflow', enabled: true },
+        { key: 'workflowRuns', text: t('sidebar.workflowRuns'), icon: <History />, path: '/workflows', enabled: true },
+        { key: 'contentLibrary', text: t('sidebar.contentLibrary'), icon: <Description />, path: '/content/library', enabled: false },
         { key: 'templates', text: t('sidebar.templates'), icon: <Description />, path: '/templates', enabled: false },
         { key: 'versionHistory', text: t('sidebar.versionHistory'), icon: <History />, path: '/content/versions', enabled: false },
         { key: 'export', text: t('sidebar.export'), icon: <CloudUpload />, path: '/content/export', enabled: false }
@@ -136,10 +137,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   ]
 
   const getSecondaryItems = (): NavigationItem[] => [
-    { key: 'notifications', text: t('sidebar.notifications'), icon: <Notifications />, path: '/notifications', badge: 3 },
-    { key: 'pricing', text: t('sidebar.pricing'), icon: <PaymentIcon />, path: '/pricing' },
-    { key: 'settings', text: t('sidebar.settings'), icon: <SettingsIcon />, path: '/settings' },
-    { key: 'helpSupport', text: t('sidebar.helpSupport'), icon: <Help />, path: '/help' }
+    { key: 'notifications', text: t('sidebar.notifications'), icon: <Notifications />, path: '/notifications', badge: 3,enabled:false},
+    { key: 'pricing', text: t('sidebar.pricing'), icon: <PaymentIcon />, path: '/pricing',enabled:false },
+    { key: 'settings', text: t('sidebar.settings'), icon: <SettingsIcon />, path: '/settings',enabled:true },
+    { key: 'helpSupport', text: t('sidebar.helpSupport'), icon: <Help />, path: '/help',enabled:false }
   ]
 
   const handleNavigation = (path: string) => {

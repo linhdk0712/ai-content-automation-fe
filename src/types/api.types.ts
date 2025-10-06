@@ -16,13 +16,19 @@ export interface ApiResponse<T = unknown> {
   path?: string
 }
 
+// Updated to match backend ErrorResponse format
 export interface ApiError {
-  message: string
-  status: number
-  code?: string
-  details?: Record<string, unknown>
   timestamp: string
+  status: number
+  error: string
+  message: string
   path: string
+  errorCode?: string
+  validationErrors?: Record<string, string>
+  suggestions?: string[]
+  documentationUrl?: string
+  details?: Record<string, unknown>
+  traceId?: string
 }
 
 export interface PaginatedResponse<T> {

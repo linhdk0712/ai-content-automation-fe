@@ -63,6 +63,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useWorkflow } from '../../hooks/useWorkflow';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import { generateContentId } from '../../utils/uuid';
 
 
 
@@ -250,7 +251,11 @@ const ContentWorkflow: React.FC = () => {
         }
       };
 
-      const run = await triggerAiAvatarWorkflow(0, workflowData);
+      // Generate a unique content ID for this workflow run
+      const contentId = generateContentId();
+      console.log('Generated content ID for workflow:', contentId);
+      
+      const run = await triggerAiAvatarWorkflow(contentId, workflowData);
 
       setWorkflowProgress(prev => prev ? {
         ...prev,

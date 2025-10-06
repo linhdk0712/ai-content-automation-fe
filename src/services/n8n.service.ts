@@ -22,4 +22,12 @@ export async function triggerAiAvatarWorkflow(contentId: number, contentData?: R
   return apiRequest.post<N8nWorkflowRunDto>(`/n8n/workflows/ai-avatar/trigger/${contentId}`, contentData || {});
 }
 
+export async function fetchWorkflowRun(runId: number): Promise<N8nWorkflowRunDto> {
+  return apiRequest.get<N8nWorkflowRunDto>(`/n8n/runs/${runId}`);
+}
+
+export async function fetchAllWorkflowRuns(): Promise<N8nWorkflowRunDto[]> {
+  return apiRequest.get<N8nWorkflowRunDto[]>(`/n8n/runs`);
+}
+
 

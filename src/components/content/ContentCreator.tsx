@@ -24,6 +24,7 @@ import { useContentGeneration } from '../../hooks/useContentGeneration';
 import { useTemplates } from '../../hooks/useTemplates';
 import { contentService } from '../../services/content.service';
 import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import { generateContentId } from '../../utils/uuid';
 import { ContentType } from '../../types/api.types';
 import { useI18n } from '../../hooks/useI18n';
 import {
@@ -239,7 +240,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
           targetAudience: targetAudience
         }
       };
-      const run = await triggerAiAvatarWorkflow(lastContentId ?? 0, contentData);
+      // Use existing content ID or generate a new one
+      const contentId = lastContentId || generateContentId();
+      console.log('Using content ID for workflow:', contentId);
+      
+      const run = await triggerAiAvatarWorkflow(contentId, contentData);
       setToastSeverity('success');
       setToastMsg(t('contentCreator.sentToWorkflow'));
       setToastOpen(true);

@@ -95,6 +95,21 @@ const LanguageDemo = createRouteComponent(
   'Language Demo'
 )
 
+const WorkflowDemo = createRouteComponent(
+  () => import('./components/demo/WorkflowDemo'),
+  'Workflow Demo'
+)
+
+const WorkflowRunsPage = createRouteComponent(
+  () => import('./pages/workflows/WorkflowRunsPage'),
+  'Workflow Runs'
+)
+
+const RunViewer = createRouteComponent(
+  () => import('./pages/workflows/RunViewer'),
+  'Run Viewer'
+)
+
 // Preload critical components
 ComponentPreloader.preload('Dashboard', () => import('./pages/Dashboard'))
 ComponentPreloader.preload('ContentCreator', () => import('./pages/content/ContentCreator'))
@@ -182,7 +197,10 @@ function AppContent() {
               <Route path="templates/:id/edit" element={<TemplateEditor />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="workflows" element={<WorkflowRunsPage />} />
+              <Route path="workflows/runs/:runId" element={<RunViewer />} />
               <Route path="demo/language" element={<LanguageDemo />} />
+              <Route path="demo/workflow" element={<WorkflowDemo />} />
              
             </Route>
 
