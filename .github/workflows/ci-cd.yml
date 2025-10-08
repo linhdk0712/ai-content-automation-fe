@@ -35,6 +35,7 @@ jobs:
       run: |
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
+        ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
         ssh -i private_key.pem $USER@$HOST << 'EOF'
           cd /path/to/your/project
           git pull origin main
