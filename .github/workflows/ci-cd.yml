@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'
+        node-version: '24'
     - name: Install dependencies
       run: |
         npm install
@@ -33,6 +33,7 @@ jobs:
         HOST: ${{ secrets.VPS_HOST }}
         USER: ${{ secrets.VPS_USER }}
       run: |
+        mkdir -p ~/.ssh
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
         ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
