@@ -437,6 +437,7 @@ export class I18nManager {
         createContent: "Create Content",
         workflow: "Workflow",
         workflowRuns: "Workflow Runs",
+        workflowTimeline: "Workflow Timeline",
         contentLibrary: "Content Library",
         templates: "Templates",
         versionHistory: "Version History",

@@ -5,28 +5,27 @@ import {
   CardContent,
   Typography,
   Chip,
-  IconButton,
   LinearProgress,
-  Collapse,
-  Grid,
-  Divider,
-  Button,
-  Alert,
-  CircularProgress,
-  Tooltip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
-  ListItemSecondaryAction
+  ListItemIcon,
+  Button,
+  Alert,
+  Divider,
+  Grid,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Refresh as RefreshIcon,
-  LiveTv as LiveIcon,
-  CheckCircle as CheckCircleIcon,
+  CheckCircle as CompletedIcon,
   Error as ErrorIcon,
+  PlayArrow as RunningIcon,
+  Pending as PendingIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayIcon,
   Stop as StopIcon,
@@ -42,12 +41,12 @@ interface ContentWorkflowStatusProps {
   onViewFullDetails?: (runId: number) => void;
 }
 
-const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
+const ContentWorkflowStatus = ({
   contentId,
   userId,
   showDetails = true,
   onViewFullDetails
-}) => {
+}: ContentWorkflowStatusProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showNodeDetails, setShowNodeDetails] = useState(false);
 
@@ -57,24 +56,23 @@ const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
     loading,
     error,
     refreshAll,
-    sseConnected,
-    connectToWorkflow,
-    disconnectFromWorkflow
+    socketConnected,
+    connectToContent,
+    disconnectFromContent
   } = useContentWorkflow({
     contentId,
     userId,
     autoRefresh: true,
-    enableSSE: true
+    enableSocket: true
   });
 
   // Status color mapping
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'RUNNING': return 'warning';
       case 'COMPLETED': return 'success';
+      case 'RUNNING': return 'warning';
       case 'FAILED': return 'error';
       case 'PARTIAL': return 'info';
-      case 'NO_DATA': return 'default';
       default: return 'default';
     }
   };
@@ -82,75 +80,45 @@ const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
   // Status icon mapping
   const getStatusIcon = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'RUNNING': return <CircularProgress size={16} />;
-      case 'COMPLETED': return <CheckCircleIcon color="success" />;
-      case 'FAILED': return <ErrorIcon color="error" />;
-      case 'PARTIAL': return <ScheduleIcon color="info" />;
-      case 'NO_DATA': return <ScheduleIcon color="disabled" />;
+      case 'COMPLETED': return <CompletedIcon />;
+      case 'RUNNING': return <RunningIcon />;
+      case 'FAILED': return <ErrorIcon />;
+      case 'PARTIAL': return <PendingIcon />;
       default: return <ScheduleIcon />;
     }
   };
 
-  // Node status icon
+  // Node status icon mapping
   const getNodeStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'success': return <CheckCircleIcon color="success" fontSize="small" />;
-      case 'failed': return <ErrorIcon color="error" fontSize="small" />;
-      default: return <ScheduleIcon color="disabled" fontSize="small" />;
+      case 'success': return <CompletedIcon color="success" />;
+      case 'failed': return <ErrorIcon color="error" />;
+      case 'running': return <RunningIcon color="warning" />;
+      default: return <PendingIcon color="disabled" />;
     }
   };
 
-  // Calculate progress percentage
-  const getProgressPercentage = () => {
-    if (!status || status.totalNodes === 0) return 0;
-    return Math.round((status.successfulNodes / status.totalNodes) * 100);
-  };
-
-  // Format duration
-  const formatDuration = (startedAt?: string, finishedAt?: string) => {
-    if (!startedAt) return 'N/A';
-    
-    const start = new Date(startedAt);
-    const end = finishedAt ? new Date(finishedAt) : new Date();
-    const duration = end.getTime() - start.getTime();
-    
-    const minutes = Math.floor(duration / 60000);
-    const seconds = Math.floor((duration % 60000) / 1000);
-    
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
-  // Handle SSE toggle
-  const handleToggleSSE = () => {
-    if (sseConnected) {
-      disconnectFromWorkflow();
-    } else {
-      connectToWorkflow();
-    }
-  };
-
-  if (loading && !status) {
+  if (loading) {
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CircularProgress size={20} />
-            <Typography>Loading workflow status...</Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <LinearProgress sx={{ flexGrow: 1 }} />
+            <Typography variant="body2" color="text.secondary">
+              Loading workflow status...
+            </Typography>
           </Box>
         </CardContent>
       </Card>
     );
   }
 
-  if (error && !status) {
+  if (error) {
     return (
       <Card>
         <CardContent>
           <Alert severity="error" action={
-            <Button size="small" onClick={refreshAll}>
+            <Button color="inherit" size="small" onClick={() => refreshAll()}>
               Retry
             </Button>
           }>
@@ -165,9 +133,9 @@ const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
     return (
       <Card>
         <CardContent>
-          <Typography color="text.secondary">
-            No workflow data available for this content.
-          </Typography>
+          <Alert severity="info">
+            No workflow data found for content ID {contentId}
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -177,195 +145,139 @@ const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
     <Card>
       <CardContent>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+          <Box display="flex" alignItems="center" gap={2}>
             <Typography variant="h6">
               Workflow Status
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {getStatusIcon(status.overallStatus)}
+            <Chip
+              icon={getStatusIcon(status.overallStatus)}
+              label={status.overallStatus}
+              color={getStatusColor(status.overallStatus)}
+              size="small"
+            />
+            {socketConnected && (
               <Chip
-                label={status.overallStatus}
-                color={getStatusColor(status.overallStatus) as any}
+                label="Live"
+                color="success"
                 size="small"
+                variant="outlined"
               />
-              {sseConnected && (
-                <Chip
-                  icon={<LiveIcon />}
-                  label="Live"
-                  color="success"
-                  size="small"
-                  variant="outlined"
-                />
-              )}
-            </Box>
+            )}
           </Box>
           
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {status.overallStatus === 'RUNNING' && (
-              <Tooltip title={sseConnected ? 'Disconnect live updates' : 'Connect live updates'}>
-                <IconButton
-                  size="small"
-                  color={sseConnected ? 'success' : 'default'}
-                  onClick={handleToggleSSE}
-                >
-                  {sseConnected ? <StopIcon /> : <PlayIcon />}
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Refresh">
-              <IconButton size="small" onClick={refreshAll} disabled={loading}>
-                <RefreshIcon />
+          <Box display="flex" gap={1}>
+            <Tooltip title={socketConnected ? "Disconnect real-time updates" : "Connect for real-time updates"}>
+              <IconButton
+                size="small"
+                onClick={socketConnected ? disconnectFromContent : connectToContent}
+                color={socketConnected ? "success" : "default"}
+              >
+                {socketConnected ? <StopIcon /> : <PlayIcon />}
               </IconButton>
             </Tooltip>
-            {showDetails && (
-              <Tooltip title={expanded ? 'Hide details' : 'Show details'}>
-                <IconButton size="small" onClick={() => setExpanded(!expanded)}>
-                  {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              </Tooltip>
+            
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => refreshAll()}
+            >
+              Refresh
+            </Button>
+            
+            {status.workflowRun && onViewFullDetails && (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<ViewIcon />}
+                onClick={() => onViewFullDetails(status.workflowRun!.id)}
+              >
+                View Details
+              </Button>
             )}
           </Box>
         </Box>
 
-        {/* Progress Summary */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" color="text.secondary">
-              Total Nodes
-            </Typography>
-            <Typography variant="h6">
-              {status.totalNodes}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" color="text.secondary">
-              Successful
-            </Typography>
-            <Typography variant="h6" color="success.main">
-              {status.successfulNodes}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" color="text.secondary">
-              Failed
-            </Typography>
-            <Typography variant="h6" color="error.main">
-              {status.failedNodes}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="body2" color="text.secondary">
-              Progress
-            </Typography>
-            <Typography variant="h6">
-              {getProgressPercentage()}%
-            </Typography>
-          </Grid>
-        </Grid>
-
-        {/* Progress Bar */}
-        {status.totalNodes > 0 && (
-          <Box sx={{ mb: 2 }}>
-            <LinearProgress
-              variant="determinate"
-              value={getProgressPercentage()}
-              sx={{ height: 8, borderRadius: 4 }}
-              color={status.overallStatus === 'FAILED' ? 'error' : 'primary'}
+        {/* Progress */}
+        {status.overallStatus === 'RUNNING' && (
+          <Box mb={2}>
+            <LinearProgress 
+              variant="indeterminate" 
+              color="primary"
+              sx={{ height: 6, borderRadius: 3 }}
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Workflow is running...
+            </Typography>
           </Box>
         )}
 
         {/* Workflow Run Info */}
         {status.workflowRun && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Current Run: {status.workflowRun.workflowKey}
-            </Typography>
-            <Typography variant="body2">
-              Started: {new Date(status.workflowRun.startedAt).toLocaleString()}
-            </Typography>
-            <Typography variant="body2">
-              Duration: {formatDuration(status.workflowRun.startedAt, status.workflowRun.finishedAt)}
-            </Typography>
-            {onViewFullDetails && (
-              <Button
-                size="small"
-                startIcon={<ViewIcon />}
-                onClick={() => onViewFullDetails(status.workflowRun!.id)}
-                sx={{ mt: 1 }}
-              >
-                View Full Details
-              </Button>
+          <Grid container spacing={2} mb={2}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Workflow:</strong> {status.workflowRun.workflowKey || 'Unknown'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Started:</strong> {new Date(status.workflowRun.startedAt).toLocaleString()}
+              </Typography>
+            </Grid>
+            {status.workflowRun.finishedAt && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Finished:</strong> {new Date(status.workflowRun.finishedAt).toLocaleString()}
+                </Typography>
+              </Grid>
             )}
-          </Box>
+          </Grid>
         )}
 
-        {/* Error Message */}
-        {status.workflowRun?.errorMessage && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {status.workflowRun.errorMessage}
-          </Alert>
-        )}
-
-        {/* Detailed View */}
-        {showDetails && (
-          <Collapse in={expanded} timeout="auto" unmountOnExit>
+        {/* Node Details */}
+        {showDetails && nodeRuns.length > 0 && (
+          <>
             <Divider sx={{ my: 2 }} />
             
-            {/* Node Runs */}
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Accordion 
+              expanded={showNodeDetails} 
+              onChange={() => setShowNodeDetails(!showNodeDetails)}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle2">
-                  Node Execution Details ({nodeRuns.length})
+                  Node Executions ({nodeRuns.length})
                 </Typography>
-                <Button
-                  size="small"
-                  onClick={() => setShowNodeDetails(!showNodeDetails)}
-                >
-                  {showNodeDetails ? 'Hide' : 'Show'} Nodes
-                </Button>
-              </Box>
-              
-              <Collapse in={showNodeDetails} timeout="auto" unmountOnExit>
+              </AccordionSummary>
+              <AccordionDetails>
                 <List dense>
-                  {nodeRuns.slice(0, 10).map((node, index) => (
-                    <ListItem key={`${node.executionId}-${node.nodeName}-${index}`}>
+                  {nodeRuns.slice(0, 10).map((nodeRun, index) => (
+                    <ListItem key={`${nodeRun.executionId}-${nodeRun.nodeName}-${index}`}>
                       <ListItemIcon>
-                        {getNodeStatusIcon(node.status)}
+                        {getNodeStatusIcon(nodeRun.status)}
                       </ListItemIcon>
                       <ListItemText
-                        primary={node.nodeName}
+                        primary={nodeRun.nodeName}
                         secondary={
-                          <Box>
-                            <Typography variant="caption" display="block">
-                              Type: {node.nodeType || 'Unknown'}
+                          <React.Fragment>
+                            <Typography variant="caption" display="block" component="span">
+                              Status: {nodeRun.status} | Type: {nodeRun.nodeType || 'Unknown'}
                             </Typography>
-                            <Typography variant="caption" display="block">
-                              Status: {node.status}
-                            </Typography>
-                            {node.finishedAt && (
-                              <Typography variant="caption" display="block">
-                                Finished: {new Date(node.finishedAt).toLocaleString()}
+                            {nodeRun.finishedAt && (
+                              <Typography variant="caption" color="text.secondary" component="span">
+                                Finished: {new Date(nodeRun.finishedAt).toLocaleString()}
                               </Typography>
                             )}
-                          </Box>
+                          </React.Fragment>
                         }
                       />
-                      <ListItemSecondaryAction>
-                        <Chip
-                          label={node.status}
-                          color={node.status === 'success' ? 'success' : node.status === 'failed' ? 'error' : 'default'}
-                          size="small"
-                        />
-                      </ListItemSecondaryAction>
                     </ListItem>
                   ))}
                   {nodeRuns.length > 10 && (
                     <ListItem>
                       <ListItemText
                         primary={
-                          <Typography variant="body2" color="text.secondary" align="center">
+                          <Typography variant="caption" color="text.secondary">
                             ... and {nodeRuns.length - 10} more nodes
                           </Typography>
                         }
@@ -373,10 +285,48 @@ const ContentWorkflowStatus: React.FC<ContentWorkflowStatusProps> = ({
                     </ListItem>
                   )}
                 </List>
-              </Collapse>
-            </Box>
-          </Collapse>
+              </AccordionDetails>
+            </Accordion>
+          </>
         )}
+
+        {/* Summary Stats */}
+        <Box mt={2}>
+          <Grid container spacing={2}>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Total Nodes
+              </Typography>
+              <Typography variant="h6">
+                {status.totalNodes || nodeRuns.length}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Completed
+              </Typography>
+              <Typography variant="h6" color="success.main">
+                {nodeRuns.filter(n => n.status === 'success').length}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Failed
+              </Typography>
+              <Typography variant="h6" color="error.main">
+                {status.failedNodes || nodeRuns.filter(n => n.status === 'failed').length}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Running
+              </Typography>
+              <Typography variant="h6" color="warning.main">
+                {nodeRuns.filter(n => n.status === 'running').length}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
       </CardContent>
     </Card>
   );

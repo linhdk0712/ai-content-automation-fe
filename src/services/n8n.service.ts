@@ -43,9 +43,6 @@ export interface ContentWorkflowStatusDto {
 }
 
 // ========== EXISTING APIs ==========
-export async function fetchWorkflowRuns(workflowKey: string): Promise<N8nWorkflowRunDto[]> {
-  return apiRequest.get<N8nWorkflowRunDto[]>(`/n8n/workflows/${encodeURIComponent(workflowKey)}/runs`);
-}
 
 export async function triggerAiAvatarWorkflow(contentId: number, contentData?: Record<string, any>): Promise<N8nWorkflowRunDto> {
   return apiRequest.post<N8nWorkflowRunDto>(`/n8n/workflows/ai-avatar/trigger/${contentId}`, contentData || {});

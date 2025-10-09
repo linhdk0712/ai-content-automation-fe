@@ -8,14 +8,14 @@ import {
   fetchNodeRunsByContentId,
   fetchLatestNodeRunByContentId
 } from '../services/n8n.service';
-import { useSSE } from './useSSE';
+import { useContentSocket } from './useSocket';
 
 export interface UseContentWorkflowOptions {
   contentId: number;
   userId: number;
   autoRefresh?: boolean;
   refreshInterval?: number;
-  enableSSE?: boolean;
+  enableSocket?: boolean;
 }
 
 export interface UseContentWorkflowReturn {
@@ -40,10 +40,10 @@ export interface UseContentWorkflowReturn {
   refreshNodeRuns: (status?: string) => Promise<void>;
   refreshAll: () => Promise<void>;
   
-  // SSE connection
-  sseConnected: boolean;
-  connectToWorkflow: () => void;
-  disconnectFromWorkflow: () => void;
+  // Socket connection
+  socketConnected: boolean;
+  connectToContent: () => void;
+  disconnectFromContent: () => void;
 }
 
 export function useContentWorkflow(options: UseContentWorkflowOptions): UseContentWorkflowReturn {
@@ -52,7 +52,7 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
     userId, 
     autoRefresh = true, 
     refreshInterval = 30000,
-    enableSSE = true 
+    enableSocket = true 
   } = options;
 
   // State
@@ -70,77 +70,49 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
   // Error state
   const [error, setError] = useState<string | null>(null);
 
-  // SSE connection for real-time updates
+  // Socket connection for real-time updates
   const {
-    isConnected: sseConnected,
-    connectToWorkflow: sseConnectToWorkflow,
-    disconnect: sseDisconnect,
-    error: sseError
-  } = useSSE({
-    userId,
-    onConnection: (data) => {
-      console.log('Connected to content workflow SSE:', data);
-    },
-    onWorkflowUpdate: (data) => {
-      console.log('Received workflow update via SSE:', data);
-      updateWorkflowRunInList(data);
+    isConnected: socketConnected,
+    connect: socketConnect,
+    disconnect: socketDisconnect,
+    contentData,
+    contentUpdates,
+    error: socketError
+  } = useContentSocket(contentId, userId, enableSocket);
+
+  // Handle socket updates
+  useEffect(() => {
+    if (contentData) {
+      console.log('Received content update via Socket.IO:', contentData);
+      
+      // Update node runs based on socket data
+      updateNodeRunFromSocket(contentData);
+      
       // Refresh status to get updated overall status
       refreshStatus();
-    },
-    onRunUpdate: (data) => {
-      console.log('Received run update via SSE:', data);
-      updateWorkflowRunInList(data);
-    },
-    onNodeUpdate: (data) => {
-      console.log('Received node update via SSE:', data);
-      updateNodeRunInList(data);
-      // Refresh status to get updated progress
-      refreshStatus();
-    },
-    onError: (error) => {
-      console.error('SSE error in content workflow:', error);
-      setError('Real-time connection error');
     }
-  });
+  }, [contentData]);
 
-  // Update workflow run in list
-  const updateWorkflowRunInList = useCallback((updatedRun: N8nWorkflowRunDto) => {
-    setWorkflowRuns(prevRuns => {
-      const runIndex = prevRuns.findIndex(run => 
-        run.id === updatedRun.id || run.runId === updatedRun.runId
-      );
-      
-      if (runIndex >= 0) {
-        const newRuns = [...prevRuns];
-        newRuns[runIndex] = { ...newRuns[runIndex], ...updatedRun };
-        return newRuns;
-      } else {
-        // New run, add to the beginning
-        return [updatedRun, ...prevRuns];
-      }
-    });
-  }, []);
-
-  // Update node run in list
-  const updateNodeRunInList = useCallback((nodeData: any) => {
-    // Create a node run DTO from the node update data
+  // Update node run from socket data
+  const updateNodeRunFromSocket = useCallback((socketData: any) => {
+    // Create a node run DTO from the socket update data
     const nodeRunUpdate: Partial<N8nNodeRunDto> = {
-      executionId: nodeData.executionId,
-      workflowId: nodeData.workflowId,
-      workflowName: nodeData.workflowName,
-      nodeName: nodeData.nodeName,
-      nodeType: nodeData.nodeType,
-      status: nodeData.status,
-      mode: nodeData.mode,
-      finishedAt: nodeData.finishedAt,
+      executionId: socketData.executionId,
+      workflowId: socketData.workflowId,
+      workflowName: socketData.workflowName,
+      nodeName: socketData.nodeName,
+      nodeType: socketData.nodeType,
+      status: socketData.status,
+      mode: socketData.mode,
+      finishedAt: socketData.finishedAt,
       updatedAt: new Date().toISOString(),
       contentId: contentId
     };
 
     setNodeRuns(prevNodes => {
       const nodeIndex = prevNodes.findIndex(node => 
-        node.executionId === nodeData.executionId && 
-        node.nodeName === nodeData.nodeName
+        node.executionId === socketData.executionId && 
+        node.nodeName === socketData.nodeName
       );
       
       if (nodeIndex >= 0) {
@@ -155,7 +127,7 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
 
     // Update latest node run if this is more recent
     setLatestNodeRun(prev => {
-      if (!prev || (nodeData.finishedAt && nodeData.finishedAt > prev.finishedAt)) {
+      if (!prev || (socketData.finishedAt && socketData.finishedAt > prev.finishedAt)) {
         return nodeRunUpdate as N8nNodeRunDto;
       }
       return prev;
@@ -242,26 +214,26 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
     }
   }, [refreshStatus, refreshWorkflowRuns, refreshNodeRuns]);
 
-  // Connect to workflow for real-time updates
-  const connectToWorkflow = useCallback(() => {
-    if (enableSSE && status?.workflowRun?.runId) {
-      console.log('Connecting to workflow for real-time updates:', status.workflowRun.runId);
-      sseConnectToWorkflow(status.workflowRun.runId);
+  // Connect to content for real-time updates
+  const connectToContent = useCallback(() => {
+    if (enableSocket) {
+      console.log('Connecting to content for real-time updates:', contentId);
+      socketConnect();
     }
-  }, [enableSSE, status?.workflowRun?.runId, sseConnectToWorkflow]);
+  }, [enableSocket, contentId, socketConnect]);
 
-  // Disconnect from workflow
-  const disconnectFromWorkflow = useCallback(() => {
-    console.log('Disconnecting from workflow SSE');
-    sseDisconnect();
-  }, [sseDisconnect]);
+  // Disconnect from content
+  const disconnectFromContent = useCallback(() => {
+    console.log('Disconnecting from content Socket.IO');
+    socketDisconnect();
+  }, [socketDisconnect]);
 
-  // Auto-refresh logic
+  // Auto-refresh logic (fallback when socket is not connected)
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
 
-    if (autoRefresh && !sseConnected) {
-      console.log('SSE not connected, starting fallback refresh interval');
+    if (autoRefresh && !socketConnected) {
+      console.log('Socket not connected, starting fallback refresh interval');
       
       intervalId = setInterval(() => {
         // Only refresh if there are running workflows
@@ -279,33 +251,33 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
         clearInterval(intervalId);
       }
     };
-  }, [autoRefresh, refreshInterval, sseConnected, status?.overallStatus, refreshAll]);
+  }, [autoRefresh, refreshInterval, socketConnected, status?.overallStatus, refreshAll]);
 
   // Initial load
   useEffect(() => {
     refreshAll();
   }, [refreshAll]);
 
-  // Auto-connect to SSE when workflow is running
+  // Auto-connect to Socket when workflow is running
   useEffect(() => {
-    if (enableSSE && status?.overallStatus === 'RUNNING' && !sseConnected) {
-      connectToWorkflow();
+    if (enableSocket && status?.overallStatus === 'RUNNING' && !socketConnected) {
+      connectToContent();
     }
-  }, [enableSSE, status?.overallStatus, sseConnected, connectToWorkflow]);
+  }, [enableSocket, status?.overallStatus, socketConnected, connectToContent]);
 
-  // Handle SSE errors
+  // Handle Socket errors
   useEffect(() => {
-    if (sseError) {
+    if (socketError) {
       setError('Real-time connection lost');
     }
-  }, [sseError]);
+  }, [socketError]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disconnectFromWorkflow();
+      disconnectFromContent();
     };
-  }, [disconnectFromWorkflow]);
+  }, [disconnectFromContent]);
 
   return {
     // Status data
@@ -329,9 +301,9 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
     refreshNodeRuns,
     refreshAll,
     
-    // SSE connection
-    sseConnected,
-    connectToWorkflow,
-    disconnectFromWorkflow
+    // Socket connection
+    socketConnected,
+    connectToContent,
+    disconnectFromContent
   };
 }

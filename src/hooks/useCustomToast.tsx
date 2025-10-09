@@ -1,6 +1,28 @@
-import React from 'react'
-import { toast, Id } from 'react-toastify'
-import CustomToastContent, { ToastAction } from '../components/common/CustomToastContent'
+import { Id, toast } from 'react-toastify'
+
+type ToastAction = {
+  label: string
+  action: () => void
+  style?: 'primary' | 'secondary'
+}
+
+function InlineToastContent({ title, message, actions }: { title?: string; message: string; actions?: ToastAction[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {title ? <strong>{title}</strong> : null}
+      <span>{message}</span>
+      {actions && actions.length > 0 ? (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {actions.map((a, idx) => (
+            <button key={idx} onClick={a.action} style={{ padding: '6px 10px' }}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 export interface CustomToastOptions {
   title?: string
@@ -18,7 +40,7 @@ export function useCustomToast() {
     
     if (title || actions) {
       return toast.success(
-        <CustomToastContent title={title} message={message} actions={actions} />,
+        <InlineToastContent title={title} message={message} actions={actions} />,
         {
           autoClose: 5000,
           ...toastOptions,
@@ -37,7 +59,7 @@ export function useCustomToast() {
     
     if (title || actions) {
       return toast.error(
-        <CustomToastContent title={title} message={message} actions={actions} />,
+        <InlineToastContent title={title} message={message} actions={actions} />,
         {
           autoClose: 8000,
           ...toastOptions,
@@ -56,7 +78,7 @@ export function useCustomToast() {
     
     if (title || actions) {
       return toast.warning(
-        <CustomToastContent title={title} message={message} actions={actions} />,
+        <InlineToastContent title={title} message={message} actions={actions} />,
         {
           autoClose: 6000,
           ...toastOptions,
@@ -75,7 +97,7 @@ export function useCustomToast() {
     
     if (title || actions) {
       return toast.info(
-        <CustomToastContent title={title} message={message} actions={actions} />,
+        <InlineToastContent title={title} message={message} actions={actions} />,
         {
           autoClose: 5000,
           ...toastOptions,
@@ -91,21 +113,19 @@ export function useCustomToast() {
 
   const showErrorWithRetry = (message: string, onRetry: () => void, title?: string): Id => {
     return toast.error(
-      <CustomToastContent 
+      <InlineToastContent 
         title={title || 'Error'}
         message={message}
-        actions={[
-          {
-            label: 'Retry',
-            action: onRetry,
-            style: 'primary'
-          },
-          {
-            label: 'Dismiss',
-            action: () => toast.dismiss(),
-            style: 'secondary'
-          }
-        ]}
+        actions={[{
+          label: 'Retry',
+          action: onRetry,
+          style: 'primary'
+        },
+        {
+          label: 'Dismiss',
+          action: () => toast.dismiss(),
+          style: 'secondary'
+        }]}
       />,
       {
         autoClose: false,
@@ -116,7 +136,7 @@ export function useCustomToast() {
 
   const showPersistentWarning = (message: string, title?: string): Id => {
     return toast.warning(
-      <CustomToastContent 
+      <InlineToastContent 
         title={title || 'Warning'}
         message={message}
         actions={[{

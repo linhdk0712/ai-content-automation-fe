@@ -47,22 +47,22 @@ interface UserSettings {
 
 class SettingsService {
   async getSettings(): Promise<UserSettings> {
-    const response = await api.get('/settings');
-    return response.data;
+    const response = await api.get('/user/settings');
+    return response.data.data || response.data;
   }
 
   async updateSettings(settings: UserSettings): Promise<UserSettings> {
-    const response = await api.put('/settings', settings);
-    return response.data;
+    const response = await api.put('/user/settings', settings);
+    return response.data.data || response.data;
   }
 
   async resetSettings(): Promise<UserSettings> {
-    const response = await api.post('/settings/reset');
-    return response.data;
+    const response = await api.post('/user/settings/reset');
+    return response.data.data || response.data;
   }
 
   async exportSettings(): Promise<Blob> {
-    const response = await api.get('/settings/export', {
+    const response = await api.get('/user/data/export', {
       responseType: 'blob'
     });
     return response.data;
@@ -72,49 +72,49 @@ class SettingsService {
     const formData = new FormData();
     formData.append('settings', file);
     
-    const response = await api.post('/settings/import', formData, {
+    const response = await api.post('/user/settings/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data.data || response.data;
   }
 
   async updateProfileSettings(profileSettings: UserSettings['profile']): Promise<void> {
-    await api.put('/settings/profile', profileSettings);
+    await api.put('/user/settings/profile', profileSettings);
   }
 
   async updateNotificationSettings(notificationSettings: UserSettings['notifications']): Promise<void> {
-    await api.put('/settings/notifications', notificationSettings);
+    await api.put('/user/settings/notifications', notificationSettings);
   }
 
   async updatePrivacySettings(privacySettings: UserSettings['privacy']): Promise<void> {
-    await api.put('/settings/privacy', privacySettings);
+    await api.put('/user/settings/privacy', privacySettings);
   }
 
   async updateAppearanceSettings(appearanceSettings: UserSettings['appearance']): Promise<void> {
-    await api.put('/settings/appearance', appearanceSettings);
+    await api.put('/user/settings/appearance', appearanceSettings);
   }
 
   async updateAccessibilitySettings(accessibilitySettings: UserSettings['accessibility']): Promise<void> {
-    await api.put('/settings/accessibility', accessibilitySettings);
+    await api.put('/user/settings/accessibility', accessibilitySettings);
   }
 
   async updateSecuritySettings(securitySettings: UserSettings['security']): Promise<void> {
-    await api.put('/settings/security', securitySettings);
+    await api.put('/user/settings/security', securitySettings);
   }
 
   async enable2FA(): Promise<{ qrCode: string; backupCodes: string[] }> {
-    const response = await api.post('/settings/security/2fa/enable');
-    return response.data;
+    const response = await api.post('/user/security/2fa/enable');
+    return response.data.data || response.data;
   }
 
   async disable2FA(code: string): Promise<void> {
-    await api.post('/settings/security/2fa/disable', { code });
+    await api.post('/user/security/2fa/disable', { code });
   }
 
   async verify2FA(code: string): Promise<void> {
-    await api.post('/settings/security/2fa/verify', { code });
+    await api.post('/user/security/2fa/verify', { code });
   }
 
   async getConnectedDevices(): Promise<Array<{
@@ -125,12 +125,12 @@ class SettingsService {
     location: string;
     current: boolean;
   }>> {
-    const response = await api.get('/settings/security/devices');
-    return response.data;
+    const response = await api.get('/user/security/devices');
+    return response.data.data || response.data;
   }
 
   async revokeDevice(deviceId: string): Promise<void> {
-    await api.delete(`/settings/security/devices/${deviceId}`);
+    await api.delete(`/user/security/devices/${deviceId}`);
   }
 
   async getLoginHistory(): Promise<Array<{
@@ -141,8 +141,8 @@ class SettingsService {
     device: string;
     success: boolean;
   }>> {
-    const response = await api.get('/settings/security/login-history');
-    return response.data;
+    const response = await api.get('/user/security/login-history');
+    return response.data.data || response.data;
   }
 }
 

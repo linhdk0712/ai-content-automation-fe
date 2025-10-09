@@ -100,6 +100,8 @@ const WorkflowDemo = createRouteComponent(
   'Workflow Demo'
 )
 
+
+
 const WorkflowRunsPage = createRouteComponent(
   () => import('./pages/workflows/WorkflowRunsPage'),
   'Workflow Runs'
@@ -113,6 +115,11 @@ const RunViewer = createRouteComponent(
 const ContentWorkflowPage = createRouteComponent(
   () => import('./pages/workflows/ContentWorkflowPage'),
   'Content Workflow Monitor'
+)
+
+const WorkflowTimelinePage = createRouteComponent(
+  () => import('./pages/workflows/WorkflowTimelinePage'),
+  'Workflow Timeline'
 )
 
 // Preload critical components
@@ -205,6 +212,7 @@ function AppContent() {
               <Route path="workflows" element={<WorkflowRunsPage />} />
               <Route path="workflows/runs/:runId" element={<RunViewer />} />
               <Route path="workflows/content" element={<ContentWorkflowPage />} />
+              <Route path="workflows/timeline" element={<WorkflowTimelinePage />} />
               <Route path="demo/language" element={<LanguageDemo />} />
               <Route path="demo/workflow" element={<WorkflowDemo />} />
              

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Container } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
 import WorkflowRunsList from './WorkflowRunsList';
 import { useAuth } from '../../hooks/useAuth';
 

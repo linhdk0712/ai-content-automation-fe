@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { N8nWorkflowRunDto, fetchAllWorkflowRuns, fetchWorkflowRun } from '../services/n8n.service';
-import { useSSE } from './useSSE';
+import { useSocket } from './useSocket';
 
-export interface WorkflowRunWithSSE extends N8nWorkflowRunDto {
+export interface WorkflowRunWithSocket extends N8nWorkflowRunDto {
     isLive?: boolean; // Indicates if this run is receiving live updates
     lastUpdated?: Date;
 }
@@ -14,52 +14,51 @@ export interface UseWorkflowRunsOptions {
 }
 
 export interface UseWorkflowRunsReturn {
-    runs: WorkflowRunWithSSE[];
+    runs: WorkflowRunWithSocket[];
     loading: boolean;
     error: string | null;
     refreshRuns: (silent?: boolean) => Promise<void>;
-    connectToRun: (runId: string) => void;
-    disconnectFromRun: () => void;
-    connectedRunId: string | null;
-    sseConnected: boolean;
+    connectToExecution: (executionId: string) => void;
+    disconnectFromExecution: () => void;
+    connectedExecutionId: string | null;
+    socketConnected: boolean;
 }
 
 export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRunsReturn {
     const { userId, autoRefresh = true, refreshInterval = 30000 } = options;
 
-    const [runs, setRuns] = useState<WorkflowRunWithSSE[]>([]);
+    const [runs, setRuns] = useState<WorkflowRunWithSocket[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [connectedRunId, setConnectedRunId] = useState<string | null>(null);
+    const [connectedExecutionId, setConnectedExecutionId] = useState<string | null>(null);
 
     const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastRefreshRef = useRef<Date | null>(null);
     const isRefreshingRef = useRef<boolean>(false);
 
-    // SSE connection for real-time updates
+    // Socket connection for real-time updates
     const {
-        isConnected: sseConnected,
-        connectToRun: sseConnectToRun,
-        disconnect: sseDisconnect,
-        error: sseError
-    } = useSSE({
+        isConnected: socketConnected,
+        connect: socketConnect,
+        disconnect: socketDisconnect,
+        joinExecutionRoom,
+        error: socketError
+    } = useSocket({
         userId,
-        onConnection: (data) => {
-            console.log('Connected to workflow run SSE:', data);
+        autoConnect: true, // Auto-connect to show connection status
+        onConnection: () => {
+            console.log('Connected to workflow runs socket');
         },
-        onRunUpdate: (data) => {
-            console.log('Received run update via SSE:', data);
-            updateRunInList(data);
+        onExecutionUpdate: (data) => {
+            console.log('Received execution update via Socket.IO:', data);
+            updateRunFromSocket(data);
         },
-        onNodeUpdate: (data) => {
-            console.log('Received node update via SSE:', data);
-            // Update the run with node information
-            if (connectedRunId) {
-                updateRunProgress(connectedRunId, data);
-            }
+        onWorkflowUpdate: (data) => {
+            console.log('Received workflow update via Socket.IO:', data);
+            updateRunFromSocket(data);
         },
         onError: (error) => {
-            console.error('SSE error in workflow runs:', error);
+            console.error('Socket error in workflow runs:', error);
             setError('Real-time connection error');
         }
     });
@@ -83,20 +82,20 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
 
             const fetchedRuns = await fetchAllWorkflowRuns();
 
-            // Mark runs as live if they're currently running and we have SSE connection
-            const runsWithSSE: WorkflowRunWithSSE[] = fetchedRuns.map(run => ({
+            // Mark runs as live if they're currently running and we have socket connection
+            const runsWithSocket: WorkflowRunWithSocket[] = fetchedRuns.map(run => ({
                 ...run,
-                isLive: run.status === 'RUNNING' && run.runId === connectedRunId && sseConnected,
+                isLive: run.status === 'RUNNING' && run.runId === connectedExecutionId && socketConnected,
                 lastUpdated: new Date()
             }));
 
             setRuns(prevRuns => {
                 // Only update if there are actual changes to minimize re-renders
                 if (JSON.stringify(prevRuns.map(r => ({ id: r.id, status: r.status, finishedAt: r.finishedAt }))) ===
-                    JSON.stringify(runsWithSSE.map(r => ({ id: r.id, status: r.status, finishedAt: r.finishedAt })))) {
+                    JSON.stringify(runsWithSocket.map(r => ({ id: r.id, status: r.status, finishedAt: r.finishedAt })))) {
                     return prevRuns; // No significant changes
                 }
-                return runsWithSSE;
+                return runsWithSocket;
             });
 
             lastRefreshRef.current = new Date();
@@ -112,13 +111,23 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                 setLoading(false);
             }
         }
-    }, [connectedRunId, sseConnected]);
+    }, [connectedExecutionId, socketConnected]);
 
-    // Update a specific run in the list (smooth update without flickering)
-    const updateRunInList = useCallback((updatedRun: N8nWorkflowRunDto) => {
+    // Update a specific run from socket data
+    const updateRunFromSocket = useCallback((socketData: any) => {
+        // Convert socket data to workflow run format
+        const updatedRun: Partial<N8nWorkflowRunDto> = {
+            runId: socketData.executionId,
+            workflowId: socketData.workflowId,
+            workflowName: socketData.workflowName,
+            status: socketData.status,
+            finishedAt: socketData.finishedAt,
+            updatedAt: new Date().toISOString()
+        };
+
         setRuns(prevRuns => {
             const runIndex = prevRuns.findIndex(run =>
-                run.id === updatedRun.id || run.runId === updatedRun.runId
+                run.runId === socketData.executionId
             );
 
             if (runIndex >= 0) {
@@ -127,9 +136,7 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                 // Only update if there are actual changes to avoid unnecessary re-renders
                 const hasChanges =
                     existingRun.status !== updatedRun.status ||
-                    existingRun.finishedAt !== updatedRun.finishedAt ||
-                    existingRun.output !== updatedRun.output ||
-                    existingRun.errorMessage !== updatedRun.errorMessage;
+                    existingRun.finishedAt !== updatedRun.finishedAt;
 
                 if (!hasChanges) {
                     return prevRuns; // No changes, return same reference
@@ -149,60 +156,37 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                     ...updatedRun,
                     isLive: true,
                     lastUpdated: new Date()
-                }, ...prevRuns];
+                } as WorkflowRunWithSocket, ...prevRuns];
             }
         });
     }, []);
 
-    // Update run progress based on node updates
-    const updateRunProgress = useCallback((runId: string, nodeData: any) => {
-        setRuns(prevRuns => {
-            return prevRuns.map(run => {
-                if (run.runId === runId) {
-                    // Update output with node information
-                    let updatedOutput = run.output;
-                    try {
-                        const output = updatedOutput ? JSON.parse(updatedOutput) : {};
-                        output.currentNode = nodeData.nodeName;
-                        output.currentNodeStatus = nodeData.status;
-                        output.lastNodeUpdate = new Date().toISOString();
-                        updatedOutput = JSON.stringify(output);
-                    } catch (e) {
-                        console.warn('Failed to update run output with node data:', e);
-                    }
+    // Connect to a specific execution for real-time updates
+    const connectToExecution = useCallback((executionId: string) => {
+        setConnectedExecutionId(executionId);
 
-                    return {
-                        ...run,
-                        output: updatedOutput,
-                        isLive: true,
-                        lastUpdated: new Date()
-                    };
-                }
-                return run;
-            });
-        });
-    }, []);
-
-    // Connect to a specific run for real-time updates
-    const connectToRun = useCallback((runId: string) => {
-        console.log('Connecting to run for real-time updates:', runId);
-        setConnectedRunId(runId);
-        sseConnectToRun(runId);
+        // Connect to socket if not already connected
+        if (!socketConnected) {
+            socketConnect();
+            // Don't join room immediately, wait for connection
+        } else {
+            // Socket is already connected, join room immediately
+            joinExecutionRoom(executionId);
+        }
 
         // Mark the connected run as live
         setRuns(prevRuns =>
             prevRuns.map(run => ({
                 ...run,
-                isLive: run.runId === runId && run.status === 'RUNNING'
+                isLive: run.runId === executionId && run.status === 'RUNNING'
             }))
         );
-    }, [sseConnectToRun]);
+    }, [socketConnected, socketConnect, joinExecutionRoom]);
 
-    // Disconnect from SSE
-    const disconnectFromRun = useCallback(() => {
-        console.log('Disconnecting from run SSE');
-        setConnectedRunId(null);
-        sseDisconnect();
+    // Disconnect from socket
+    const disconnectFromExecution = useCallback(() => {
+        setConnectedExecutionId(null);
+        socketDisconnect();
 
         // Mark all runs as not live
         setRuns(prevRuns =>
@@ -211,9 +195,9 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                 isLive: false
             }))
         );
-    }, [sseDisconnect]);
+    }, [socketDisconnect]);
 
-    // Auto-refresh logic - Fallback when SSE is not available
+    // Auto-refresh logic - Fallback when Socket is not available
     useEffect(() => {
         // Clear any existing interval
         if (refreshIntervalRef.current) {
@@ -221,8 +205,7 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
             refreshIntervalRef.current = null;
         }
 
-        if (autoRefresh && !sseConnected) {
-            console.log('SSE not connected, starting fallback refresh interval');
+        if (autoRefresh && !socketConnected) {
 
             refreshIntervalRef.current = setInterval(() => {
                 // Only refresh if we're not getting live updates
@@ -239,13 +222,10 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                     timeSinceLastRefresh > refreshInterval * 3; // Safety net: 90 seconds
 
                 if (needsRefresh && !isRefreshingRef.current) {
-                    console.log('Silent fallback refresh triggered - SSE unavailable');
                     // Use silent refresh to avoid UI flickering
                     refreshRuns(true);
                 }
             }, refreshInterval);
-        } else if (sseConnected) {
-            console.log('SSE connected, disabling fallback refresh interval');
         }
 
         return () => {
@@ -253,64 +233,69 @@ export function useWorkflowRuns(options: UseWorkflowRunsOptions): UseWorkflowRun
                 clearInterval(refreshIntervalRef.current);
             }
         };
-    }, [autoRefresh, refreshInterval, refreshRuns, sseConnected, runs]);
+    }, [autoRefresh, refreshInterval, refreshRuns, socketConnected, runs]);
 
     // Initial load
     useEffect(() => {
         refreshRuns();
     }, [refreshRuns]);
 
-    // Handle SSE errors
+    // Handle Socket errors
     useEffect(() => {
-        if (sseError) {
+        if (socketError) {
             setError('Real-time connection lost');
         }
-    }, [sseError]);
+    }, [socketError]);
+
+    // Join execution room when socket connects and we have a pending execution
+    useEffect(() => {
+        if (socketConnected && connectedExecutionId) {
+            joinExecutionRoom(connectedExecutionId);
+        }
+    }, [socketConnected, connectedExecutionId, joinExecutionRoom]);
 
     // Auto-connect to running workflows
     useEffect(() => {
         const runningRuns = runs.filter(run => run.status === 'RUNNING');
 
-        // If we have running runs and no SSE connection, connect to the most recent one
-        if (runningRuns.length > 0 && !connectedRunId && !sseConnected) {
+        // If we have running runs and no socket connection, connect to the most recent one
+        if (runningRuns.length > 0 && !connectedExecutionId && !socketConnected) {
             const mostRecentRun = runningRuns.sort((a, b) =>
                 new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
             )[0];
 
             if (mostRecentRun.runId) {
-                console.log('Auto-connecting to most recent running workflow:', mostRecentRun.runId);
-                connectToRun(mostRecentRun.runId);
+                connectToExecution(mostRecentRun.runId);
             }
         }
 
         // If connected run is no longer running, disconnect
-        if (connectedRunId && sseConnected) {
-            const connectedRun = runs.find(run => run.runId === connectedRunId);
+        if (connectedExecutionId && socketConnected) {
+            const connectedRun = runs.find(run => run.runId === connectedExecutionId);
             if (connectedRun && connectedRun.status !== 'RUNNING') {
-                console.log('Connected run is no longer running, disconnecting');
-                disconnectFromRun();
+                disconnectFromExecution();
             }
         }
-    }, [runs, connectedRunId, sseConnected, connectToRun, disconnectFromRun]);
+    }, [runs, connectedExecutionId, socketConnected, connectToExecution, disconnectFromExecution]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            disconnectFromRun();
+            disconnectFromExecution();
             if (refreshIntervalRef.current) {
                 clearInterval(refreshIntervalRef.current);
             }
         };
-    }, [disconnectFromRun]);
+    }, [disconnectFromExecution]);
 
     return {
         runs,
         loading,
         error,
         refreshRuns,
-        connectToRun,
-        disconnectFromRun,
-        connectedRunId,
-        sseConnected
+        connectToExecution,
+        disconnectFromExecution,
+        connectedExecutionId,
+        socketConnected
     };
 }

@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      REACT_APP_API_URL: http://host.docker.internal:8081/api
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - n8n_default
+
+networks:
+  n8n_default:
+    driver: bridge

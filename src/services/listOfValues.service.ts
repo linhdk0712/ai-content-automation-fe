@@ -25,7 +25,22 @@ export interface ResponseBase<T> {
  * Service for managing centralized List of Values (dropdown options)
  */
 export class ListOfValuesService {
-  private static readonly BASE_URL = '/list-of-values'
+  // Use user-specific List of Values endpoint
+  private static readonly BASE_URL = '/user/list-of-values'
+
+  // Map frontend categories to backend user endpoint categories
+  private static readonly USER_CATEGORY_MAP: Record<string, string> = {
+    'languages': 'language',
+    'industries': 'industry',
+    'content-types': 'content_type',
+    'tones': 'tone',
+    'target-audiences': 'target_audience',
+    'ai-providers': 'ai_provider',
+  }
+
+  private static toUserCategory(category: string): string {
+    return ListOfValuesService.USER_CATEGORY_MAP[category] || category
+  }
 
   /**
    * Get list of values for a specific category
@@ -37,15 +52,32 @@ export class ListOfValuesService {
   ): Promise<ListOfValuesResponse[]> {
     try {
       const params = new URLSearchParams({
-        language,
-        includeInactive: includeInactive.toString()
+        language
       })
 
-      const response = await apiRequest.get<ListOfValuesResponse[]>(
-        `${this.BASE_URL}/${category}?${params.toString()}`
+      // The user endpoint returns an array of UserListOfValueDto
+      type UserListOfValueDto = {
+        id: number
+        listOfValueId: number
+        enabled: boolean
+        listOfValue: ListOfValuesResponse
+      }
+
+      const userCategory = this.toUserCategory(category)
+      const response = await apiRequest.get<UserListOfValueDto[]>(
+        `${this.BASE_URL}/${userCategory}?${params.toString()}`
       )
 
-      return response || []
+      // Map to the expected ListOfValuesResponse[], honoring user enabled flag and includeInactive
+      const mapped = (response || [])
+        .filter(item => includeInactive ? true : item.enabled)
+        .map(item => {
+          const lov = item.listOfValue
+          // Ensure active flag respects user enabled setting
+          return { ...lov, active: item.enabled && (lov.active ?? true) }
+        })
+
+      return mapped
     } catch (error) {
       console.error(`Failed to get list of values for category ${category}:`, error)
       throw error
@@ -57,7 +89,7 @@ export class ListOfValuesService {
    */
   static async getAvailableCategories(): Promise<string[]> {
     try {
-      const response = await apiRequest.get<string[]>(this.BASE_URL)
+      const response = await apiRequest.get<string[]>(`${this.BASE_URL}/categories`)
       return response || []
     } catch (error) {
       console.error('Failed to get available categories:', error)

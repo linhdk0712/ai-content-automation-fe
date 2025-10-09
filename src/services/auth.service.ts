@@ -35,6 +35,7 @@ export interface UserInfo {
   lastName?: string
   profilePictureUrl?: string
   emailVerified: boolean
+  roles?: string[]
 }
 
 export interface UserProfile {

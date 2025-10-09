@@ -1,70 +1,66 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Chip,
-  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Tooltip,
+  Chip,
+  IconButton,
   Button,
-  Alert,
-  CircularProgress,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Collapse,
+  Alert,
+  LinearProgress,
+  Tooltip,
   Grid,
-  Divider
+  Paper
 } from '@mui/material';
 import {
-  Refresh as RefreshIcon,
   Visibility as ViewIcon,
+  Refresh as RefreshIcon,
   PlayArrow as PlayIcon,
   Stop as StopIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  LiveTv as LiveIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
+  CheckCircle as CompletedIcon,
   Error as ErrorIcon,
+  PlayArrow as RunningIcon,
+  Pending as PendingIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useWorkflowRuns, WorkflowRunWithSSE } from '../../hooks/useWorkflowRuns';
+import { useWorkflowRuns, WorkflowRunWithSocket } from '../../hooks/useWorkflowRuns';
 import { useI18n } from '../../hooks/useI18n';
 
 interface WorkflowRunsListProps {
   userId: number;
 }
 
-const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
+const WorkflowRunsList = ({ userId }: WorkflowRunsListProps) => {
   const navigate = useNavigate();
   const { t } = useI18n();
   
-  const [selectedRun, setSelectedRun] = useState<WorkflowRunWithSSE | null>(null);
+  const [selectedRun, setSelectedRun] = useState<WorkflowRunWithSocket | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const {
     runs,
     loading,
     error,
     refreshRuns,
-    connectToRun,
-    disconnectFromRun,
-    connectedRunId,
-    sseConnected
+    connectToExecution,
+    disconnectFromExecution,
+    connectedExecutionId,
+    socketConnected
   } = useWorkflowRuns({ userId });
+
+
 
   // Status color mapping
   const getStatusColor = (status: string) => {
@@ -72,8 +68,8 @@ const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
       case 'RUNNING': return 'warning';
       case 'COMPLETED': return 'success';
       case 'FAILED': return 'error';
-      case 'CANCELLED': return 'default';
       case 'QUEUED': return 'info';
+      case 'CANCELLED': return 'default';
       default: return 'default';
     }
   };
@@ -81,315 +77,252 @@ const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
   // Status icon mapping
   const getStatusIcon = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'RUNNING': return <CircularProgress size={16} />;
-      case 'COMPLETED': return <CheckCircleIcon color="success" />;
-      case 'FAILED': return <ErrorIcon color="error" />;
-      case 'CANCELLED': return <CancelIcon color="disabled" />;
-      case 'QUEUED': return <ScheduleIcon color="info" />;
-      default: return <ScheduleIcon />;
+      case 'RUNNING': return <RunningIcon />;
+      case 'COMPLETED': return <CompletedIcon />;
+      case 'FAILED': return <ErrorIcon />;
+      case 'QUEUED': return <PendingIcon />;
+      case 'CANCELLED': return <CancelIcon />;
+      default: return <PendingIcon />;
     }
   };
 
-  // Format duration
+  const handleViewDetails = (run: WorkflowRunWithSocket) => {
+    if (run.id) {
+      navigate(`/workflows/runs/${run.id}${run.contentId ? `?contentId=${run.contentId}` : ''}`);
+    }
+  };
+
+  const handleShowDetails = (run: WorkflowRunWithSocket) => {
+    setSelectedRun(run);
+    setDetailsOpen(true);
+  };
+
+  const handleConnectToRun = (runId: string) => {
+    if (connectedExecutionId === runId) {
+      disconnectFromExecution();
+    } else {
+      connectToExecution(runId);
+    }
+  };
+
   const formatDuration = (startedAt: string, finishedAt?: string) => {
     const start = new Date(startedAt);
     const end = finishedAt ? new Date(finishedAt) : new Date();
     const duration = end.getTime() - start.getTime();
     
-    const minutes = Math.floor(duration / 60000);
-    const seconds = Math.floor((duration % 60000) / 1000);
+    const seconds = Math.floor(duration / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
     
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
-  // Extract current step from output
-  const getCurrentStep = (run: WorkflowRunWithSSE) => {
-    if (!run.output) return 'Initializing';
-    
-    try {
-      const output = JSON.parse(run.output);
-      return output.currentNode || 'Processing';
-    } catch {
-      return 'Processing';
-    }
-  };
-
-  // Handle row expansion
-  const toggleRowExpansion = (runId: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(runId)) {
-      newExpanded.delete(runId);
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
     } else {
-      newExpanded.add(runId);
-    }
-    setExpandedRows(newExpanded);
-  };
-
-  // Handle view details
-  const handleViewDetails = (run: WorkflowRunWithSSE) => {
-    setSelectedRun(run);
-    setDetailsOpen(true);
-  };
-
-  // Handle connect/disconnect to live updates
-  const handleToggleLiveUpdates = (run: WorkflowRunWithSSE) => {
-    if (run.runId) {
-      if (connectedRunId === run.runId) {
-        disconnectFromRun();
-      } else {
-        connectToRun(run.runId);
-      }
+      return `${seconds}s`;
     }
   };
 
-  // Navigate to detailed run viewer
-  const handleNavigateToRun = (runId: number) => {
-    navigate(`/workflows/runs/${runId}`);
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2} mb={2}>
+            <LinearProgress sx={{ flexGrow: 1 }} />
+            <Typography variant="body2" color="text.secondary">
+              Loading workflow runs...
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          {t('workflows.workflowRuns')}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4" component="h1">
+          Workflow Runs
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          {sseConnected && (
+        <Box display="flex" gap={2} alignItems="center">
+          {socketConnected && (
             <Chip
-              icon={<LiveIcon />}
               label="Live Updates"
               color="success"
-              variant="outlined"
               size="small"
+              variant="outlined"
             />
           )}
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={() => refreshRuns()}
-            disabled={loading}
           >
-            {t('common.refresh')}
+            Refresh
           </Button>
         </Box>
       </Box>
 
+
+
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => {}}>
+        <Alert severity="error" sx={{ mb: 2 }} action={
+          <Button color="inherit" size="small" onClick={() => refreshRuns()}>
+            Retry
+          </Button>
+        }>
           {error}
         </Alert>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <CircularProgress size={20} />
-          <Typography>{t('common.loading')}</Typography>
-        </Box>
-      )}
+      {/* Stats Cards */}
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h4" color="primary">
+              {runs.length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Runs
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h4" color="warning.main">
+              {runs.filter(r => r.status === 'RUNNING').length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Running
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h4" color="success.main">
+              {runs.filter(r => r.status === 'COMPLETED').length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Completed
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h4" color="error.main">
+              {runs.filter(r => r.status === 'FAILED').length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Failed
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Runs Table */}
       <Card>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell width={50}></TableCell>
-                  <TableCell>{t('workflows.status')}</TableCell>
-                  <TableCell>{t('workflows.workflowKey')}</TableCell>
-                  <TableCell>{t('workflows.currentStep')}</TableCell>
-                  <TableCell>{t('workflows.startedAt')}</TableCell>
-                  <TableCell>{t('workflows.duration')}</TableCell>
-                  <TableCell>{t('workflows.actions')}</TableCell>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow key="header">
+                <TableCell>Workflow</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Started</TableCell>
+                <TableCell>Duration</TableCell>
+                <TableCell>Content ID</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {runs.length === 0 ? (
+                <TableRow key="empty-state">
+                  <TableCell colSpan={6} align="center">
+                    <Typography variant="body2" color="text.secondary" py={4}>
+                      No workflow runs found
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {runs.length === 0 && !loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">
-                        {t('workflows.noWorkflowRuns')}
+              ) : (
+                runs.map((run) => (
+                  <TableRow key={run.id} hover>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="body2" fontWeight="medium">
+                          {run.workflowKey || 'Unknown Workflow'}
+                        </Typography>
+                        {run.isLive && (
+                          <Chip
+                            label="Live"
+                            color="success"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={getStatusIcon(run.status)}
+                        label={run.status}
+                        color={getStatusColor(run.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {new Date(run.startedAt).toLocaleString()}
                       </Typography>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  runs.map((run) => (
-                    <React.Fragment key={run.id}>
-                      <TableRow hover>
-                        <TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatDuration(run.startedAt, run.finishedAt)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {run.contentId && (
+                        <Chip
+                          label={run.contentId}
+                          size="small"
+                          variant="outlined"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" gap={1} justifyContent="flex-end">
+                        {run.status === 'RUNNING' && run.runId && (
+                          <Tooltip title={
+                            connectedExecutionId === run.runId 
+                              ? "Disconnect live updates" 
+                              : "Connect for live updates"
+                          }>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleConnectToRun(run.runId!)}
+                              color={connectedExecutionId === run.runId ? "success" : "default"}
+                            >
+                              {connectedExecutionId === run.runId ? <StopIcon /> : <PlayIcon />}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        
+                        <Tooltip title="View details">
                           <IconButton
                             size="small"
-                            onClick={() => toggleRowExpansion(run.id)}
+                            onClick={() => handleViewDetails(run)}
                           >
-                            {expandedRows.has(run.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            <ViewIcon />
                           </IconButton>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getStatusIcon(run.status)}
-                            <Chip
-                              label={run.status}
-                              color={getStatusColor(run.status) as any}
-                              size="small"
-                            />
-                            {run.isLive && (
-                              <Chip
-                                icon={<LiveIcon />}
-                                label="Live"
-                                color="success"
-                                size="small"
-                                variant="outlined"
-                              />
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {run.workflowKey}
-                          </Typography>
-                          {run.runId && (
-                            <Typography variant="caption" color="text.secondary">
-                              ID: {run.runId}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {getCurrentStep(run)}
-                          </Typography>
-                          {run.status === 'RUNNING' && (
-                            <LinearProgress 
-                              variant="indeterminate" 
-                              sx={{ mt: 1, height: 4, borderRadius: 2 }}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {new Date(run.startedAt).toLocaleString()}
-                          </Typography>
-                          {run.lastUpdated && (
-                            <Typography variant="caption" color="text.secondary">
-                              Updated: {run.lastUpdated.toLocaleTimeString()}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatDuration(run.startedAt, run.finishedAt)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title={t('workflows.viewDetails')}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleViewDetails(run)}
-                              >
-                                <ViewIcon />
-                              </IconButton>
-                            </Tooltip>
-                            {run.status === 'RUNNING' && run.runId && (
-                              <Tooltip title={
-                                connectedRunId === run.runId 
-                                  ? t('workflows.disconnectLiveUpdates')
-                                  : t('workflows.connectLiveUpdates')
-                              }>
-                                <IconButton
-                                  size="small"
-                                  color={connectedRunId === run.runId ? 'success' : 'default'}
-                                  onClick={() => handleToggleLiveUpdates(run)}
-                                >
-                                  {connectedRunId === run.runId ? <StopIcon /> : <PlayIcon />}
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                      
-                      {/* Expanded Row Details */}
-                      <TableRow>
-                        <TableCell colSpan={7} sx={{ py: 0 }}>
-                          <Collapse in={expandedRows.has(run.id)} timeout="auto" unmountOnExit>
-                            <Box sx={{ p: 2, backgroundColor: 'grey.50' }}>
-                              <Grid container spacing={2}>
-                                <Grid item xs={12} md={6}>
-                                  <Typography variant="subtitle2" gutterBottom>
-                                    {t('workflows.runDetails')}
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    <strong>Content ID:</strong> {run.contentId || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    <strong>User ID:</strong> {run.userId || 'N/A'}
-                                  </Typography>
-                                  {run.finishedAt && (
-                                    <Typography variant="body2">
-                                      <strong>Finished:</strong> {new Date(run.finishedAt).toLocaleString()}
-                                    </Typography>
-                                  )}
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                  {run.errorMessage && (
-                                    <Box>
-                                      <Typography variant="subtitle2" color="error" gutterBottom>
-                                        {t('workflows.errorMessage')}
-                                      </Typography>
-                                      <Typography variant="body2" color="error">
-                                        {run.errorMessage}
-                                      </Typography>
-                                    </Box>
-                                  )}
-                                  {run.output && (
-                                    <Box>
-                                      <Typography variant="subtitle2" gutterBottom>
-                                        {t('workflows.currentOutput')}
-                                      </Typography>
-                                      <Box
-                                        component="pre"
-                                        sx={{
-                                          fontSize: '0.75rem',
-                                          backgroundColor: 'background.paper',
-                                          p: 1,
-                                          borderRadius: 1,
-                                          overflow: 'auto',
-                                          maxHeight: 150
-                                        }}
-                                      >
-                                        {JSON.stringify(JSON.parse(run.output), null, 2)}
-                                      </Box>
-                                    </Box>
-                                  )}
-                                </Grid>
-                              </Grid>
-                              <Divider sx={{ my: 2 }} />
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  onClick={() => handleNavigateToRun(run.id)}
-                                >
-                                  {t('workflows.viewFullDetails')}
-                                </Button>
-                              </Box>
-                            </Box>
-                          </Collapse>
-                        </TableCell>
-                      </TableRow>
-                    </React.Fragment>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Card>
 
       {/* Details Dialog */}
@@ -400,80 +333,49 @@ const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
         fullWidth
       >
         <DialogTitle>
-          {t('workflows.workflowRunDetails')}
+          Workflow Run Details
         </DialogTitle>
         <DialogContent>
           {selectedRun && (
-            <Box sx={{ pt: 1 }}>
+            <Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>ID:</strong> {selectedRun.id}
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Workflow:</strong> {selectedRun.workflowKey || 'Unknown'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Run ID:</strong> {selectedRun.runId || 'N/A'}
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Run ID:</strong> {selectedRun.runId || selectedRun.id}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Workflow:</strong> {selectedRun.workflowKey}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
+                  <Typography variant="body2" color="text.secondary">
                     <strong>Status:</strong> {selectedRun.status}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Started:</strong> {new Date(selectedRun.startedAt).toLocaleString()}
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Content ID:</strong> {selectedRun.contentId || 'N/A'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>Duration:</strong> {formatDuration(selectedRun.startedAt, selectedRun.finishedAt)}
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Started:</strong> {new Date(selectedRun.startedAt).toLocaleString()}
                   </Typography>
                 </Grid>
-                {selectedRun.input && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Input Data:
+                {selectedRun.finishedAt && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Finished:</strong> {new Date(selectedRun.finishedAt).toLocaleString()}
                     </Typography>
-                    <Box
-                      component="pre"
-                      sx={{
-                        fontSize: '0.75rem',
-                        backgroundColor: 'grey.100',
-                        p: 2,
-                        borderRadius: 1,
-                        overflow: 'auto',
-                        maxHeight: 200
-                      }}
-                    >
-                      {JSON.stringify(JSON.parse(selectedRun.input), null, 2)}
-                    </Box>
                   </Grid>
                 )}
-                {selectedRun.output && (
+                {selectedRun.errorMessage && (
                   <Grid item xs={12}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Output Data:
-                    </Typography>
-                    <Box
-                      component="pre"
-                      sx={{
-                        fontSize: '0.75rem',
-                        backgroundColor: 'grey.100',
-                        p: 2,
-                        borderRadius: 1,
-                        overflow: 'auto',
-                        maxHeight: 200
-                      }}
-                    >
-                      {JSON.stringify(JSON.parse(selectedRun.output), null, 2)}
-                    </Box>
+                    <Alert severity="error">
+                      <strong>Error:</strong> {selectedRun.errorMessage}
+                    </Alert>
                   </Grid>
                 )}
               </Grid>
@@ -482,17 +384,17 @@ const WorkflowRunsList: React.FC<WorkflowRunsListProps> = ({ userId }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailsOpen(false)}>
-            {t('common.close')}
+            Close
           </Button>
           {selectedRun && (
             <Button
               variant="contained"
               onClick={() => {
-                handleNavigateToRun(selectedRun.id);
+                handleViewDetails(selectedRun);
                 setDetailsOpen(false);
               }}
             >
-              {t('workflows.viewFullDetails')}
+              View Full Details
             </Button>
           )}
         </DialogActions>

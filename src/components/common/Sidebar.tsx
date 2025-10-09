@@ -98,6 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { key: 'createContent', text: t('sidebar.createContent'), icon: <AutoAwesome />, path: '/content/create', enabled: true },
         { key: 'workflow', text: t('sidebar.workflow'), icon: <Build />, path: '/content/workflow', enabled: true },
         { key: 'workflowRuns', text: t('sidebar.workflowRuns'), icon: <History />, path: '/workflows', enabled: true },
+        { key: 'workflowTimeline', text: t('sidebar.workflowTimeline'), icon: <Schedule />, path: '/workflows/timeline', enabled: true },
         { key: 'contentLibrary', text: t('sidebar.contentLibrary'), icon: <Description />, path: '/content/library', enabled: false },
         { key: 'templates', text: t('sidebar.templates'), icon: <Description />, path: '/templates', enabled: false },
         { key: 'versionHistory', text: t('sidebar.versionHistory'), icon: <History />, path: '/content/versions', enabled: false },

@@ -1,0 +1,67 @@
+/* ListOfValues Layout Styles */
+.listOfValuesContainer {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 32px;
+}
+
+.listOfValuesCard {
+  width: 100% !important;
+  min-height: 600px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gridContainer {
+  width: 100% !important;
+  margin: 0 auto !important;
+  max-width: 1400px;
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 800px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .listOfValuesContainer {
+    max-width: 1200px;
+    padding: 16px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .listOfValuesContainer {
+    padding: 8px 16px;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .listOfValuesContainer {
+    padding: 8px;
+  }
+  
+  .table {
+    min-width: 500px;
+  }
+}
+
+/* Optimize List of Values layout for wider screens */
+@media (min-width: 1200px) {
+  .gridContainer .MuiGrid-item:first-child {
+    max-width: 300px;
+  }
+  
+  .gridContainer .MuiGrid-item:last-child {
+    flex: 1;
+  }
+}

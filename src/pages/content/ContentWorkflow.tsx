@@ -22,7 +22,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ContentTypeSelect,
@@ -36,7 +36,8 @@ import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
 import { generateContentId } from '../../utils/uuid';
 import { useI18n } from '../../hooks/useI18n';
 import { useErrorHandler } from '../../utils/error-handler';
-import { useRunSSE } from '../../hooks/useSSE';
+import { useSocket } from '../../hooks/useSocket';
+
 
 interface ContentData {
   title: string;
@@ -96,15 +97,33 @@ const ContentWorkflow: React.FC = () => {
   const [selectedStepId, setSelectedStepId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState('');
 
-  // SSE connection for real-time updates
+  // Socket connection for real-time updates
   const {
-    isConnected: sseConnected,
-    runData,
-    nodeUpdates,
-    connectToRun,
-    disconnect: disconnectSSE,
-    error: sseError
-  } = useRunSSE(currentRunId || '', currentUserId, false); // Don't auto-connect
+    isConnected: socketConnected,
+    connect: socketConnect,
+    disconnect: socketDisconnect,
+    joinExecutionRoom,
+    error: socketError
+  } = useSocket({
+    userId: currentUserId,
+    autoConnect: false, // We'll connect manually when workflow starts
+    onConnection: () => {
+      console.log('Connected to workflow socket');
+    },
+    onExecutionUpdate: (data) => {
+      console.log('Received execution update via Socket.IO:', data);
+      updateWorkflowProgressFromSocket(data);
+    },
+    onWorkflowUpdate: (data) => {
+      console.log('Received workflow update via Socket.IO:', data);
+      updateWorkflowProgressFromSocket(data);
+    },
+    onError: (error) => {
+      console.error('Socket error in workflow:', error);
+    }
+  });
+
+
 
   // Load data on mount
   useEffect(() => {
@@ -115,56 +134,37 @@ const ContentWorkflow: React.FC = () => {
     }
   }, [id]);
 
-  // Handle SSE updates
+  // Handle Socket errors
   useEffect(() => {
-    if (runData) {
-      console.log('Received run data from SSE:', runData);
-      
-      // Update workflow progress based on SSE data
-      setWorkflowProgress(prev => ({
-        id: runData.id?.toString() || prev?.id || 'unknown',
-        status: mapBackendStatusToFrontend(runData.status),
-        currentStep: extractCurrentStep(runData),
-        progress: calculateProgress(runData),
-        message: extractMessage(runData),
-        startedAt: runData.startedAt || prev?.startedAt || new Date().toISOString(),
-        finishedAt: runData.finishedAt || prev?.finishedAt,
-        errorMessage: runData.errorMessage || prev?.errorMessage
-      }));
-    }
-  }, [runData]);
-
-  // Handle node updates
-  useEffect(() => {
-    if (nodeUpdates.length > 0) {
-      const latestNodeUpdate = nodeUpdates[nodeUpdates.length - 1];
-      console.log('Latest node update:', latestNodeUpdate);
-      
-      // Update progress based on node completion
-      setWorkflowProgress(prev => prev ? {
-        ...prev,
-        currentStep: latestNodeUpdate.nodeName || prev.currentStep,
-        message: `Processing: ${latestNodeUpdate.nodeName}`,
-        progress: Math.min((prev.progress || 0) + 10, 90) // Increment progress
-      } : null);
-    }
-  }, [nodeUpdates]);
-
-  // Handle SSE connection errors
-  useEffect(() => {
-    if (sseError) {
-      console.error('SSE connection error:', sseError);
-      const processedError = handleError(new Error('Real-time connection lost. Updates may be delayed.'), 'sse_connection');
+    if (socketError) {
+      console.error('Socket connection error:', socketError);
+      const processedError = handleError(new Error('Real-time connection lost. Updates may be delayed.'), 'socket_connection');
       showUserError(processedError);
     }
-  }, [sseError, showUserError]);
+  }, [socketError, handleError, showUserError]);
 
-  // Cleanup SSE connection on unmount
+  // Cleanup Socket connection on unmount
   useEffect(() => {
     return () => {
-      disconnectSSE();
+      socketDisconnect();
     };
-  }, [disconnectSSE]);
+  }, [socketDisconnect]);
+
+  // Update workflow progress from socket data
+  const updateWorkflowProgressFromSocket = useCallback((socketData: any) => {
+    setWorkflowProgress(prev => ({
+      id: socketData.executionId || prev?.id || 'unknown',
+      status: mapBackendStatusToFrontend(socketData.status),
+      currentStep: socketData.nodeName || extractCurrentStepFromSocket(socketData),
+      progress: calculateProgressFromSocket(socketData),
+      message: extractMessageFromSocket(socketData),
+      startedAt: prev?.startedAt || new Date().toISOString(),
+      finishedAt: socketData.finishedAt || prev?.finishedAt,
+      errorMessage: prev?.errorMessage
+    }));
+  }, []);
+
+
 
   // Handle content input changes
   const handleContentChange = (field: keyof ContentData, value: string) => {
@@ -185,29 +185,21 @@ const ContentWorkflow: React.FC = () => {
     }
   };
 
-  const extractCurrentStep = (runData: any): string => {
-    if (runData.output) {
-      try {
-        const output = typeof runData.output === 'string' ? JSON.parse(runData.output) : runData.output;
-        return output.currentNode || 'Processing';
-      } catch {
-        return 'Processing';
-      }
-    }
-    return 'Processing';
+  const extractCurrentStepFromSocket = (socketData: any): string => {
+    return socketData.nodeName || 'Processing';
   };
 
-  const calculateProgress = (runData: any): number => {
-    if (runData.status === 'COMPLETED') return 100;
-    if (runData.status === 'FAILED') return 0;
-    if (runData.status === 'RUNNING') return 50; // Default progress for running
+  const calculateProgressFromSocket = (socketData: any): number => {
+    if (socketData.status === 'success') return 100;
+    if (socketData.status === 'failed') return 0;
+    if (socketData.status === 'running') return 50; // Default progress for running
     return 0;
   };
 
-  const extractMessage = (runData: any): string => {
-    if (runData.status === 'COMPLETED') return t('workflow.workflowCompleted');
-    if (runData.status === 'FAILED') return runData.errorMessage || t('workflow.workflowFailed');
-    if (runData.status === 'RUNNING') return t('workflow.processingContent');
+  const extractMessageFromSocket = (socketData: any): string => {
+    if (socketData.status === 'success') return t('workflow.workflowCompleted');
+    if (socketData.status === 'failed') return t('workflow.workflowFailed');
+    if (socketData.status === 'running') return `Processing: ${socketData.nodeName}`;
     return t('workflow.initializingWorkflow');
   };
 
@@ -251,8 +243,14 @@ const ContentWorkflow: React.FC = () => {
       // Set the run ID and connect to SSE
       if (run.runId) {
         setCurrentRunId(run.runId);
-        connectToRun(run.runId);
-        console.log('Connected to SSE for run:', run.runId);
+        console.log('Started workflow run:', run.runId);
+        
+        // Connect to Socket.IO for real-time updates
+        if (!socketConnected) {
+          socketConnect();
+        }
+        // Join execution room for this specific run
+        joinExecutionRoom(run.runId);
       }
 
       setWorkflowProgress(prev => prev ? {
@@ -532,8 +530,8 @@ const ContentWorkflow: React.FC = () => {
             {/* SSE Connection Status */}
             {currentRunId && (
               <Chip
-                label={sseConnected ? 'Live' : 'Offline'}
-                color={sseConnected ? 'success' : 'default'}
+                label={socketConnected ? 'Live' : 'Running'}
+                color={socketConnected ? 'success' : 'primary'}
                 size="small"
                 variant="outlined"
               />

@@ -14,7 +14,7 @@ export class PWAService {
       try {
         this.registration = await navigator.serviceWorker.register('/sw.js');
         console.log('Service Worker registered successfully');
-        
+
         // Listen for updates
         this.registration.addEventListener('updatefound', () => {
           this.handleServiceWorkerUpdate();
@@ -52,7 +52,7 @@ export class PWAService {
     try {
       this.deferredPrompt.prompt();
       const { outcome } = await this.deferredPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
         console.log('PWA installation accepted');
         this.isInstalled = true;
@@ -204,7 +204,7 @@ export class PWAService {
 
       // Send subscription to server
       await this.sendSubscriptionToServer(subscription);
-      
+
       return subscription;
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
@@ -298,7 +298,7 @@ export class PWAService {
         return false;
       }
     }
-    
+
     // Fallback to clipboard
     if (navigator.clipboard && data.url) {
       try {
@@ -309,7 +309,7 @@ export class PWAService {
         return false;
       }
     }
-    
+
     return false;
   }
 
