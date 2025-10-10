@@ -3,7 +3,12 @@ import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const API_BASE_URL = 'http://127.0.0.1:8081/api/v1'
+
+// Debug: Log API base URL
+console.log('🔧 API_BASE_URL:', API_BASE_URL)
+console.log('🔧 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
+console.log('🔧 Current origin:', window.location.origin)
 
 // Local helper types for request metadata
 interface RequestMetadata {
