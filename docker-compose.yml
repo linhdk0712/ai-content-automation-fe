@@ -8,13 +8,14 @@ services:
       - "3000:3000"
     environment:
       REACT_APP_API_URL: http://auth-service:8081/api
+      BACKEND_URL: http://auth-service:8081
     volumes:
       - .:/app
       - /app/node_modules
     restart: unless-stopped
-    networks:
-      - ai-content-net
+#     networks:
+#       - ai-content-net
 
-networks:
-  ai-content-net:
-    external: true
+# networks:
+#   ai-content-net:
+#     external: true
