@@ -5,20 +5,18 @@ FROM node:24-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install pnpm for faster package management
-RUN npm install -g pnpm
 
 # Copy package files first for better layer caching
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.yaml* ./
 
 # Install dependencies
-RUN pnpm install
+RUN npm install
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN pnpm run build
+RUN npm run build
 
 # Stage 2: Production stage with Nginx
 FROM nginx:1.25-alpine AS production
@@ -47,10 +45,6 @@ USER appuser
 
 # Expose port
 EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
