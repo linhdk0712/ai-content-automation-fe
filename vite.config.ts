@@ -87,6 +87,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    allowedHosts: [
+      'bossai.com.vn',
+      'www.bossai.com.vn',
+      'localhost',
+      '127.0.0.1',
+      '180.93.138.113'
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
@@ -111,29 +118,29 @@ export default defineConfig({
           // Core React libraries
           'react-core': ['react', 'react-dom'],
           'react-router': ['react-router-dom'],
-          
+
           // UI Libraries - Split MUI into smaller chunks
           'mui-core': ['@mui/material', '@mui/system'],
           'mui-icons': ['@mui/icons-material'],
           'mui-pickers': ['@mui/x-date-pickers', '@mui/x-date-pickers-pro'],
           'emotion': ['@emotion/react', '@emotion/styled'],
-          
+
           // Data & State Management
           'query': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
           'form': ['react-hook-form', '@hookform/resolvers', 'yup', 'zod'],
-          
+
           // Utilities
           'utils': ['lodash', 'date-fns', 'axios'],
           'dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities', 'react-beautiful-dnd'],
-          
+
           // Chart & Visualization
           'charts': ['recharts', 'reactflow'],
           'calendar': ['react-big-calendar'],
-          
+
           // Editor & Content
           'editor': ['@tinymce/tinymce-react'],
           'notifications': ['react-toastify'],
-          
+
           // Other vendor libraries
           'vendor-misc': ['framer-motion', 'emoji-picker-react', 'papaparse', 'diff']
         },
