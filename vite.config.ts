@@ -5,7 +5,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/app/',
+  // No base path - serve from root
   plugins: [
     react({
       // Optimize React imports
@@ -60,8 +60,8 @@ export default defineConfig({
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/app/',
-        scope: '/app/',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -88,11 +88,9 @@ export default defineConfig({
     port: 3000,
     host: true,
     allowedHosts: [
-      'bossai.com.vn',
-      'www.bossai.com.vn',
+      '180.93.138.113',
       'localhost',
-      '127.0.0.1',
-      '180.93.138.113'
+      '127.0.0.1'
     ],
     proxy: {
       '/api': {

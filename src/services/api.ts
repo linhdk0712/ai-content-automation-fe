@@ -2,13 +2,13 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+// API Configuration - Always use relative path to avoid CORS
+const API_BASE_URL = '/api/v1'
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)
-console.log('🔧 VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
 console.log('🔧 Current origin:', window.location.origin)
+console.log('🔧 Full API URL will be:', window.location.origin + API_BASE_URL)
 
 // Local helper types for request metadata
 interface RequestMetadata {
@@ -102,16 +102,16 @@ class TokenManager {
 
       // Handle ResponseBase format from backend
       const responseData = response.data
-      
+
       // Check if it's ResponseBase format
-      if (responseData && typeof responseData === 'object' && 
-          'errorCode' in responseData && 'errorMessage' in responseData && 'data' in responseData) {
+      if (responseData && typeof responseData === 'object' &&
+        'errorCode' in responseData && 'errorMessage' in responseData && 'data' in responseData) {
         const responseBase = responseData as ResponseBase<{ accessToken: string; refreshToken: string }>
-        
+
         if (responseBase.errorCode || responseBase.errorMessage) {
           throw new Error(responseBase.errorMessage || 'Token refresh failed')
         }
-        
+
         const authData = responseBase.data
         if (authData?.accessToken && authData?.refreshToken) {
           this.setTokens(authData.accessToken, authData.refreshToken)
@@ -119,7 +119,7 @@ class TokenManager {
         } else {
           throw new Error('Invalid refresh response - no auth data')
         }
-      } 
+      }
       // Handle legacy format (fallback)
       else {
         const authData = responseData as { accessToken: string; refreshToken: string }
@@ -166,7 +166,7 @@ api.interceptors.request.use(
 
     if (token) {
       console.log('Token preview:', token.substring(0, 20) + '...')
-      
+
       // Check if token is expired and refresh if needed
       if (TokenManager.isTokenExpired(token)) {
         console.log('Token is expired, attempting refresh...')
@@ -276,11 +276,11 @@ api.interceptors.response.use(
 
     // Create API error
     const apiError = createApiError(error)
-    
+
     // Show error toast for non-auth endpoints (to avoid spam during token refresh)
-    if (!originalRequest.url?.includes('/auth/refresh') && 
-        !originalRequest.url?.includes('/auth/login') &&
-        error.response?.status !== 401) {
+    if (!originalRequest.url?.includes('/auth/refresh') &&
+      !originalRequest.url?.includes('/auth/login') &&
+      error.response?.status !== 401) {
       toastService.apiError(apiError)
     }
 
@@ -316,13 +316,13 @@ function createApiError(error: AxiosError): ApiError {
   if (response) {
     // Server responded with error status
     const responseData = response.data
-    
+
     // Check if it's new ErrorResponse format from GlobalExceptionHandler
-    if (responseData && typeof responseData === 'object' && 
-        'timestamp' in responseData && 'status' in responseData && 
-        'error' in responseData && 'message' in responseData && 'path' in responseData) {
+    if (responseData && typeof responseData === 'object' &&
+      'timestamp' in responseData && 'status' in responseData &&
+      'error' in responseData && 'message' in responseData && 'path' in responseData) {
       const errorResponse = responseData as ApiError
-      
+
       return {
         timestamp: errorResponse.timestamp,
         status: errorResponse.status,
@@ -337,12 +337,12 @@ function createApiError(error: AxiosError): ApiError {
         traceId: errorResponse.traceId
       }
     }
-    
+
     // Check if it's ResponseBase format
-    else if (responseData && typeof responseData === 'object' && 
-        ('errorCode' in responseData && 'errorMessage' in responseData)) {
+    else if (responseData && typeof responseData === 'object' &&
+      ('errorCode' in responseData && 'errorMessage' in responseData)) {
       const responseBase = responseData as ResponseBase<unknown>
-      
+
       return {
         timestamp: new Date().toISOString(),
         status: response.status,
@@ -353,7 +353,7 @@ function createApiError(error: AxiosError): ApiError {
         details: responseBase.data as Record<string, unknown> | undefined
       }
     }
-    
+
     // Check if it's legacy ApiResponse format
     else if (responseData && typeof responseData === 'object' && 'message' in responseData) {
       const apiResponse = responseData as ApiResponse<unknown>
@@ -367,7 +367,7 @@ function createApiError(error: AxiosError): ApiError {
         details: apiResponse.data as Record<string, unknown> | undefined
       }
     }
-    
+
     // Fallback for unknown response format
     else {
       return {
@@ -440,23 +440,23 @@ export const apiRequest = {
 
 // Helper function to extract data from API response
 function extractResponseData<T = unknown>(
-  response: AxiosResponse<ResponseBase<T> | ApiResponse<T> | T>, 
+  response: AxiosResponse<ResponseBase<T> | ApiResponse<T> | T>,
   showNotification: boolean = false
 ): T {
   const apiResponse = response.data
   console.log("Raw API Response:", apiResponse)
   console.log("Response URL:", response.config?.url)
   console.log("Response Status:", response.status)
-  
+
   // Check if response follows new ResponseBase format
   // ResponseBase has specific structure: { errorCode, errorMessage, data }
   // All three fields must be present (even if null)
   const isObject = typeof apiResponse === 'object' && apiResponse !== null
   const hasErrorCode = isObject && 'errorCode' in apiResponse
-  const hasErrorMessage = isObject && 'errorMessage' in apiResponse  
+  const hasErrorMessage = isObject && 'errorMessage' in apiResponse
   const hasData = isObject && 'data' in apiResponse
   const hasResponseBaseStructure = hasErrorCode && hasErrorMessage && hasData
-  
+
   console.log("ResponseBase detection:", {
     isObject,
     hasErrorCode,
@@ -465,10 +465,10 @@ function extractResponseData<T = unknown>(
     hasResponseBaseStructure,
     keys: isObject ? Object.keys(apiResponse) : []
   })
-  
+
   if (hasResponseBaseStructure) {
     const responseBase = apiResponse as ResponseBase<T>
-    
+
     console.log("Processing ResponseBase:", {
       errorCode: responseBase.errorCode,
       errorMessage: responseBase.errorMessage,
@@ -476,7 +476,7 @@ function extractResponseData<T = unknown>(
       dataType: typeof responseBase.data,
       fullResponse: responseBase
     })
-    
+
     // Show toast based on response
     if (showNotification) {
       try {
@@ -491,7 +491,7 @@ function extractResponseData<T = unknown>(
         // Don't let toast errors break the API call
       }
     }
-    
+
     // Simple rule: errorCode = "SUCCESS" means success, anything else is an error
     if (responseBase.errorCode !== 'SUCCESS') {
       console.log("Error response detected:", {
@@ -499,8 +499,8 @@ function extractResponseData<T = unknown>(
         errorMessage: responseBase.errorMessage
       })
       const error = new Error(responseBase.errorMessage || 'Request failed')
-      ;(error as any).code = responseBase.errorCode
-      ;(error as any).status = response.status
+        ; (error as any).code = responseBase.errorCode
+        ; (error as any).status = response.status
       throw error
     } else {
       console.log("Success response detected:", {
@@ -508,7 +508,7 @@ function extractResponseData<T = unknown>(
         errorMessage: responseBase.errorMessage
       })
     }
-    
+
     // Return data if available, otherwise return the whole response as T
     if (responseBase.data !== null && responseBase.data !== undefined) {
       return responseBase.data
@@ -517,11 +517,11 @@ function extractResponseData<T = unknown>(
       return null as T
     }
   }
-  
+
   // Check if response follows legacy ApiResponse wrapper format
   else if (typeof apiResponse === 'object' && apiResponse !== null && 'success' in apiResponse) {
     const wrappedResponse = apiResponse as ApiResponse<T>
-    
+
     // Show toast for legacy format
     if (showNotification) {
       if (wrappedResponse.success) {
@@ -530,7 +530,7 @@ function extractResponseData<T = unknown>(
         toastService.error(wrappedResponse.message || 'Request failed')
       }
     }
-    
+
     if (wrappedResponse.success && wrappedResponse.data !== undefined) {
       return wrappedResponse.data
     } else if (wrappedResponse.success && wrappedResponse.data === undefined) {
@@ -539,24 +539,24 @@ function extractResponseData<T = unknown>(
     } else {
       throw new Error(wrappedResponse.message || 'Request failed')
     }
-  } 
-  
+  }
+
   // Response is direct data (not wrapped) or unknown format
   else {
     console.log("Treating as direct data response")
-    
+
     // Show generic success toast for direct data responses
     if (showNotification && response.status >= 200 && response.status < 300) {
       toastService.success('Operation completed successfully')
     }
-    
+
     // For login endpoint, if we get an object with accessToken, treat it as AuthResponse
-    if (response.config?.url?.includes('/auth/login') && 
-        isObject && 'accessToken' in apiResponse) {
+    if (response.config?.url?.includes('/auth/login') &&
+      isObject && 'accessToken' in apiResponse) {
       console.log("Detected direct AuthResponse format")
       return apiResponse as T
     }
-    
+
     return apiResponse as T
   }
 }
