@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files first for better layer caching
 COPY package.json package-lock.yaml* ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with optimized npm config
+RUN npm ci --only=production --no-audit --no-fund --prefer-offline
 
 # Copy source code
 COPY . .
@@ -21,27 +21,12 @@ RUN npm run build
 # Stage 2: Production stage with Nginx
 FROM nginx:1.25-alpine AS production
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Remove default nginx config and copy nginx configuration in one layer
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Remove default nginx website
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copy built application from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
-
-# Change ownership of nginx directories
-RUN chown -R appuser:appgroup /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html
-
-# Switch to non-root user
-USER appuser
+# Copy built application from build stage
+COPY --from=builder /app/build /usr/share/nginx/html
 
 # Expose port
 EXPOSE 3000
