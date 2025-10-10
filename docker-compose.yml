@@ -15,18 +15,7 @@ services:
     restart: unless-stopped
     networks:
       - ai-content-net
-    depends_on:
-      - auth-service
-
-  # Add auth-service if it's not defined elsewhere
-  auth-service:
-    # Your auth-service configuration here
-    container_name: auth-service
-    ports:
-      - "8081:8081"
-    networks:
-      - ai-content-net
 
 networks:
   ai-content-net:
-    driver: bridge
+    external: true
