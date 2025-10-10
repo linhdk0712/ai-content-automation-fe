@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json package-lock.yaml* ./
 
 # Install dependencies with optimized npm config
-RUN npm ci --only=production --no-audit --no-fund --prefer-offline
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -26,7 +26,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from build stage
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
 EXPOSE 3000
