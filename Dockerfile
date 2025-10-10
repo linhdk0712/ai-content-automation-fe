@@ -38,7 +38,11 @@ EXPOSE 3000
 
 # Create startup script
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
+    echo 'echo "Substituting BACKEND_URL: $BACKEND_URL"' >> /docker-entrypoint.sh && \
     echo 'envsubst "\$BACKEND_URL" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
+    echo 'echo "Testing nginx configuration..."' >> /docker-entrypoint.sh && \
+    echo 'nginx -t' >> /docker-entrypoint.sh && \
+    echo 'echo "Starting nginx..."' >> /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
