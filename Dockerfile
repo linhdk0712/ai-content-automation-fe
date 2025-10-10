@@ -21,9 +21,9 @@ RUN npm run build
 # Stage 2: Production stage with Nginx
 FROM nginx:1.25-alpine AS production
 
-# Remove default nginx config and copy nginx configuration in one layer
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Use our full nginx configuration (main context) and place it as nginx.conf
+# This avoids placing main-context directives (like `user`) inside conf.d
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from build stage
 COPY --from=builder /app/dist /usr/share/nginx/html
