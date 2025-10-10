@@ -493,8 +493,9 @@ board specific improvements */
   .MuiDivider-root {
     margin: 16px 0 !important;
   }
-}/
-* Enhanced horizontal spacing */
+}
+
+/* Enhanced horizontal spacing */
 .horizontal-spacing-system {
   /* Container horizontal padding */
   padding-left: 24px;

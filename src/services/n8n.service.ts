@@ -3,6 +3,8 @@ import { apiRequest } from './api';
 export interface N8nWorkflowRunDto {
   id: number;
   workflowKey: string;
+  workflowId?: string;
+  workflowName?: string;
   runId?: string;
   status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | string;
   startedAt: string;
@@ -12,6 +14,7 @@ export interface N8nWorkflowRunDto {
   errorMessage?: string;
   userId?: number;
   contentId?: number;
+  updatedAt?: string;
   nodeRuns?: N8nNodeRunDto[]; // Related node runs
 }
 
@@ -93,5 +96,3 @@ export async function fetchContentWorkflowStatus(contentId: number): Promise<Con
 export async function fetchLatestNodeRunByContentId(contentId: number): Promise<N8nNodeRunDto> {
   return apiRequest.get<N8nNodeRunDto>(`/n8n/content/${contentId}/latest-node-run`);
 }
-
-

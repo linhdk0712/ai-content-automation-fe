@@ -444,7 +444,14 @@ const ContentVersions: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {error.userMessage}
+          </Typography>
+          {error.code && (
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              Error code: {error.code}
+            </Typography>
+          )}
         </Alert>
         <Button onClick={() => navigate(`/content/edit/${id}`)}>
           Back to Editor

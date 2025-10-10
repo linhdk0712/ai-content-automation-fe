@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react';
 import { contentService } from '../services/content.service';
 import { ContentVersion, VersionControlService } from '../services/versionControl.service';
 import { ContentResponse } from '../types/api.types';
-import { useErrorHandler } from '../utils/error-handler';
+import { ProcessedError, useErrorHandler } from '../utils/error-handler';
 
 export interface UseContentReturn {
   content: ContentResponse | null;
   versions: ContentVersion[];
   loading: boolean;
+  error: ProcessedError | null;
   loadContent: (id: number) => Promise<void>;
   deleteContent: (id: number) => Promise<void>;
   duplicateContent: (id: number,workspaceId: string) => Promise<void>;
@@ -26,15 +27,18 @@ export const useContent = (): UseContentReturn => {
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [versions] = useState<ContentVersion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<ProcessedError | null>(null);
   const { handleError, showUserError } = useErrorHandler();
   const versionControlService = new VersionControlService();
   const loadContent = useCallback(async (id: number) => {
     try {
       setLoading(true);
+      setError(null);
       const data = await contentService.getContent(id);
       setContent(data);
     } catch (err) {
       const processedError = handleError(err, 'load_content');
+      setError(processedError);
       showUserError(processedError);
     } finally {
       setLoading(false);
