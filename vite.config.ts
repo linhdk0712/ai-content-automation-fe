@@ -106,37 +106,35 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor'
-            }
-            if (id.includes('@mui')) {
-              return 'mui-vendor'
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor'
-            }
-            if (id.includes('react-router')) {
-              return 'router-vendor'
-            }
-            if (id.includes('@emotion')) {
-              return 'emotion-vendor'
-            }
-            return 'vendor'
-          }
-
-          // Feature-based chunks
-          if (id.includes('/pages/')) {
-            const pageName = id.split('/pages/')[1].split('/')[0]
-            return `page-${pageName}`
-          }
-
-          if (id.includes('/components/')) {
-            const componentType = id.split('/components/')[1].split('/')[0]
-            return `components-${componentType}`
-          }
+        manualChunks: {
+          // Core React libraries
+          'react-core': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
+          
+          // UI Libraries - Split MUI into smaller chunks
+          'mui-core': ['@mui/material', '@mui/system'],
+          'mui-icons': ['@mui/icons-material'],
+          'mui-pickers': ['@mui/x-date-pickers', '@mui/x-date-pickers-pro'],
+          'emotion': ['@emotion/react', '@emotion/styled'],
+          
+          // Data & State Management
+          'query': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
+          'form': ['react-hook-form', '@hookform/resolvers', 'yup', 'zod'],
+          
+          // Utilities
+          'utils': ['lodash', 'date-fns', 'axios'],
+          'dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities', 'react-beautiful-dnd'],
+          
+          // Chart & Visualization
+          'charts': ['recharts', 'reactflow'],
+          'calendar': ['react-big-calendar'],
+          
+          // Editor & Content
+          'editor': ['@tinymce/tinymce-react'],
+          'notifications': ['react-toastify'],
+          
+          // Other vendor libraries
+          'vendor-misc': ['framer-motion', 'emoji-picker-react', 'papaparse', 'diff']
         },
         // Optimize chunk file names
         chunkFileNames: (chunkInfo) => {
@@ -146,10 +144,15 @@ export default defineConfig({
           }
           return 'assets/chunk-[hash].js'
         }
+      },
+      // Enable more aggressive tree shaking
+      treeshake: {
+        preset: 'recommended',
+        manualPureFunctions: ['console.log', 'console.warn', 'console.info']
       }
     },
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000
+    // Reduce chunk size warning limit for better optimization
+    chunkSizeWarningLimit: 500
   },
   optimizeDeps: {
     include: [

@@ -3,7 +3,7 @@ import React from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { AccessibilityProvider, AccessibilityToolbarComponent } from './components/common/AccessibilityUtils'
-import ErrorBoundary from './components/common/ErrorBoundary'
+import { ErrorBoundary } from './components/common/ErrorBoundaries'
 import Layout from './components/common/Layout'
 import LoadingSpinner from './components/common/LoadingStates'
 import NotificationContainer from './components/common/NotificationContainer'

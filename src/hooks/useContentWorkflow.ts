@@ -76,25 +76,22 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
     connect: socketConnect,
     disconnect: socketDisconnect,
     contentData,
-    contentUpdates,
     error: socketError
   } = useContentSocket(contentId, userId, enableSocket);
 
-  // Handle socket updates
-  useEffect(() => {
-    if (contentData) {
-      console.log('Received content update via Socket.IO:', contentData);
-      
-      // Update node runs based on socket data
-      updateNodeRunFromSocket(contentData);
-      
-      // Refresh status to get updated overall status
-      refreshStatus();
-    }
-  }, [contentData]);
-
   // Update node run from socket data
-  const updateNodeRunFromSocket = useCallback((socketData: any) => {
+  interface SocketData {
+    executionId: string;
+    workflowId: string;
+    workflowName: string;
+    nodeName: string;
+    nodeType: string;
+    status: string;
+    mode: string;
+    finishedAt: string | null;
+  }
+
+  const updateNodeRunFromSocket = useCallback((socketData: SocketData) => {
     // Create a node run DTO from the socket update data
     const nodeRunUpdate: Partial<N8nNodeRunDto> = {
       executionId: socketData.executionId,
@@ -104,7 +101,7 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
       nodeType: socketData.nodeType,
       status: socketData.status,
       mode: socketData.mode,
-      finishedAt: socketData.finishedAt,
+      finishedAt: socketData.finishedAt ?? undefined,
       updatedAt: new Date().toISOString(),
       contentId: contentId
     };
@@ -127,7 +124,7 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
 
     // Update latest node run if this is more recent
     setLatestNodeRun(prev => {
-      if (!prev || (socketData.finishedAt && socketData.finishedAt > prev.finishedAt)) {
+      if (!prev || (socketData.finishedAt && prev.finishedAt && socketData.finishedAt > prev.finishedAt)) {
         return nodeRunUpdate as N8nNodeRunDto;
       }
       return prev;
@@ -152,6 +149,23 @@ export function useContentWorkflow(options: UseContentWorkflowOptions): UseConte
       setStatusLoading(false);
     }
   }, [contentId]);
+
+  // Handle socket updates
+  useEffect(() => {
+    if (contentData) {
+      console.log('Received content update via Socket.IO:', contentData);
+      
+      // Update node runs based on socket data
+      if (contentData.workflowId) {
+        updateNodeRunFromSocket(contentData as SocketData);
+      } else {
+        console.error('Invalid contentData: workflowId is undefined');
+      }
+      
+      // Refresh status to get updated overall status
+      refreshStatus();
+    }
+  }, [contentData, refreshStatus, updateNodeRunFromSocket]);
 
   // Refresh workflow runs
   const refreshWorkflowRuns = useCallback(async () => {

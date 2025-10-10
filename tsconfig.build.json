@@ -3,14 +3,14 @@
   "compilerOptions": {
     "noEmit": true,
     "skipLibCheck": true,
-    "strict": false,  
-    "noImplicitAny": false,
-    "noImplicitReturns": false,
-    "noImplicitThis": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitOverride": false,
-    "exactOptionalPropertyTypes": false
+    "strict": true,  
+    "noImplicitAny": false,  // Disable for now - has many issues
+    "noImplicitReturns": false,  // Disable for now - has missing return statements
+    "noImplicitThis": true,
+    "noUnusedLocals": false,  // Disable for now - has many unused variables
+    "noUnusedParameters": false,  // Disable for now - has many issues
+    "noImplicitOverride": false,  // Disable for now - needs class method overrides
+    "exactOptionalPropertyTypes": false  // Disable for now - has type compatibility issues
   },
   "include": [
     "src/vite-env.d.ts",

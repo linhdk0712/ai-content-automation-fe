@@ -85,10 +85,28 @@ main {
   padding-right: 0 !important;
 }
 
+/* Combined MuiCard-root styles */
 .MuiCard-root {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  margin-bottom: 12px !important;
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+
+@media (min-width: 600px) {
+  .MuiCard-root {
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .MuiCard-root {
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
 }
 
 .MuiBox-root {
@@ -410,11 +428,7 @@ board specific improvements */
   }
 }
 
-/* Enhanced MUI component spacing */
-.MuiCard-root {
-  margin-bottom: 12px !important;
-}
-
+/* Enhanced MUI component spacing - Card content */
 .MuiCard-root .MuiCardContent-root {
   padding: 12px !important;
 }
@@ -438,31 +452,38 @@ board specific improvements */
   margin-bottom: 12px !important;
 }
 
-/* Typography spacing */
+/* Combined Typography styles */
 .MuiTypography-h4 {
   margin-bottom: 8px !important;
+  font-size: 1.25rem !important;
 }
 
 .MuiTypography-h5 {
   margin-bottom: 6px !important;
+  font-size: 1.1rem !important;
 }
 
 .MuiTypography-h6 {
   margin-bottom: 6px !important;
+  font-size: 0.95rem !important;
 }
 
 /* Button spacing */
-.MuiButton-root + .MuiButton-root {
-  margin-left: 12px !important;
-}
+/* Removed duplicate selector ".MuiButton-root + .MuiButton-root" */
 
 /* Form spacing */
 .MuiTextField-root {
   margin-bottom: 20px !important;
 }
 
+/* Combined MuiFormControl-root styles */
 .MuiFormControl-root {
   margin-bottom: 20px !important;
+  margin-right: 16px !important;
+}
+
+.MuiFormControl-root:last-child {
+  margin-right: 0 !important;
 }
 
 /* Divider spacing */
@@ -542,25 +563,7 @@ board specific improvements */
   width: calc(100% + 32px) !important;
 }
 
-/* Card horizontal spacing */
-.MuiCard-root {
-  margin-left: 4px !important;
-  margin-right: 4px !important;
-}
-
-@media (min-width: 600px) {
-  .MuiCard-root {
-    margin-left: 8px !important;
-    margin-right: 8px !important;
-  }
-}
-
-@media (min-width: 900px) {
-  .MuiCard-root {
-    margin-left: 12px !important;
-    margin-right: 12px !important;
-  }
-}
+/* Card horizontal spacing - Already defined above, removing duplicate */
 
 /* Button group horizontal spacing */
 .MuiButtonGroup-root .MuiButton-root:not(:first-of-type) {
@@ -568,14 +571,19 @@ board specific improvements */
   border-left: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
 
-/* Chip horizontal spacing */
+/* Combined Chip styles */
 .MuiChip-root {
   margin-right: 8px !important;
   margin-bottom: 8px !important;
+  font-size: 0.75rem !important;
 }
 
 .MuiChip-root:last-child {
   margin-right: 0 !important;
+}
+
+.MuiChip-small {
+  font-size: 0.7rem !important;
 }
 
 /* List horizontal spacing */
@@ -595,14 +603,7 @@ board specific improvements */
   min-width: 56px !important;
 }
 
-/* Form control horizontal spacing */
-.MuiFormControl-root {
-  margin-right: 16px !important;
-}
-
-.MuiFormControl-root:last-child {
-  margin-right: 0 !important;
-}
+/* Form control horizontal spacing - Already combined above */
 
 /* Responsive horizontal adjustments */
 @media (max-width: 600px) {
@@ -643,17 +644,7 @@ board specific improvements */
   font-size: 1.5rem !important;
 }
 
-.MuiTypography-h4 {
-  font-size: 1.25rem !important;
-}
-
-.MuiTypography-h5 {
-  font-size: 1.1rem !important;
-}
-
-.MuiTypography-h6 {
-  font-size: 0.95rem !important;
-}
+/* Typography font sizes - Already combined above */
 
 .MuiTypography-subtitle1 {
   font-size: 0.9rem !important;
@@ -688,14 +679,7 @@ board specific improvements */
   font-size: 0.85rem !important;
 }
 
-/* Chip font sizes */
-.MuiChip-root {
-  font-size: 0.75rem !important;
-}
-
-.MuiChip-small {
-  font-size: 0.7rem !important;
-}
+/* Chip font sizes - Already combined above */
 
 /* Input font sizes */
 .MuiInputBase-root {
@@ -811,9 +795,7 @@ board specific improvements */
   }
 }/* Co
 mpact sidebar optimizations */
-.MuiDrawer-paper {
-  /* Reduce sidebar content padding */
-}
+/* .MuiDrawer-paper - Empty ruleset removed */
 
 .MuiDrawer-paper .MuiToolbar-root {
   min-height: 56px !important;
