@@ -5,6 +5,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/app/',
   plugins: [
     react({
       // Optimize React imports
@@ -59,8 +60,8 @@ export default defineConfig({
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: '/app/',
+        scope: '/app/',
         icons: [
           {
             src: 'pwa-192x192.png',
