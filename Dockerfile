@@ -1,50 +1,35 @@
-# Multi-stage build for React TypeScript application
-# Stage 1: Build stage
+# Build stage for React TypeScript application
 FROM node:24-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-
 # Copy package files first for better layer caching
-COPY package.json package-lock.yaml* ./
+COPY package.json package-lock.json* ./
 
-# Install dependencies with optimized npm config
+# Install dependencies
 RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application for production
 RUN npm run build
 
-# Stage 2: Production stage with Nginx
-FROM nginx:1.25-alpine AS production
+# Production stage - simple static file server
+FROM node:24-alpine AS production
 
-# Install envsubst (part of gettext package)
-RUN apk add --no-cache gettext
+# Install serve package globally for serving static files
+RUN npm install -g serve
 
-# Copy nginx config template
-COPY nginx.conf /etc/nginx/nginx.conf.template
+# Set working directory
+WORKDIR /app
 
 # Copy built application from build stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Set default backend URL
-ENV BACKEND_URL=http://auth-service:8081
+COPY --from=builder /app/dist ./dist
 
 # Expose port
 EXPOSE 3000
 
-# Create startup script
-RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
-    echo 'echo "Substituting BACKEND_URL: $BACKEND_URL"' >> /docker-entrypoint.sh && \
-    echo 'envsubst "\$BACKEND_URL" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /docker-entrypoint.sh && \
-    echo 'echo "Testing nginx configuration..."' >> /docker-entrypoint.sh && \
-    echo 'nginx -t' >> /docker-entrypoint.sh && \
-    echo 'echo "Starting nginx..."' >> /docker-entrypoint.sh && \
-    echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
-
-# Start with our custom script
-CMD ["/docker-entrypoint.sh"]
+# Serve the built application
+CMD ["serve", "-s", "dist", "-l", "3000"]

@@ -7,8 +7,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://auth-service:8081/api
-      BACKEND_URL: http://auth-service:8081
+      # API URL will be handled by your external API gateway
+      REACT_APP_API_URL: /api
     volumes:
       - .:/app
       - /app/node_modules
