@@ -2,8 +2,8 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
-// API Configuration - Always use relative path to avoid CORS
-const API_BASE_URL = 'http://180.93.138.113:8081/api/v1'
+// API Configuration - Use relative path for nginx proxy
+const API_BASE_URL = '/api/v1'
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)
