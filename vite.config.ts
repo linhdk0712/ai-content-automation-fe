@@ -94,6 +94,7 @@ export default defineConfig({
       '127.0.0.1',
       'bossai.com.vn'
     ],
+    middlewareMode: false,
     proxy: {
       '/api': {
         target: 'http://localhost:8081',

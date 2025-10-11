@@ -310,7 +310,8 @@ export class I18nManager {
   private async fetchTranslations(languageCode: string): Promise<Translations> {
     try {
       // In a real application, this would fetch from your API or CDN
-      const response = await fetch(`/locales/${languageCode}.json`);
+      // Use relative path that works with base path
+      const response = await fetch(`../locales/${languageCode}.json`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch translations: ${response.status}`);
