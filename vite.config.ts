@@ -90,13 +90,28 @@ export default defineConfig({
     allowedHosts: [
       '180.93.138.113',
       'localhost',
-      '127.0.0.1'
+      '127.0.0.1',
+      'bossai.com.vn'
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8081',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // Add CORS headers for preflight requests
+            if (req.method === 'OPTIONS') {
+              res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+              res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+              res.setHeader('Access-Control-Allow-Credentials', 'true');
+              res.statusCode = 200;
+              res.end();
+            }
+          });
+        }
       }
     }
   },
