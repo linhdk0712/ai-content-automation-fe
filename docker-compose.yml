@@ -1,47 +1,24 @@
+version: "3.8"
+
 services:
+  # Frontend React Application
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
       args:
-        - NODE_ENV=production
+        NODE_ENV: production
+        VITE_API_URL: http://localhost:8081
     container_name: ai-content-frontend
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "3000:3000"
     environment:
-      # Runtime environment variables (injected by env.sh)
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}
-      - VITE_REALTIME_SERVER_URL=${VITE_REALTIME_SERVER_URL:-/socket.io}
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
-      - VITE_FACEBOOK_CLIENT_ID=${VITE_FACEBOOK_CLIENT_ID}
-      - VITE_NODE_ENV=${VITE_NODE_ENV:-production}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN:-localhost}`)"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-    security_opt:
-      - no-new-privileges:true
-    # Temporarily disable read-only for environment injection
-    # read_only: true
-    tmpfs:
-      - /tmp
-      - /var/cache/nginx
-      - /var/run
+      - NODE_ENV=production
     volumes:
-      # Allow writing to html directory for environment config
-      - /usr/share/nginx/html
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - ai-content-net
+    restart: unless-stopped
+networks:
+  ai-content-net:
+    external: true

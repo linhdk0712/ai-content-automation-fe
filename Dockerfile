@@ -1,72 +1,68 @@
-# Build stage for Vite React TypeScript application
-FROM node:20-alpine AS builder
+# Multi-stage Dockerfile for React/Vite application
+# Stage 1: Build stage
+FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Set environment variables for build
-ENV CI=false
-ENV NODE_ENV=production
+# Install dependencies for building native modules
+RUN apk add --no-cache python3 make g++
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Copy package files
+COPY package*.json ./
 
-# Copy package files first for better layer caching
-COPY package.json package-lock.json* ./
-
-# Install all dependencies (including devDependencies for build)
-RUN npm install --silent && \
-    npm cache clean --force
+# Install dependencies
+RUN npm ci --only=production --silent && npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the application for production (TypeScript check can be done in CI/CD)
-RUN npx vite build
+# Build arguments for environment configuration
+ARG NODE_ENV=production
+ARG VITE_API_URL=http://localhost:8081
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
 
-# Remove devDependencies after build to reduce image size
-RUN npm prune --production
+# Set environment variables
+ENV NODE_ENV=${NODE_ENV}
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+ENV VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
 
-# Production stage
+# Build the application
+RUN npm run build
+
+# Stage 2: Production stage
 FROM nginx:1.25-alpine AS production
 
-# Install bash and wget for env.sh script and health check
-RUN apk add --no-cache bash dumb-init wget
+# Install curl for health checks
+RUN apk add --no-cache curl
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy custom nginx configurations
-COPY nginx-main.conf /etc/nginx/nginx.conf
+# Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Set working directory
-WORKDIR /usr/share/nginx/html
+# Create nginx user and set permissions
+RUN addgroup -g 1001 -S nginx && \
+    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
 
-# Copy environment scripts and make them executable
-COPY ./env.sh .
-COPY ./env-runtime.sh .
-RUN chmod +x env.sh env-runtime.sh
-
-# Create non-root user for nginx worker processes
-RUN addgroup -g 1001 -S appuser && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G appuser -g appuser appuser
-
-# Ensure proper permissions for nginx directories
-RUN chown -R appuser:appuser /usr/share/nginx/html
+# Switch to non-root user
+USER nginx
 
 # Expose port
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+    CMD curl -f http://localhost:3000/health || exit 1
 
-# Use dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start the application
-CMD ["/bin/bash", "-c", "/usr/share/nginx/html/env-runtime.sh && nginx -g 'daemon off;'"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
