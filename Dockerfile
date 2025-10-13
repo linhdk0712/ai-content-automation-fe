@@ -46,9 +46,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Set working directory
 WORKDIR /usr/share/nginx/html
 
-# Copy environment script and make it executable
+# Copy environment scripts and make them executable
 COPY ./env.sh .
-RUN chmod +x env.sh
+COPY ./env-runtime.sh .
+RUN chmod +x env.sh env-runtime.sh
 
 # Create non-root user for nginx worker processes
 RUN addgroup -g 1001 -S appuser && \
@@ -68,4 +69,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["/bin/bash", "-c", "/usr/share/nginx/html/env.sh && nginx -g 'daemon off;'"]
+CMD ["/bin/bash", "-c", "/usr/share/nginx/html/env-runtime.sh && nginx -g 'daemon off;'"]
