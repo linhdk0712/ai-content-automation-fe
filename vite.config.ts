@@ -5,8 +5,6 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Set base path for nginx routing
-  base: '/app/',
   plugins: [
     react({
       // Optimize React imports
