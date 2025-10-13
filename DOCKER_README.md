@@ -4,12 +4,15 @@
 
 ### Production Build & Run
 ```bash
-# Build and run with docker-compose
+# Build and run frontend only (recommended for production)
 docker-compose up -d
 
-# Or build manually
+# Or build manually for standalone use
 ./docker-build.sh production
 docker run -d -p 3000:3000 --name frontend ai-content-frontend:latest
+
+# Run with backend services (if needed for testing)
+docker-compose -f docker-compose.with-backend.yml up -d
 ```
 
 ### Development Mode
@@ -22,19 +25,28 @@ docker-compose -f docker-compose.yml -f docker-compose.override.yml up
 
 ```
 frontend/
-├── Dockerfile                 # Multi-stage production build
-├── docker-compose.yml         # Production configuration
-├── docker-compose.override.yml # Development overrides
-├── nginx.conf                 # Nginx configuration with best practices
-├── env.sh                     # Runtime environment injection
-├── docker-build.sh           # Build script with security scanning
-├── .dockerignore             # Optimized build context
-├── .env.example              # Environment template
-├── .env.production           # Production environment template
-└── DOCKER_README.md          # This file
+├── Dockerfile                      # Multi-stage production build
+├── docker-compose.yml              # Frontend-only production configuration
+├── docker-compose.with-backend.yml # Full stack configuration (optional)
+├── docker-compose.override.yml     # Development overrides
+├── nginx.conf                      # Nginx config for standalone frontend
+├── nginx-with-proxy.conf           # Nginx config with backend proxy
+├── env.sh                          # Runtime environment injection
+├── docker-build.sh                # Build script with security scanning
+├── .dockerignore                   # Optimized build context
+├── .env.example                    # Environment template
+├── .env.production                 # Production environment template
+└── DOCKER_README.md               # This file
 ```
 
 ## 🔧 Configuration
+
+### Production Architecture
+
+The Docker configuration is designed for production environments where:
+- **Frontend runs in Docker container** (this configuration)
+- **Backend services run independently** on the same server or different servers
+- **No internal Docker networking** between frontend and backend
 
 ### Environment Variables
 
@@ -45,9 +57,9 @@ Copy `.env.example` to `.env` and configure:
 FRONTEND_PORT=3000
 FRONTEND_DOMAIN=yourdomain.com
 
-# API Configuration  
-VITE_API_BASE_URL=/api/v1
-VITE_REALTIME_SERVER_URL=/socket.io
+# API Configuration (point to your backend servers)
+VITE_API_BASE_URL=http://your-backend-server:8081/api/v1
+VITE_REALTIME_SERVER_URL=http://your-realtime-server:3001
 
 # Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co

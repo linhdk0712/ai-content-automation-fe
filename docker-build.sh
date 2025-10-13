@@ -1,16 +1,25 @@
 #!/bin/bash
 
 # Docker build script with best practices
-# Usage: ./docker-build.sh [environment] [tag]
+# Usage: ./docker-build.sh [environment] [tag] [with-proxy]
 
 set -e
 
 # Default values
 ENVIRONMENT=${1:-production}
 TAG=${2:-latest}
+WITH_PROXY=${3:-false}
 IMAGE_NAME="ai-content-frontend"
 
 echo "🚀 Building Docker image for $ENVIRONMENT environment..."
+
+# Choose nginx config based on proxy requirement
+if [ "$WITH_PROXY" = "true" ]; then
+    echo "📋 Using nginx config with backend proxy"
+    cp nginx-with-proxy.conf nginx.conf.tmp
+    mv nginx.conf nginx.conf.backup
+    mv nginx.conf.tmp nginx.conf
+fi
 
 # Load environment variables
 if [ -f ".env.${ENVIRONMENT}" ]; then
@@ -64,6 +73,13 @@ if [ "$ENVIRONMENT" = "production" ]; then
     docker stop test-frontend
 fi
 
+# Restore original nginx config if modified
+if [ "$WITH_PROXY" = "true" ] && [ -f "nginx.conf.backup" ]; then
+    echo "🔄 Restoring original nginx config"
+    mv nginx.conf.backup nginx.conf
+fi
+
 echo "🎉 Build completed successfully!"
 echo "📦 Image: ${IMAGE_NAME}:${TAG}"
-echo "🚀 To run: docker-compose up -d"
+echo "🚀 To run standalone: docker run -p 3000:3000 ${IMAGE_NAME}:${TAG}"
+echo "🚀 To run with compose: docker-compose up -d"
