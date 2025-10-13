@@ -3,7 +3,7 @@ import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
 // API Configuration - Use Vite env (browser-safe). Fallback to '/api' for dev proxy
-const API_BASE_URL = 'http://180.93.138.113:8081/api/v1'
+const API_BASE_URL = 'http://localhost:8081/api/v1'
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)
