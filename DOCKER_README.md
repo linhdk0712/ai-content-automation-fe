@@ -1,129 +1,225 @@
-# Frontend Docker Setup
+# Docker Configuration Guide
 
-## Tổng quan
+## 🚀 Quick Start
 
-Frontend được containerized sử dụng multi-stage Docker build với Nginx để serve static files.
+### Production Build & Run
+```bash
+# Build and run with docker-compose
+docker-compose up -d
 
-## Cấu hình
+# Or build manually
+./docker-build.sh production
+docker run -d -p 3000:3000 --name frontend ai-content-frontend:latest
+```
+
+### Development Mode
+```bash
+# Run in development mode with hot reload
+docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+```
+
+## 📁 File Structure
+
+```
+frontend/
+├── Dockerfile                 # Multi-stage production build
+├── docker-compose.yml         # Production configuration
+├── docker-compose.override.yml # Development overrides
+├── nginx.conf                 # Nginx configuration with best practices
+├── env.sh                     # Runtime environment injection
+├── docker-build.sh           # Build script with security scanning
+├── .dockerignore             # Optimized build context
+├── .env.example              # Environment template
+├── .env.production           # Production environment template
+└── DOCKER_README.md          # This file
+```
+
+## 🔧 Configuration
 
 ### Environment Variables
 
-Các biến môi trường được định nghĩa trong file `.env`:
+Copy `.env.example` to `.env` and configure:
 
 ```bash
-# API Configuration
-VITE_API_BASE_URL=/api/v1                    # API endpoint (relative path)
-VITE_SUPABASE_URL=https://...                # Supabase URL
-VITE_SUPABASE_ANON_KEY=...                   # Supabase anonymous key
+# Frontend Configuration
+FRONTEND_PORT=3000
+FRONTEND_DOMAIN=yourdomain.com
 
-# WebSocket & Realtime
-VITE_WS_URL=ws://180.93.138.113:8080/ws      # WebSocket URL
-VITE_REALTIME_SERVER_URL=http://180.93.138.113:3001  # Realtime server
+# API Configuration  
+VITE_API_BASE_URL=/api/v1
+VITE_REALTIME_SERVER_URL=/socket.io
 
-# Environment
-VITE_NODE_ENV=production                     # Build environment
-NODE_ENV=production                          # Node environment
+# Supabase Configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# OAuth Configuration
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 ```
 
-### Base Path
+### Runtime Environment Injection
 
-Application được cấu hình với base path `/app/` trong `vite.config.ts`:
+The `env.sh` script allows changing environment variables without rebuilding:
 
-```typescript
-export default defineConfig({
-  base: '/app/',
-  // ...
-})
-```
+1. Environment variables are injected at container startup
+2. Variables with `VITE_` prefix are replaced in built files
+3. Supports dynamic configuration for different environments
 
-## Build & Deploy
+## 🏗️ Build Process
 
-### Sử dụng Script
+### Multi-stage Build
+1. **Builder stage**: Install dependencies and build React app
+2. **Production stage**: Serve with Nginx, security hardened
 
+### Security Features
+- Non-root user execution
+- Read-only filesystem
+- Security headers in Nginx
+- Health checks
+- Resource limits
+
+### Performance Optimizations
+- Gzip compression
+- Static asset caching
+- Optimized Nginx configuration
+- Layer caching for faster builds
+
+## 🔍 Health Checks
+
+The container includes health checks:
+- HTTP endpoint: `http://localhost:3000/health`
+- Automatic container restart on failure
+- Startup grace period
+
+## 🛡️ Security Best Practices
+
+### Container Security
+- Non-root user execution
+- Read-only root filesystem
+- No new privileges
+- Minimal base image (Alpine)
+
+### Nginx Security
+- Security headers (CSP, XSS protection, etc.)
+- Hidden server tokens
+- Request size limits
+- Access control for hidden files
+
+## 📊 Monitoring & Logging
+
+### Logging Configuration
+- JSON structured logs
+- Log rotation (10MB, 3 files)
+- Separate access and error logs
+
+### Monitoring
+- Health check endpoint
+- Nginx status monitoring
+- Container resource usage
+
+## 🚀 Deployment
+
+### Production Deployment
 ```bash
-# Build image
-./docker-build.sh
+# 1. Configure environment
+cp .env.production .env
+# Edit .env with your production values
 
-# Build và chạy container
-./docker-build.sh --run
-
-# Sử dụng docker-compose
-./docker-build.sh --compose
-```
-
-### Manual Commands
-
-```bash
-# Build image
-docker build -t ai-content-frontend .
-
-# Run container
-docker run -d \
-  --name frontend \
-  -p 3000:3000 \
-  --network ai-content-net \
-  ai-content-frontend
-
-# Sử dụng docker-compose
+# 2. Build and deploy
 docker-compose up -d
+
+# 3. Verify deployment
+curl http://localhost:3000/health
 ```
 
-## Nginx Configuration
-
-Container sử dụng Nginx với cấu hình:
-
-- **Port**: 3000
-- **Base path**: `/app/`
-- **SPA routing**: Tất cả routes được redirect về `index.html`
-- **API proxy**: `/api/` được proxy tới `auth-service:8081`
-- **Static caching**: 1 năm cho assets
-- **Security headers**: Được thêm tự động
-
-## Truy cập
-
-- **Frontend**: http://localhost:3000/app/
-- **Health check**: http://localhost:3000/app/
-
-## Troubleshooting
-
-### Build Issues
-
-1. **Node version**: Sử dụng Node 20 LTS
-2. **Dependencies**: Chạy `npm ci` thay vì `npm install`
-3. **Environment**: Đảm bảo file `.env` tồn tại
-
-### Runtime Issues
-
-1. **API connection**: Kiểm tra network `ai-content-net`
-2. **Base path**: Đảm bảo truy cập qua `/app/`
-3. **CORS**: Nginx đã cấu hình CORS headers
-
-### Logs
-
+### Scaling
 ```bash
-# Container logs
-docker logs -f frontend
-
-# Nginx access logs
-docker exec frontend tail -f /var/log/nginx/access.log
-
-# Nginx error logs
-docker exec frontend tail -f /var/log/nginx/error.log
+# Scale frontend instances
+docker-compose up -d --scale frontend=3
 ```
 
-## Network
-
-Container cần kết nối với network `ai-content-net` để giao tiếp với các services khác:
-
+### Updates
 ```bash
-# Tạo network nếu chưa có
-docker network create ai-content-net
+# Zero-downtime updates
+docker-compose pull
+docker-compose up -d --no-deps frontend
 ```
 
-## Health Check
+## 🔧 Troubleshooting
 
-Container có health check tự động:
-- **Endpoint**: `http://localhost:3000/app/`
-- **Interval**: 30s
-- **Timeout**: 10s
-- **Retries**: 3
+### Common Issues
+
+1. **Environment variables not working**
+   - Check `env.sh` script execution
+   - Verify VITE_ prefix on variables
+   - Check container logs: `docker logs ai-content-frontend`
+
+2. **Build failures**
+   - Clear Docker cache: `docker system prune -a`
+   - Check .dockerignore excludes
+   - Verify Node.js version compatibility
+
+3. **Nginx errors**
+   - Check nginx.conf syntax
+   - Verify file permissions
+   - Check upstream service connectivity
+
+### Debug Commands
+```bash
+# View container logs
+docker logs ai-content-frontend -f
+
+# Execute shell in container
+docker exec -it ai-content-frontend /bin/bash
+
+# Check nginx configuration
+docker exec ai-content-frontend nginx -t
+
+# View environment variables
+docker exec ai-content-frontend env | grep VITE_
+```
+
+## 📈 Performance Tuning
+
+### Build Optimization
+- Use `.dockerignore` to reduce build context
+- Enable BuildKit for faster builds
+- Use multi-stage builds for smaller images
+
+### Runtime Optimization
+- Enable Nginx gzip compression
+- Configure proper caching headers
+- Use CDN for static assets
+- Implement HTTP/2
+
+### Resource Limits
+```yaml
+# Add to docker-compose.yml
+deploy:
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.25'
+      memory: 256M
+```
+
+## 🔄 CI/CD Integration
+
+### GitHub Actions Example
+```yaml
+- name: Build and Push Docker Image
+  run: |
+    ./docker-build.sh production ${{ github.sha }}
+    docker tag ai-content-frontend:${{ github.sha }} registry/ai-content-frontend:latest
+    docker push registry/ai-content-frontend:latest
+```
+
+### Security Scanning
+```bash
+# Install Trivy for security scanning
+# The build script automatically runs security scans if Trivy is available
+trivy image ai-content-frontend:latest
+```

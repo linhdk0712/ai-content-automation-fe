@@ -3,7 +3,7 @@ import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
 // API Configuration - Use relative path for nginx proxy
-const API_BASE_URL = '/api/v1'
+const API_BASE_URL = process.env.VITE_API_BASE_URL
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)

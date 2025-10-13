@@ -1,92 +1,69 @@
 #!/bin/bash
 
-# Frontend Docker Build Script
-# This script builds and optionally runs the frontend container
+# Docker build script with best practices
+# Usage: ./docker-build.sh [environment] [tag]
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Configuration
+# Default values
+ENVIRONMENT=${1:-production}
+TAG=${2:-latest}
 IMAGE_NAME="ai-content-frontend"
-CONTAINER_NAME="frontend"
-PORT="3000"
 
-# Functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+echo "🚀 Building Docker image for $ENVIRONMENT environment..."
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if .env file exists
-if [ ! -f ".env" ]; then
-    log_warn ".env file not found. Copying from .env.example"
-    if [ -f ".env.example" ]; then
-        cp .env.example .env
-        log_info "Please update .env file with your configuration"
-    else
-        log_error ".env.example not found. Please create .env file manually"
-        exit 1
-    fi
-fi
-
-# Build the Docker image
-log_info "Building Docker image: $IMAGE_NAME"
-docker build -t $IMAGE_NAME .
-
-if [ $? -eq 0 ]; then
-    log_info "Docker image built successfully"
+# Load environment variables
+if [ -f ".env.${ENVIRONMENT}" ]; then
+    echo "📋 Loading environment from .env.${ENVIRONMENT}"
+    export $(cat .env.${ENVIRONMENT} | grep -v '^#' | xargs)
+elif [ -f ".env" ]; then
+    echo "📋 Loading environment from .env"
+    export $(cat .env | grep -v '^#' | xargs)
 else
-    log_error "Failed to build Docker image"
-    exit 1
+    echo "⚠️  No environment file found, using defaults"
 fi
 
-# Check if we should run the container
-if [ "$1" = "--run" ] || [ "$1" = "-r" ]; then
-    log_info "Stopping existing container if running..."
-    docker stop $CONTAINER_NAME 2>/dev/null || true
-    docker rm $CONTAINER_NAME 2>/dev/null || true
+# Build arguments
+BUILD_ARGS=""
+if [ "$ENVIRONMENT" = "production" ]; then
+    BUILD_ARGS="--target production"
+fi
+
+# Build the image
+echo "🔨 Building Docker image: ${IMAGE_NAME}:${TAG}"
+docker build \
+    ${BUILD_ARGS} \
+    --build-arg NODE_ENV=${ENVIRONMENT} \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from ${IMAGE_NAME}:latest \
+    -t ${IMAGE_NAME}:${TAG} \
+    -t ${IMAGE_NAME}:latest \
+    .
+
+echo "✅ Docker image built successfully!"
+
+# Optional: Run security scan
+if command -v docker &> /dev/null && command -v trivy &> /dev/null; then
+    echo "🔍 Running security scan..."
+    trivy image ${IMAGE_NAME}:${TAG}
+fi
+
+# Optional: Test the image
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo "🧪 Testing the built image..."
+    docker run --rm -d --name test-frontend -p 3001:3000 ${IMAGE_NAME}:${TAG}
+    sleep 5
     
-    log_info "Starting container: $CONTAINER_NAME"
-    docker run -d \
-        --name $CONTAINER_NAME \
-        -p $PORT:3000 \
-        --network ai-content-net \
-        $IMAGE_NAME
-    
-    if [ $? -eq 0 ]; then
-        log_info "Container started successfully"
-        log_info "Frontend available at: http://localhost:$PORT/app/"
-        log_info "To view logs: docker logs -f $CONTAINER_NAME"
+    if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+        echo "✅ Health check passed!"
     else
-        log_error "Failed to start container"
+        echo "❌ Health check failed!"
         exit 1
     fi
-fi
-
-# Check if we should use docker-compose
-if [ "$1" = "--compose" ] || [ "$1" = "-c" ]; then
-    log_info "Using docker-compose to start services..."
-    docker-compose up -d
     
-    if [ $? -eq 0 ]; then
-        log_info "Services started with docker-compose"
-        log_info "Frontend available at: http://localhost:$PORT/app/"
-    else
-        log_error "Failed to start services with docker-compose"
-        exit 1
-    fi
+    docker stop test-frontend
 fi
 
-log_info "Build completed successfully!"
+echo "🎉 Build completed successfully!"
+echo "📦 Image: ${IMAGE_NAME}:${TAG}"
+echo "🚀 To run: docker-compose up -d"

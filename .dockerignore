@@ -86,3 +86,17 @@ __tests__/
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
+cypress/
+test-results/
+coverage/
+
+# Development files
+.env.example
+.env.development
+.env.production
+vite.config.ts
+vitest.config.ts
+cypress.config.ts
+
+# Build artifacts
+build.log
