@@ -60,10 +60,10 @@ fi
 # Optional: Test the image
 if [ "$ENVIRONMENT" = "production" ]; then
     echo "🧪 Testing the built image..."
-    docker run --rm -d --name test-frontend -p 3001:3000 ${IMAGE_NAME}:${TAG}
+    docker run --rm -d --name test-frontend -p 3000:3000 ${IMAGE_NAME}:${TAG}
     sleep 5
     
-    if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+    if curl -f http://localhost:3000/health > /dev/null 2>&1; then
         echo "✅ Health check passed!"
     else
         echo "❌ Health check failed!"
