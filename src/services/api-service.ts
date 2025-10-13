@@ -1,9 +1,9 @@
 // Comprehensive API service wrapper with enhanced error handling and loading states
 
-import { apiRequest } from './api'
-import { loadingManager, LoadingKeys, LoadingOptions } from '../utils/loading-manager.tsx'
+import { PaginatedResponse } from '../types/api.types'
 import { ErrorHandler, ProcessedError } from '../utils/error-handler'
-import { ApiResponse, ApiError, PaginatedResponse } from '../types/api.types'
+import { LoadingKeys, loadingManager, LoadingOptions } from '../utils/loading-manager.tsx'
+import { apiRequest } from './api'
 
 // Service response wrapper
 export interface ServiceResponse<T> {
@@ -331,7 +331,7 @@ export class EnhancedContentService extends BaseApiService {
     })
   }
 
-  async deleteContent(id: number, workspaceId?: number): Promise<ServiceResponse<void>> {
+  async deleteContent(id: number): Promise<ServiceResponse<void>> {
     return this.delete(`/content/${id}`, `content.delete.${id}`, {
       loadingOptions: {
         operation: 'Deleting content',
