@@ -5,6 +5,8 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Set base path - use root for Vercel, /app/ for self-hosted
+  base: process.env.VERCEL ? '/' : '/app/',
   plugins: [
     react({
       // Optimize React imports
@@ -59,8 +61,8 @@ export default defineConfig({
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/app/',
-        scope: '/app/',
+        start_url: process.env.VERCEL ? '/' : '/app/',
+        scope: process.env.VERCEL ? '/' : '/app/',
         icons: [
           {
             src: 'pwa-192x192.png',
