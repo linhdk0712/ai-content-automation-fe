@@ -129,44 +129,26 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React libraries
-          'react-core': ['react', 'react-dom'],
-          'react-router': ['react-router-dom'],
-
-          // UI Libraries - Split MUI into smaller chunks
-          'mui-core': ['@mui/material', '@mui/system'],
-          'mui-icons': ['@mui/icons-material'],
-          'mui-pickers': ['@mui/x-date-pickers', '@mui/x-date-pickers-pro'],
-          'emotion': ['@emotion/react', '@emotion/styled'],
-
-          // Data & State Management
-          'query': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
-          'form': ['react-hook-form', '@hookform/resolvers', 'yup', 'zod'],
-
-          // Utilities
-          'utils': ['lodash', 'date-fns', 'axios'],
-          'dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities', 'react-beautiful-dnd'],
-
-          // Chart & Visualization
-          'charts': ['recharts', 'reactflow'],
-          'calendar': ['react-big-calendar'],
-
-          // Editor & Content
-          'editor': ['@tinymce/tinymce-react'],
-          'notifications': ['react-toastify'],
-
-          // Other vendor libraries
-          'vendor-misc': ['framer-motion', 'emoji-picker-react', 'papaparse', 'diff']
-        },
-        // Optimize chunk file names
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
-          if (facadeModuleId) {
-            return 'assets/[name]-[hash].js'
+        // Simplify chunk strategy to avoid loading issues
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor'
+            }
+            if (id.includes('@mui')) {
+              return 'mui-vendor'
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor'
+            }
+            return 'vendor'
           }
-          return 'assets/chunk-[hash].js'
-        }
+        },
+        // Stable chunk file names
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       },
       // Enable more aggressive tree shaking
       treeshake: {
