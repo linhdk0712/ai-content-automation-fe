@@ -9,6 +9,8 @@ services:
       args:
         NODE_ENV: production
         VITE_API_URL: http://localhost:8081
+        VERCEL: 1
+        DOCKER: 1
     container_name: ai-content-frontend
     ports:
       - "3000:3000"

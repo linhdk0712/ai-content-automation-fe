@@ -1,12 +1,14 @@
-import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Set base path - use root for Vercel, /app/ for self-hosted
-  base: process.env.VERCEL ? '/' : '/app/',
+  // Base path
+  // - Docker or Vercel: '/'
+  // - Otherwise: '/app/' (legacy self-hosted path)
+  base: (process.env.DOCKER || process.env.VERCEL) ? '/' : '/app/',
   plugins: [
     react({
       // Optimize React imports
@@ -101,7 +103,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy, options) => {
+        configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
             // Add CORS headers for preflight requests
             if (req.method === 'OPTIONS') {
