@@ -62,8 +62,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { templateService } from '../../services/template.service';
 import { useI18n } from '../../hooks/useI18n';
+import { templateService } from '../../services/template.service';
 import {
   CreateTemplateRequest,
   Template,
@@ -523,7 +523,7 @@ const Templates: React.FC = () => {
       {!loading && (
         <>
           {/* Debug info */}
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Typography variant="caption">
                 Debug: Templates count: {templates.length}, Total elements: {totalElements}, Total pages: {totalPages}

@@ -2,8 +2,8 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
-// API Configuration - Use relative path for nginx proxy
-const API_BASE_URL = process.env.VITE_API_BASE_URL
+// API Configuration - Use Vite env (browser-safe). Fallback to '/api' for dev proxy
+const API_BASE_URL: string = (import.meta as any).env?.VITE_API_BASE_URL ?? '/api'
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)
