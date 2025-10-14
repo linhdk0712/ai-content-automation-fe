@@ -2,8 +2,10 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
-// API Configuration - Use Vite env (browser-safe). Fallback to '/api' for dev proxy
-const API_BASE_URL = 'http://localhost:8081/api/v1'
+// API Configuration - Use nginx proxy for development, VITE_API_BASE_URL or default for production
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api/v1'
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1')
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)

@@ -7,8 +7,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // Base path
   // - Docker or Vercel: '/'
-  // - Otherwise: '/app/' (legacy self-hosted path)
-  base: (process.env.DOCKER || process.env.VERCEL) ? '/' : '/app/',
+  // - Local development: '/' (changed from '/app/')
+  base: (process.env.DOCKER || process.env.VERCEL || process.env.NODE_ENV === 'development') ? '/' : '/app/',
   plugins: [
     react({
       // Optimize React imports
@@ -63,8 +63,8 @@ export default defineConfig({
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: process.env.VERCEL ? '/' : '/app/',
-        scope: process.env.VERCEL ? '/' : '/app/',
+        start_url: (process.env.VERCEL || process.env.NODE_ENV === 'development') ? '/' : '/app/',
+        scope: (process.env.VERCEL || process.env.NODE_ENV === 'development') ? '/' : '/app/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -97,27 +97,28 @@ export default defineConfig({
       'bossai.com.vn'
     ],
     middlewareMode: false,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            // Add CORS headers for preflight requests
-            if (req.method === 'OPTIONS') {
-              res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-              res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-              res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-              res.setHeader('Access-Control-Allow-Credentials', 'true');
-              res.statusCode = 200;
-              res.end();
-            }
-          });
-        }
-      }
-    }
+    // Proxy removed - using nginx proxy instead
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:8081',
+    //     changeOrigin: true,
+    //     secure: false,
+    //     rewrite: (path) => path.replace(/^\/api/, ''),
+    //     configure: (proxy) => {
+    //       proxy.on('proxyReq', (_proxyReq, req, res) => {
+    //         // Add CORS headers for preflight requests
+    //         if (req.method === 'OPTIONS') {
+    //           res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    //           res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    //           res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+    //           res.setHeader('Access-Control-Allow-Credentials', 'true');
+    //           res.statusCode = 200;
+    //           res.end();
+    //         }
+    //       });
+    //     }
+    //   }
+    // }
   },
   build: {
     outDir: 'dist',

@@ -541,7 +541,7 @@ class AuthService {
 
   // OAuth2 methods with enhanced error handling
   getOAuth2LoginUrl(provider: 'google' | 'facebook' | 'github'): string {
-    const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1'
+    const baseUrl = import.meta.env.DEV ? '/api/v1' : (((import.meta as any).env?.VITE_API_BASE_URL) || '/api/v1')
     const redirectUri = encodeURIComponent(window.location.origin + '/oauth2/redirect')
     return `${baseUrl}/oauth2/authorize/${provider}?redirect_uri=${redirectUri}`
   }
