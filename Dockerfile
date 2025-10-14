@@ -56,7 +56,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3002
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

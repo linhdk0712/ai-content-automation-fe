@@ -14,7 +14,7 @@ services:
         BACKEND_ORIGIN: http://host.docker.internal:8080
     container_name: ai-content-frontend
     ports:
-      - "3000:3000"
+      - "3002:3002"
     environment:
       - NODE_ENV=production
       - BACKEND_ORIGIN=http://host.docker.internal:8080
