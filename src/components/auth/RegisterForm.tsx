@@ -25,8 +25,7 @@ import {
   Lock,
   Person,
   Phone,
-  Google,
-  Facebook,
+
   CheckCircle,
   Cancel
 } from '@mui/icons-material';
@@ -85,7 +84,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [checkingEmail, setCheckingEmail] = useState(false);
   
   const navigate = useNavigate();
-  const { loginWithGoogle, loginWithFacebook } = useAuth();
+
 
   const {
     register,
@@ -175,35 +174,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setError(null);
-      await loginWithGoogle();
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google login failed. Please try again.');
-    }
-  };
 
-  const handleFacebookLogin = async () => {
-    try {
-      setError(null);
-      await loginWithFacebook();
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Facebook login failed. Please try again.');
-    }
-  };
 
   const getPasswordStrength = (password: string) => {
     let strength = 0;
@@ -252,32 +223,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Google />}
-          onClick={handleGoogleLogin}
-          sx={{ py: 1.5 }}
-        >
-          Google
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Facebook />}
-          onClick={handleFacebookLogin}
-          sx={{ py: 1.5 }}
-        >
-          Facebook
-        </Button>
-      </Box>
 
-      <Divider sx={{ my: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Hoặc đăng ký bằng email
-        </Typography>
-      </Divider>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={2}>

@@ -42,6 +42,8 @@ import {
   XAxis,
   YAxis
 } from 'recharts'
+
+import PageWrapper from '../components/common/PageWrapper'
 import { useAuth } from '../hooks/useAuth'
 import { useDashboard } from '../hooks/useDashboard'
 
@@ -194,14 +196,19 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{
-      px: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
-      py: { xs: 1, sm: 1.5, md: 2 },
-      maxWidth: '1600px',
-      mx: 'auto',
-      width: '100%',
-      minHeight: 'calc(100vh - 64px)'
-    }}>
+    <PageWrapper
+      title="Dashboard"
+      description="AI Content Automation Dashboard - Monitor your content performance, analytics, and recent activities"
+      keywords="dashboard, analytics, content performance, AI automation"
+    >
+      <Box sx={{
+        px: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
+        py: { xs: 1, sm: 1.5, md: 2 },
+        maxWidth: '1600px',
+        mx: 'auto',
+        width: '100%',
+        minHeight: 'calc(100vh - 64px)'
+      }}>
       {/* Header */}
       <Box sx={{
         display: 'flex',
@@ -686,7 +693,8 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
-    </Box>
+      </Box>
+    </PageWrapper>
   )
 }
 

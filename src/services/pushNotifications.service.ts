@@ -38,7 +38,7 @@ export interface NotificationPreferences {
 }
 
 class PushNotificationsService {
-  private registration: ServiceWorkerRegistration | null = null;
+  private registration: null = null;
   private subscription: PushSubscription | null = null;
   private preferences: NotificationPreferences;
   private isSupported = false;
@@ -50,8 +50,7 @@ class PushNotificationsService {
   }
 
   private checkSupport(): boolean {
-    return 'serviceWorker' in navigator && 
-           'PushManager' in window && 
+    return 'PushManager' in window && 
            'Notification' in window;
   }
 
@@ -62,7 +61,6 @@ class PushNotificationsService {
     }
 
     try {
-      this.registration = await navigator.serviceWorker.ready;
       await this.loadExistingSubscription();
     } catch (error) {
       console.error('Failed to initialize push notifications:', error);
@@ -110,50 +108,16 @@ class PushNotificationsService {
     });
   }
 
-  // Subscribe to push notifications
+  // Subscribe to push notifications (disabled - no service worker)
   private async subscribeToPush(): Promise<void> {
-    if (!this.registration) {
-      throw new Error('Service worker not registered');
-    }
-
-    try {
-      // Check for existing subscription
-      this.subscription = await this.registration.pushManager.getSubscription();
-
-      if (!this.subscription) {
-        // Create new subscription
-        const vapidPublicKey = await this.getVapidPublicKey();
-        
-        this.subscription = await this.registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey || '').buffer as ArrayBuffer
-        });
-      }
-
-      // Send subscription to server
-      await this.sendSubscriptionToServer(this.subscription);
-      
-      console.log('Push subscription successful');
-    } catch (error) {
-      console.error('Failed to subscribe to push notifications:', error);
-      throw error;
-    }
+    console.warn('Push notifications require service worker - feature disabled');
+    throw new Error('Push notifications not available without service worker');
   }
 
-  // Load existing subscription
+  // Load existing subscription (disabled - no service worker)
   private async loadExistingSubscription(): Promise<void> {
-    if (!this.registration) return;
-
-    try {
-      this.subscription = await this.registration.pushManager.getSubscription();
-      
-      if (this.subscription) {
-        // Verify subscription is still valid
-        await this.verifySubscription(this.subscription);
-      }
-    } catch (error) {
-      console.error('Failed to load existing subscription:', error);
-    }
+    console.warn('Push notifications require service worker - feature disabled');
+    return;
   }
 
   // Send subscription to server
@@ -373,23 +337,22 @@ class PushNotificationsService {
     return tomorrow.getTime();
   }
 
-  // Show notification
+  // Show notification (fallback to browser notification)
   private async showNotification(config: NotificationConfig): Promise<void> {
-    if (!this.registration) {
-      throw new Error('Service worker not registered');
+    if (Notification.permission !== 'granted') {
+      throw new Error('Notification permission not granted');
     }
 
     const options: NotificationOptions = {
       body: config.body,
-      icon: config.icon || '/icon-192x192.png',
-      badge: config.badge || '/badge-72x72.png',
+      icon: config.icon || '/pwa-192x192.png',
       tag: config.tag,
       data: config.data,
       silent: config.silent || false,
       requireInteraction: config.requireInteraction || false,
     };
 
-    await this.registration.showNotification(config.title, options);
+    new Notification(config.title, options);
   }
 
   // Update notification preferences

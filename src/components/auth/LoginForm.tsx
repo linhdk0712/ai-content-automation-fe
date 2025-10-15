@@ -20,8 +20,7 @@ import {
   VisibilityOff,
   Email,
   Lock,
-  Google,
-  Facebook
+
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -49,7 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/dashboa
   const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
-  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { login } = useAuth();
 
   const {
     register,
@@ -79,35 +78,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/dashboa
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setError(null);
-      await loginWithGoogle();
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate(redirectTo);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google login failed. Please try again.');
-    }
-  };
 
-  const handleFacebookLogin = async () => {
-    try {
-      setError(null);
-      await loginWithFacebook();
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate(redirectTo);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Facebook login failed. Please try again.');
-    }
-  };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -209,32 +180,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/dashboa
         </Button>
       </form>
 
-      <Divider sx={{ my: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Hoặc
-        </Typography>
-      </Divider>
 
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Google />}
-          onClick={handleGoogleLogin}
-          sx={{ py: 1.5 }}
-        >
-          Google
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Facebook />}
-          onClick={handleFacebookLogin}
-          sx={{ py: 1.5 }}
-        >
-          Facebook
-        </Button>
-      </Box>
 
       <Box sx={{ textAlign: 'center', mt: 3 }}>
         <Typography variant="body2" color="text.secondary">

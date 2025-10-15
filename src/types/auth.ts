@@ -63,6 +63,5 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
+
 }

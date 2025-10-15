@@ -11,8 +11,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
+
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -120,23 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      const googleLoginUrl = authService.getGoogleLoginUrl();
-      window.location.href = googleLoginUrl;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Google login failed');
-    }
-  };
 
-  const loginWithFacebook = async () => {
-    try {
-      const facebookLoginUrl = authService.getFacebookLoginUrl();
-      window.location.href = facebookLoginUrl;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Facebook login failed');
-    }
-  };
 
   const value: AuthContextType = {
     user,
@@ -146,8 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     register,
     refreshUser,
-    loginWithGoogle,
-    loginWithFacebook,
+
   };
 
   console.log('🔧 AuthProvider: Providing context value:', { 

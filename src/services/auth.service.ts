@@ -104,17 +104,7 @@ export interface ChangePasswordRequest {
   newPassword: string
 }
 
-// OAuth2 types
-export interface OAuth2LoginRequest {
-  provider: 'google' | 'facebook' | 'github'
-  redirectUri: string
-}
 
-export interface OAuth2CallbackRequest {
-  code: string
-  state: string
-  provider: string
-}
 
 class AuthService {
   // Enhanced login with better error handling
@@ -539,41 +529,7 @@ class AuthService {
     }
   }
 
-  // OAuth2 methods with enhanced error handling
-  getOAuth2LoginUrl(provider: 'google' | 'facebook' | 'github'): string {
-    const baseUrl = import.meta.env.DEV ? '/api/v1' : ((((import.meta as any).env)?.VITE_API_BASE_URL) || '/api/v1')
-    const redirectUri = encodeURIComponent(window.location.origin + '/oauth2/redirect')
-    return `${baseUrl}/oauth2/authorize/${provider}?redirect_uri=${redirectUri}`
-  }
 
-  getGoogleLoginUrl(): string {
-    return this.getOAuth2LoginUrl('google')
-  }
-
-  getFacebookLoginUrl(): string {
-    return this.getOAuth2LoginUrl('facebook')
-  }
-
-  getGithubLoginUrl(): string {
-    return this.getOAuth2LoginUrl('github')
-  }
-
-  async handleOAuth2Callback(code: string, state: string, provider: string): Promise<UserInfo> {
-    try {
-      const request: OAuth2CallbackRequest = { code, state, provider }
-      const response = await api.post('/auth/oauth2/callback', request)
-      const authData = response.data as AuthResponse
-
-      if (authData.accessToken && authData.refreshToken) {
-        TokenManager.setTokens(authData.accessToken, authData.refreshToken)
-      }
-
-      return authData.user
-    } catch (error) {
-      console.error('OAuth2 callback failed:', error)
-      throw error
-    }
-  }
 
   // Enhanced token management using TokenManager
   getAccessToken(): string | null {

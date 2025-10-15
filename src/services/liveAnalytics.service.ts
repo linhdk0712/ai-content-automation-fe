@@ -1,5 +1,7 @@
-import { supabaseService } from './supabase.service';
+
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
+import { socketService, SocketEventData } from './socket.service';
+import { apiRequest } from './api';
 
 export interface AnalyticsMetric {
   id: string;
@@ -55,31 +57,133 @@ export class LiveAnalyticsService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupSupabaseListeners();
     this.startBufferFlush();
+    this.setupSocketListeners();
   }
 
-  private setupSupabaseListeners(): void {
-    // Subscribe to analytics updates via Supabase realtime
-    supabaseService.on('authStateChanged', ({ user }) => {
-      if (user) {
-        this.subscribeToAnalytics();
+  private setupSocketListeners(): void {
+    // Connect to Socket.IO for real-time analytics updates
+    socketService.connect({
+      onConnection: () => {
+        console.log('Live analytics service connected to Socket.IO');
+        this.loadInitialMetrics();
+      },
+      onWorkflowUpdate: (data: SocketEventData) => {
+        this.handleAnalyticsFromWorkflow(data);
+      },
+      onExecutionUpdate: (data: SocketEventData) => {
+        this.handleAnalyticsFromExecution(data);
+      },
+      onContentUpdate: (data: SocketEventData) => {
+        this.handleAnalyticsFromContent(data);
+      },
+      onError: (error: Error) => {
+        console.error('Live analytics Socket.IO error:', error);
+      },
+      onDisconnect: () => {
+        console.warn('Live analytics Socket.IO disconnected');
       }
     });
   }
 
-  private subscribeToAnalytics(): void {
-    // Subscribe to analytics table changes
-    supabaseService.subscribeToTable('analytics_metrics', (payload) => {
-      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        const metric = this.convertToAnalyticsMetric(payload.new);
-        this.handleAnalyticsUpdate({ 
-          metrics: [metric], 
-          timestamp: Date.now(), 
-          source: 'supabase' 
+  private handleAnalyticsFromWorkflow(data: SocketEventData): void {
+    // Extract analytics data from workflow updates
+    if (data.result && data.contentId) {
+      const metric = this.extractAnalyticsFromWorkflowResult(data);
+      if (metric) {
+        this.handleAnalyticsUpdate({
+          metrics: [metric],
+          timestamp: Date.now(),
+          source: 'socket.io'
         });
       }
-    });
+    }
+  }
+
+  private handleAnalyticsFromExecution(data: SocketEventData): void {
+    // Handle execution-level analytics
+    if (data.status === 'success' && data.result) {
+      const metric = this.extractAnalyticsFromExecutionResult(data);
+      if (metric) {
+        this.handleAnalyticsUpdate({
+          metrics: [metric],
+          timestamp: Date.now(),
+          source: 'socket.io'
+        });
+      }
+    }
+  }
+
+  private handleAnalyticsFromContent(data: SocketEventData): void {
+    // Handle content-specific analytics
+    if (data.contentId && data.result) {
+      const metric = this.extractAnalyticsFromContentResult(data);
+      if (metric) {
+        this.handleAnalyticsUpdate({
+          metrics: [metric],
+          timestamp: Date.now(),
+          source: 'socket.io'
+        });
+      }
+    }
+  }
+
+  private extractAnalyticsFromWorkflowResult(data: SocketEventData): AnalyticsMetric | null {
+    try {
+      // Extract analytics data from workflow result
+      const result = data.result;
+      if (result && typeof result === 'object') {
+        return {
+          id: `${data.executionId}_${data.nodeName}`,
+          contentId: data.contentId || 0,
+          metricType: this.getMetricTypeFromNodeName(data.nodeName),
+          value: this.extractValueFromResult(result),
+          timestamp: new Date(data.timestamp).getTime(),
+          metadata: {
+            executionId: data.executionId,
+            workflowId: data.workflowId,
+            nodeName: data.nodeName,
+            nodeType: data.nodeType
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error extracting analytics from workflow result:', error);
+    }
+    return null;
+  }
+
+  private extractAnalyticsFromExecutionResult(data: SocketEventData): AnalyticsMetric | null {
+    // Similar to workflow but for execution-level data
+    return this.extractAnalyticsFromWorkflowResult(data);
+  }
+
+  private extractAnalyticsFromContentResult(data: SocketEventData): AnalyticsMetric | null {
+    // Similar to workflow but for content-level data
+    return this.extractAnalyticsFromWorkflowResult(data);
+  }
+
+  private getMetricTypeFromNodeName(nodeName: string): string {
+    // Map node names to metric types
+    const nodeNameLower = nodeName.toLowerCase();
+    if (nodeNameLower.includes('facebook')) return 'facebook_engagement';
+    if (nodeNameLower.includes('instagram')) return 'instagram_engagement';
+    if (nodeNameLower.includes('twitter')) return 'twitter_engagement';
+    if (nodeNameLower.includes('linkedin')) return 'linkedin_engagement';
+    if (nodeNameLower.includes('youtube')) return 'youtube_engagement';
+    if (nodeNameLower.includes('analytics')) return 'general_analytics';
+    return 'workflow_metric';
+  }
+
+  private extractValueFromResult(result: any): number {
+    // Extract numeric value from result object
+    if (typeof result === 'number') return result;
+    if (result.value && typeof result.value === 'number') return result.value;
+    if (result.count && typeof result.count === 'number') return result.count;
+    if (result.engagement && typeof result.engagement === 'number') return result.engagement;
+    if (result.views && typeof result.views === 'number') return result.views;
+    if (result.likes && typeof result.likes === 'number') return result.likes;
+    return 1; // Default value
   }
 
   private startBufferFlush(): void {
@@ -164,7 +268,7 @@ export class LiveAnalyticsService extends BrowserEventEmitter {
     const subscription = this.createSubscriptionKey(filter);
     this.subscriptions.add(subscription);
     
-    // Load initial data from Supabase
+    // Load initial data from API
     this.loadInitialMetrics(filter);
   }
 
@@ -190,7 +294,8 @@ export class LiveAnalyticsService extends BrowserEventEmitter {
       options.order = { column: 'created_at', ascending: false };
       options.limit = 100;
 
-      const metrics = await supabaseService.select('analytics_metrics', options);
+      // Load initial metrics from API
+      const metrics = await apiRequest.get('/analytics/metrics', options);
       
       if (metrics) {
         const analyticsMetrics = metrics.map(m => this.convertToAnalyticsMetric(m));

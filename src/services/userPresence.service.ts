@@ -5,7 +5,7 @@ export interface UserPresence {
   userId: string;
   username: string;
   avatar?: string;
-  status: 'online' | 'away' | 'busy' | 'offline';
+  status: 'online' | 'away' | 'busy';
   lastSeen: number;
   currentLocation?: {
     page: string;
@@ -36,9 +36,52 @@ export class UserPresenceService {
     return UserPresenceService.instance;
   }
 
-  // Placeholder methods - implement with new realtime technology
-  setupSupabaseListeners(): void {
-    console.log('UserPresenceService: setupSupabaseListeners() method needs to be implemented with new realtime technology');
+  // Real-time presence using Socket.IO
+  setupSocketListeners(): void {
+    const { socketService } = require('./socket.service');
+    
+    socketService.connect({
+      onConnection: () => {
+        console.log('User presence service connected to Socket.IO');
+        this.updatePresence('online');
+      },
+      onWorkflowUpdate: (data: any) => {
+        // Handle presence updates from workflow data
+        if (data.result && data.result.userPresence) {
+          this.handlePresenceUpdate(data.result.userPresence);
+        }
+      },
+      onError: (error: Error) => {
+        console.error('User presence Socket.IO error:', error);
+      },
+      onDisconnect: () => {
+        console.warn('User presence Socket.IO disconnected');
+        this.updatePresence('away');
+      }
+    });
+  }
+
+  private handlePresenceUpdate(presenceData: any): void {
+    // Handle incoming presence updates from other users
+    if (presenceData.userId && presenceData.status) {
+      // Update local presence cache
+      console.log('User presence update:', presenceData);
+      // Emit event for UI updates
+      this.emit?.('presenceUpdate', presenceData);
+    }
+  }
+
+  private async updatePresence(status: 'online' | 'away' | 'busy'): Promise<void> {
+    try {
+      // Send presence update to backend
+      const { apiRequest } = require('./api');
+      await apiRequest.patch('/user/presence', {
+        status,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to update presence:', error);
+    }
   }
 
   startHeartbeat(): void {

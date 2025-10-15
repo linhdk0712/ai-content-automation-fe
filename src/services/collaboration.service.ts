@@ -1,5 +1,7 @@
-import { supabaseService } from './supabase.service';
+
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
+import { socketService, SocketEventData } from './socket.service';
+import { apiRequest } from './api';
 
 export interface CollaborationUser {
   id: string;
@@ -48,13 +50,27 @@ export class CollaborationService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupSupabaseListeners();
+    this.setupSocketListeners();
   }
 
-  private setupSupabaseListeners(): void {
-    supabaseService.on('authStateChanged', ({ user }) => {
-      if (user && this.currentContentId) {
-        this.joinContent(this.currentContentId);
+  private setupSocketListeners(): void {
+    // Connect to Socket.IO for real-time collaboration
+    socketService.connect({
+      onConnection: () => {
+        console.log('Collaboration service connected to Socket.IO');
+        if (this.currentContentId) {
+          this.joinContent(this.currentContentId);
+        }
+      },
+      onContentUpdate: (data: SocketEventData) => {
+        this.handleContentCollaboration(data);
+      },
+      onError: (error: Error) => {
+        console.error('Collaboration Socket.IO error:', error);
+      },
+      onDisconnect: () => {
+        console.warn('Collaboration Socket.IO disconnected');
+        this.activeUsers.clear();
       }
     });
   }
@@ -66,38 +82,62 @@ export class CollaborationService extends BrowserEventEmitter {
 
     this.currentContentId = contentId;
     
-    // Subscribe to content changes
-    supabaseService.subscribeToTable('content', (payload) => {
-      if (payload.new?.id === contentId) {
-        this.handleCollaborationEvent({
-          type: 'text_change',
-          userId: payload.new.user_id,
-          contentId: contentId,
-          data: { content: payload.new.content },
-          timestamp: new Date(payload.new.updated_at).getTime()
-        });
-      }
-    }, `id=eq.${contentId}`);
-
-    // Subscribe to user presence for this content
-    supabaseService.subscribeToTable('user_presence', (payload) => {
-      if (payload.new?.metadata?.location?.contentId === contentId) {
-        const user: CollaborationUser = {
-          id: payload.new.user_id,
-          name: payload.new.username || 'Unknown',
-          avatar: payload.new.avatar_url,
-          isActive: payload.new.status === 'online',
-          lastActivity: new Date(payload.new.last_seen).getTime(),
-          cursor: payload.new.metadata?.cursor,
-          selection: payload.new.metadata?.selection
-        };
-        
-        this.activeUsers.set(user.id, user);
-        this.emit('userJoined', user);
-      }
-    }, `metadata->location->>contentId=eq.${contentId}`);
+    // Subscribe to content updates via Socket.IO
+    if (socketService.isConnected()) {
+      socketService.joinContentRoom(contentId);
+    }
 
     this.emit('contentJoined', contentId);
+  }
+
+  private handleContentCollaboration(data: SocketEventData): void {
+    // Handle real-time collaboration updates from Socket.IO
+    if (data.contentId && data.contentId.toString() === this.currentContentId) {
+      // Parse collaboration data from workflow result
+      if (data.result && typeof data.result === 'object') {
+        const collaborationData = data.result as any;
+        
+        if (collaborationData.type === 'cursor_update') {
+          this.handleCollaborationEvent({
+            type: 'cursor_update',
+            userId: collaborationData.userId || 'unknown',
+            contentId: this.currentContentId,
+            data: collaborationData.data,
+            timestamp: new Date(data.timestamp).getTime()
+          });
+        } else if (collaborationData.type === 'selection_update') {
+          this.handleCollaborationEvent({
+            type: 'selection_update',
+            userId: collaborationData.userId || 'unknown',
+            contentId: this.currentContentId,
+            data: collaborationData.data,
+            timestamp: new Date(data.timestamp).getTime()
+          });
+        } else if (collaborationData.type === 'text_change') {
+          this.handleCollaborationEvent({
+            type: 'text_change',
+            userId: collaborationData.userId || 'unknown',
+            contentId: this.currentContentId,
+            data: collaborationData.data,
+            timestamp: new Date(data.timestamp).getTime()
+          });
+        } else if (collaborationData.type === 'user_presence') {
+          // Handle user presence updates
+          const user: CollaborationUser = {
+            id: collaborationData.userId || 'unknown',
+            name: collaborationData.userName || 'Unknown User',
+            avatar: collaborationData.userAvatar,
+            isActive: collaborationData.isActive || true,
+            lastActivity: new Date(data.timestamp).getTime(),
+            cursor: collaborationData.cursor,
+            selection: collaborationData.selection
+          };
+          
+          this.activeUsers.set(user.id, user);
+          this.emit('userJoined', user);
+        }
+      }
+    }
   }
 
   leaveContent(): void {
@@ -110,15 +150,22 @@ export class CollaborationService extends BrowserEventEmitter {
   }
 
   async updateCursor(position: CursorPosition): Promise<void> {
-    if (!this.currentContentId || !supabaseService.user) return;
+    if (!this.currentContentId) return;
 
     try {
-      await supabaseService.update('user_presence', supabaseService.user.id, {
-        metadata: {
-          location: { contentId: this.currentContentId },
-          cursor: position
-        },
-        last_seen: new Date().toISOString()
+      // Send cursor update to backend via API
+      await apiRequest.patch('/collaboration/cursor', {
+        contentId: this.currentContentId,
+        position
+      });
+
+      // Emit local event for immediate UI update
+      this.handleCollaborationEvent({
+        type: 'cursor_update',
+        userId: 'current_user', // TODO: Get from auth context
+        contentId: this.currentContentId,
+        data: { cursor: position },
+        timestamp: Date.now()
       });
     } catch (error) {
       console.error('Failed to update cursor:', error);
@@ -126,15 +173,22 @@ export class CollaborationService extends BrowserEventEmitter {
   }
 
   async updateSelection(selection: TextSelection): Promise<void> {
-    if (!this.currentContentId || !supabaseService.user) return;
+    if (!this.currentContentId) return;
 
     try {
-      await supabaseService.update('user_presence', supabaseService.user.id, {
-        metadata: {
-          location: { contentId: this.currentContentId },
-          selection: selection
-        },
-        last_seen: new Date().toISOString()
+      // Send selection update to backend via API
+      await apiRequest.patch('/collaboration/selection', {
+        contentId: this.currentContentId,
+        selection
+      });
+
+      // Emit local event for immediate UI update
+      this.handleCollaborationEvent({
+        type: 'selection_update',
+        userId: 'current_user', // TODO: Get from auth context
+        contentId: this.currentContentId,
+        data: { selection },
+        timestamp: Date.now()
       });
     } catch (error) {
       console.error('Failed to update selection:', error);
@@ -142,44 +196,32 @@ export class CollaborationService extends BrowserEventEmitter {
   }
 
   async applyTextOperation(operation: TextOperation): Promise<void> {
-    if (!this.currentContentId || !supabaseService.user) return;
+    if (!this.currentContentId) return;
 
     try {
-      // Get current content
-      const content = await supabaseService.select('content', {
-        filter: { id: this.currentContentId },
-        limit: 1
+      // Send text operation to backend via API
+      const response = await apiRequest.patch(`/collaboration/content/${this.currentContentId}`, {
+        operation
       });
 
-      if (content && content.length > 0) {
-        let newContent = content[0].content;
-        
-        // Apply operation (simplified)
-        switch (operation.type) {
-          case 'insert':
-            newContent = newContent.slice(0, operation.position) + 
-                        (operation.content || '') + 
-                        newContent.slice(operation.position);
-            break;
-          case 'delete':
-            newContent = newContent.slice(0, operation.position) + 
-                        newContent.slice(operation.position + (operation.length || 0));
-            break;
-        }
+      // Add to operation queue for local processing
+      this.operationQueue.push(operation);
 
-        // Update content in database
-        await supabaseService.update('content', this.currentContentId, {
-          content: newContent,
-          updated_at: new Date().toISOString()
-        });
+      // Emit local event for immediate UI update
+      this.handleCollaborationEvent({
+        type: 'text_change',
+        userId: 'current_user', // TODO: Get from auth context
+        contentId: this.currentContentId,
+        data: { operation, result: response },
+        timestamp: Date.now()
+      });
 
-        // Add to operation queue for local processing
-        this.operationQueue.push(operation);
-        this.processOperationQueue();
-      }
+      // Process operation queue
+      this.processOperationQueue();
     } catch (error) {
       console.error('Failed to apply text operation:', error);
     }
+  }
   }
 
   private handleCollaborationEvent(event: CollaborationEvent): void {

@@ -1,5 +1,5 @@
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
-import { supabaseService } from './supabase.service';
+import { socketService, SocketEventData } from './socket.service';
 
 export interface PublishingJob {
   id: string;
@@ -60,31 +60,95 @@ export class PublishingStatusService extends BrowserEventEmitter {
 
   constructor() {
     super();
-    this.setupSupabaseListeners();
+    this.setupSocketListeners();
   }
 
-  private setupSupabaseListeners(): void {
-    supabaseService.on('authStateChanged', ({ user }) => {
-      if (user) {
-        this.subscribeToPublishingUpdates();
+  private setupSocketListeners(): void {
+    // Connect to Socket.IO for real-time publishing updates
+    socketService.connect({
+      onConnection: () => {
+        console.log('Publishing status service connected to Socket.IO');
+        this.loadActiveJobs();
+      },
+      onWorkflowUpdate: (data: SocketEventData) => {
+        this.handleWorkflowUpdate(data);
+      },
+      onExecutionUpdate: (data: SocketEventData) => {
+        this.handleExecutionUpdate(data);
+      },
+      onContentUpdate: (data: SocketEventData) => {
+        this.handleContentUpdate(data);
+      },
+      onError: (error: Error) => {
+        console.error('Publishing status Socket.IO error:', error);
+      },
+      onDisconnect: () => {
+        console.warn('Publishing status Socket.IO disconnected');
       }
     });
   }
 
-  private subscribeToPublishingUpdates(): void {
-    // Subscribe to publishing jobs table
-    supabaseService.subscribeToTable('publishing_jobs', (payload) => {
-      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        this.handlePublishingStatusUpdate(payload.new);
-      }
-    });
+  private handleWorkflowUpdate(data: SocketEventData): void {
+    // Handle workflow-level updates
+    if (data.type === 'node_update' && data.contentId) {
+      this.handlePublishingStatusUpdate({
+        id: data.executionId,
+        contentId: data.contentId,
+        status: this.mapWorkflowStatusToJobStatus(data.status),
+        nodeName: data.nodeName,
+        nodeType: data.nodeType,
+        result: data.result,
+        updatedAt: data.timestamp
+      });
+    }
+  }
 
-    // Subscribe to publishing progress table
-    supabaseService.subscribeToTable('publishing_progress', (payload) => {
-      if (payload.eventType === 'INSERT') {
-        this.handleProgressUpdate(payload.new);
-      }
+  private handleExecutionUpdate(data: SocketEventData): void {
+    // Handle execution-specific updates
+    this.handlePublishingStatusUpdate({
+      id: data.executionId,
+      contentId: data.contentId,
+      status: this.mapWorkflowStatusToJobStatus(data.status),
+      nodeName: data.nodeName,
+      nodeType: data.nodeType,
+      result: data.result,
+      updatedAt: data.timestamp
     });
+  }
+
+  private handleContentUpdate(data: SocketEventData): void {
+    // Handle content-specific updates
+    if (data.contentId) {
+      this.handlePublishingStatusUpdate({
+        id: data.executionId,
+        contentId: data.contentId,
+        status: this.mapWorkflowStatusToJobStatus(data.status),
+        nodeName: data.nodeName,
+        nodeType: data.nodeType,
+        result: data.result,
+        updatedAt: data.timestamp
+      });
+    }
+  }
+
+  private mapWorkflowStatusToJobStatus(workflowStatus: string): string {
+    // Map N8N workflow status to publishing job status
+    switch (workflowStatus.toLowerCase()) {
+      case 'running':
+      case 'waiting':
+        return 'processing';
+      case 'success':
+      case 'completed':
+        return 'completed';
+      case 'error':
+      case 'failed':
+        return 'failed';
+      case 'canceled':
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'processing';
+    }
   }
 
   private handlePublishingStatusUpdate(data: any): void {
@@ -159,14 +223,10 @@ export class PublishingStatusService extends BrowserEventEmitter {
 
   private async loadActiveJobs(): Promise<void> {
     try {
-      const jobs = await supabaseService.select('publishing_jobs', {
-        filter: { status: 'processing' },
-        order: { column: 'created_at', ascending: false }
-      });
-
-      if (jobs) {
-        jobs.forEach(job => this.handlePublishingStatusUpdate(job));
-      }
+      // TODO: Replace with API call to backend
+      // const jobs = await api.get('/publishing/jobs?status=processing');
+      // jobs.forEach(job => this.handlePublishingStatusUpdate(job));
+      console.warn('loadActiveJobs: API integration needed');
     } catch (error) {
       console.error('Failed to load active jobs:', error);
     }
@@ -185,11 +245,12 @@ export class PublishingStatusService extends BrowserEventEmitter {
         progress: 0,
         scheduled_time: options?.scheduledTime ? new Date(options.scheduledTime).toISOString() : null,
         priority: options?.priority || 'normal',
-        metadata: options?.metadata || {},
-        user_id: supabaseService.user?.id
+        metadata: options?.metadata || {}
       };
 
-      const job = await supabaseService.insert('publishing_jobs', jobData);
+      // TODO: Replace with API call to backend
+      // const job = await api.post('/publishing/jobs', jobData);
+      const job = { id: Date.now().toString() }; // Temporary mock
       return job.id;
     } catch (error) {
       console.error('Failed to start publishing:', error);
@@ -199,10 +260,12 @@ export class PublishingStatusService extends BrowserEventEmitter {
 
   async cancelPublishing(jobId: string): Promise<void> {
     try {
-      await supabaseService.update('publishing_jobs', jobId, {
-        status: 'cancelled',
-        completed_at: new Date().toISOString()
-      });
+      // TODO: Replace with API call to backend
+      // await api.patch(`/publishing/jobs/${jobId}`, {
+      //   status: 'cancelled',
+      //   completed_at: new Date().toISOString()
+      // });
+      console.warn('cancelPublishing: API integration needed');
     } catch (error) {
       console.error('Failed to cancel publishing:', error);
       throw error;
@@ -223,7 +286,9 @@ export class PublishingStatusService extends BrowserEventEmitter {
         updateData.platforms = platforms;
       }
 
-      await supabaseService.update('publishing_jobs', jobId, updateData);
+      // TODO: Replace with API call to backend
+      // await api.patch(`/publishing/jobs/${jobId}`, updateData);
+      console.warn('retryPublishing: API integration needed');
     } catch (error) {
       console.error('Failed to retry publishing:', error);
       throw error;
@@ -360,28 +425,35 @@ export class PublishingStatusService extends BrowserEventEmitter {
     };
   }
 
+  // Real-time subscriptions using Socket.IO
   subscribeToJob(jobId: string): string | null {
-    return supabaseService.subscribeToTable('publishing_jobs', (payload) => {
-      if (payload.new?.id === jobId) {
-        this.handlePublishingStatusUpdate(payload.new);
-      }
-    }, `id=eq.${jobId}`);
+    if (socketService.isConnected()) {
+      socketService.joinExecutionRoom(jobId);
+      return `execution_${jobId}`;
+    }
+    console.warn('Socket.IO not connected, cannot subscribe to job');
+    return null;
   }
 
   unsubscribeFromJob(channelName: string): void {
-    supabaseService.unsubscribe(channelName);
+    if (socketService.isConnected()) {
+      socketService.leaveRoom(channelName);
+    }
   }
 
   subscribeToContent(contentId: string): string | null {
-    return supabaseService.subscribeToTable('publishing_jobs', (payload) => {
-      if (payload.new?.content_id === contentId) {
-        this.handlePublishingStatusUpdate(payload.new);
-      }
-    }, `content_id=eq.${contentId}`);
+    if (socketService.isConnected()) {
+      socketService.joinContentRoom(contentId);
+      return `content_${contentId}`;
+    }
+    console.warn('Socket.IO not connected, cannot subscribe to content');
+    return null;
   }
 
   unsubscribeFromContent(channelName: string): void {
-    supabaseService.unsubscribe(channelName);
+    if (socketService.isConnected()) {
+      socketService.leaveRoom(channelName);
+    }
   }
 
   private generateJobId(): string {
