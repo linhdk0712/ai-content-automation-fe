@@ -125,15 +125,9 @@ export const calculateVirtualScrollItems = (
 export const cleanupMemory = () => {
   // Clear any global timers
   const highestTimeoutId = setTimeout(() => {}, 0)
-  for (let i = 0; i < highestTimeoutId; i++) {
-    clearTimeout(i)
-  }
   
   // Clear any global intervals
   const highestIntervalId = setInterval(() => {}, 0)
-  for (let i = 0; i < highestIntervalId; i++) {
-    clearInterval(i)
-  }
   
   // Force garbage collection if available
   if (window.gc) {

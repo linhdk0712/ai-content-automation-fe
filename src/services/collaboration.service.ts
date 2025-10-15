@@ -1,7 +1,7 @@
 
 import { BrowserEventEmitter } from '../utils/BrowserEventEmitter';
-import { socketService, SocketEventData } from './socket.service';
 import { apiRequest } from './api';
+import { SocketEventData, socketService } from './socket.service';
 
 export interface CollaborationUser {
   id: string;
@@ -43,9 +43,9 @@ export interface TextOperation {
 }
 
 export class CollaborationService extends BrowserEventEmitter {
-  private activeUsers = new Map<string, CollaborationUser>();
+  private readonly activeUsers = new Map<string, CollaborationUser>();
   private currentContentId: string | null = null;
-  private operationQueue: TextOperation[] = [];
+  private readonly operationQueue: TextOperation[] = [];
   private isProcessingOperations = false;
 
   constructor() {
@@ -99,7 +99,7 @@ export class CollaborationService extends BrowserEventEmitter {
         
         if (collaborationData.type === 'cursor_update') {
           this.handleCollaborationEvent({
-            type: 'cursor_update',
+            type: 'cursor_move',
             userId: collaborationData.userId || 'unknown',
             contentId: this.currentContentId,
             data: collaborationData.data,
@@ -107,7 +107,7 @@ export class CollaborationService extends BrowserEventEmitter {
           });
         } else if (collaborationData.type === 'selection_update') {
           this.handleCollaborationEvent({
-            type: 'selection_update',
+            type: 'selection_change',
             userId: collaborationData.userId || 'unknown',
             contentId: this.currentContentId,
             data: collaborationData.data,
@@ -139,6 +139,7 @@ export class CollaborationService extends BrowserEventEmitter {
       }
     }
   }
+  
 
   leaveContent(): void {
     if (this.currentContentId) {
@@ -161,7 +162,7 @@ export class CollaborationService extends BrowserEventEmitter {
 
       // Emit local event for immediate UI update
       this.handleCollaborationEvent({
-        type: 'cursor_update',
+        type: 'cursor_move',
         userId: 'current_user', // TODO: Get from auth context
         contentId: this.currentContentId,
         data: { cursor: position },
@@ -184,7 +185,7 @@ export class CollaborationService extends BrowserEventEmitter {
 
       // Emit local event for immediate UI update
       this.handleCollaborationEvent({
-        type: 'selection_update',
+        type: 'selection_change',
         userId: 'current_user', // TODO: Get from auth context
         contentId: this.currentContentId,
         data: { selection },
@@ -222,24 +223,23 @@ export class CollaborationService extends BrowserEventEmitter {
       console.error('Failed to apply text operation:', error);
     }
   }
-  }
 
-  private handleCollaborationEvent(event: CollaborationEvent): void {
-    switch (event.type) {
+  private handleCollaborationEvent(evt: CollaborationEvent): void {
+    switch (evt.type) {
       case 'user_join':
-        this.handleUserJoin(event);
+        this.handleUserJoin(evt);
         break;
       case 'user_leave':
-        this.handleUserLeave(event);
+        this.handleUserLeave(evt);
         break;
       case 'cursor_move':
-        this.handleCursorMove(event);
+        this.handleCursorMove(evt);
         break;
       case 'text_change':
-        this.handleTextChange(event);
+        this.handleTextChange(evt);
         break;
       case 'selection_change':
-        this.handleSelectionChange(event);
+        this.handleSelectionChange(evt);
         break;
     }
   }
@@ -304,20 +304,13 @@ export class CollaborationService extends BrowserEventEmitter {
         transformedOperation = this.transformAgainstOperation(transformedOperation, queuedOp);
       }
     }
-    
+      
     return transformedOperation;
   }
 
   private transformAgainstOperation(op1: TextOperation, op2: TextOperation): TextOperation {
     // Basic transformation logic
-    if (op1.type === 'insert' && op2.type === 'insert') {
-      if (op2.position <= op1.position) {
-        return {
-          ...op1,
-          position: op1.position + (op2.content?.length || 0)
-        };
-      }
-    } else if (op1.type === 'delete' && op2.type === 'insert') {
+    if ((op1.type === 'insert' || op1.type === 'delete') && op2.type === 'insert') {
       if (op2.position <= op1.position) {
         return {
           ...op1,
@@ -375,3 +368,25 @@ export class CollaborationService extends BrowserEventEmitter {
 }
 
 export const collaborationService = new CollaborationService();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

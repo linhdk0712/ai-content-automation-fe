@@ -2,10 +2,8 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { ApiError, ApiResponse, ResponseBase } from '../types/api.types'
 import { toastService } from './toast.service'
 
-// API Configuration - Use nginx proxy for development, '/api/v1' (or env override) for production
-const API_BASE_URL = import.meta.env.DEV
-  ? '/api/v1'
-  : (import.meta.env.VITE_API_BASE_URL || '/api/v1')
+// API Configuration - Prefer environment variable, fallback to '/api/v1'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
 
 // Debug: Log API base URL
 console.log('🔧 API_BASE_URL:', API_BASE_URL)

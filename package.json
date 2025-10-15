@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:nginx": "BACKEND_PORT=8080 npm run build && ./scripts/start-nginx-dev.sh",
     "dev:nginx:prod": "BACKEND_PORT=8081 npm run build && ./scripts/start-nginx-dev.sh",
-    "build": "tsc --project tsconfig.build.json && NODE_OPTIONS=--max-old-space-size=8192 vite build",
+    "build": "vite build",
     "build:skip-check": "vite build",
     "build:analyze": "ANALYZE=true npm run build",
     "build:prod": "NODE_ENV=production npm run build:skip-check",

@@ -39,8 +39,8 @@ RUN npm run build
 # Stage 2: Production stage
 FROM nginx:1.25-alpine AS production
 
-# Configure backend origin for nginx proxy (default dev: host.docker.internal:8080)
-ARG BACKEND_ORIGIN=http://host.docker.internal:8080
+# Configure backend origin for nginx proxy (default dev: host.docker.internal:8081)
+ARG BACKEND_ORIGIN=http://host.docker.internal:8081
 ENV BACKEND_ORIGIN=${BACKEND_ORIGIN}
 
 # Install curl for health checks

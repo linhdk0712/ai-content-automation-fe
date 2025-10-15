@@ -67,7 +67,6 @@ export class UserPresenceService {
       // Update local presence cache
       console.log('User presence update:', presenceData);
       // Emit event for UI updates
-      this.emit?.('presenceUpdate', presenceData);
     }
   }
 

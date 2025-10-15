@@ -13,29 +13,14 @@
     "exactOptionalPropertyTypes": false  // Disable for now - has type compatibility issues
   },
   "include": [
-    "src/vite-env.d.ts",
-    "src/**/*.d.ts",
-    "src/pages/content/*.tsx",
-    "src/pages/workflows/*.tsx",
-    "src/components/complex/*.tsx",
-    "src/components/common/*.tsx",
-    "src/hooks/useWorkflow.ts",
-    "src/hooks/useAuth.ts",
-    "src/hooks/useTeam.ts",
-    "src/services/supabase.service.ts",
-    "src/services/n8n.service.ts",
-    "src/services/userPresence.service.ts",
-    "src/services/api.ts",
-    "src/contexts/RealTimeContext.tsx",
-    "src/utils/*.ts",
-    "src/types/*.ts"
+    "src"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx"
   ]
 }
