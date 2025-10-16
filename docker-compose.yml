@@ -1,11 +1,11 @@
 services:
-  # Frontend React Application (Development Mode)
+  # Frontend React Application (Production Mode)
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       args:
-        NODE_ENV: development
+        NODE_ENV: production
         VITE_API_BASE_URL: /api/v1
         VERCEL: 1
         DOCKER: 1
@@ -14,11 +14,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - BACKEND_ORIGIN=http://auth-service:8081
     volumes:
-      - .:/app
-      - /app/node_modules
       - ./logs/nginx:/var/log/nginx
     networks:
       - ai-content-net
