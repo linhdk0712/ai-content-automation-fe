@@ -5,10 +5,27 @@ import { toastService } from './toast.service'
 // API Configuration - Prefer environment variable, fallback to '/api/v1'
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
 
-// Debug: Log API base URL
-console.log('🔧 API_BASE_URL:', API_BASE_URL)
-console.log('🔧 Current origin:', window.location.origin)
-console.log('🔧 Full API URL will be:', window.location.origin + API_BASE_URL)
+// Logging utility for development
+const logger = {
+  debug: (message: string, data?: unknown) => {
+    if (import.meta.env.DEV) {
+      console.log(`🔧 [API] ${message}`, data || '')
+    }
+  },
+  warn: (message: string, data?: unknown) => {
+    console.warn(`⚠️ [API] ${message}`, data || '')
+  },
+  error: (message: string, data?: unknown) => {
+    console.error(`❌ [API] ${message}`, data || '')
+  }
+}
+
+// Debug: Log API configuration in development
+logger.debug('API Configuration:', {
+  baseUrl: API_BASE_URL,
+  origin: window.location.origin,
+  fullUrl: window.location.origin + API_BASE_URL
+})
 
 // Local helper types for request metadata
 interface RequestMetadata {
@@ -98,7 +115,7 @@ class TokenManager {
         refreshToken,
       })
 
-      console.log('Token refresh response:', response.data)
+      logger.debug('Token refresh response received')
 
       // Handle ResponseBase format from backend
       const responseData = response.data
@@ -131,7 +148,7 @@ class TokenManager {
         }
       }
     } catch (error) {
-      console.error('Token refresh failed:', error)
+      logger.error('Token refresh failed', error)
       this.clearTokens()
       // Redirect to login page
       if (typeof window !== 'undefined') {
@@ -143,10 +160,31 @@ class TokenManager {
 
   static isTokenExpired(token: string): boolean {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1])) as { exp: number }
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        logger.warn('Invalid JWT token format')
+        return true
+      }
+
+      const payload = JSON.parse(atob(parts[1])) as { exp?: number }
+      if (!payload.exp) {
+        logger.warn('JWT token missing expiration claim')
+        return true
+      }
+
       const currentTime = Date.now() / 1000
-      return payload.exp <= currentTime
-    } catch {
+      const isExpired = payload.exp <= currentTime
+      
+      if (import.meta.env.DEV && isExpired) {
+        logger.debug('Token expired', {
+          exp: new Date(payload.exp * 1000).toISOString(),
+          now: new Date().toISOString()
+        })
+      }
+
+      return isExpired
+    } catch (error) {
+      logger.warn('Failed to parse JWT token', error)
       return true
     }
   }
@@ -161,31 +199,30 @@ api.interceptors.request.use(
 
     // Add authentication token
     let token = TokenManager.getAccessToken()
-    console.log('Request interceptor - Token available:', token ? 'Yes' : 'No')
-    console.log('Request URL:', config.url)
+    logger.debug('Request interceptor', { 
+      hasToken: !!token, 
+      url: config.url 
+    })
 
     if (token) {
-      console.log('Token preview:', token.substring(0, 20) + '...')
-
       // Check if token is expired and refresh if needed
       if (TokenManager.isTokenExpired(token)) {
-        console.log('Token is expired, attempting refresh...')
+        logger.debug('Token expired, attempting refresh')
         try {
           token = await TokenManager.refreshAccessToken()
-          console.log('Token refreshed successfully')
+          logger.debug('Token refreshed successfully')
         } catch (error) {
-          console.warn('Token refresh failed:', error)
+          logger.warn('Token refresh failed', error)
           // Continue with expired token, let the server handle it
         }
       }
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
-        console.log('Authorization header set for', config.url, ':', `Bearer ${token.substring(0, 20)}...`)
-        console.log('Full headers:', config.headers)
+        logger.debug('Authorization header set', { url: config.url })
       }
     } else {
-      console.log('No token available - request will be unauthenticated for:', config.url)
+      logger.debug('No token available - unauthenticated request', { url: config.url })
     }
 
     // Add retry configuration to request
@@ -208,7 +245,10 @@ api.interceptors.response.use(
     // Log successful requests in development
     if (import.meta.env.DEV) {
       const duration = Date.now() - ((response.config as RequestWithMeta).metadata?.startTime || 0)
-      console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status} (${duration}ms)`)
+      logger.debug(`${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        duration: `${duration}ms`
+      })
     }
 
     return response
@@ -234,8 +274,8 @@ api.interceptors.response.use(
         originalRequest.headers = originalRequest.headers ?? {}
         originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
-      } catch {
-        console.warn('Token refresh failed, redirecting to login')
+      } catch (refreshError) {
+        logger.warn('Token refresh failed, redirecting to login', refreshError)
         return Promise.reject(createApiError(error))
       }
     }
@@ -249,7 +289,10 @@ api.interceptors.response.use(
       if ((originalRequest.metadata.retryCount) < DEFAULT_RETRY_CONFIG.maxRetries) {
         originalRequest.metadata.retryCount++
 
-        console.warn(`Rate limited. Retrying after ${delay}ms (attempt ${originalRequest.metadata.retryCount})`)
+        logger.warn(`Rate limited, retrying after ${delay}ms`, {
+          attempt: originalRequest.metadata.retryCount,
+          url: originalRequest.url
+        })
 
         await sleep(delay)
         return api(originalRequest)
@@ -262,7 +305,10 @@ api.interceptors.response.use(
 
       const delay = calculateRetryDelay(originalRequest.metadata.retryCount)
 
-      console.warn(`Request failed, retrying in ${delay}ms (attempt ${originalRequest.metadata.retryCount})`)
+      logger.warn(`Request failed, retrying in ${delay}ms`, {
+        attempt: originalRequest.metadata.retryCount,
+        url: originalRequest.url
+      })
 
       await sleep(delay)
       return api(originalRequest)
@@ -271,7 +317,10 @@ api.interceptors.response.use(
     // Log error in development
     if (import.meta.env.DEV) {
       const duration = Date.now() - (originalRequest.metadata?.startTime || 0)
-      console.error(`❌ ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - ${error.response?.status || 'Network Error'} (${duration}ms)`)
+      logger.error(`${originalRequest.method?.toUpperCase()} ${originalRequest.url}`, {
+        status: error.response?.status || 'Network Error',
+        duration: `${duration}ms`
+      })
     }
 
     // Create API error
@@ -438,127 +487,123 @@ export const apiRequest = {
     }).then(response => extractResponseData(response, showNotification)) as Promise<T>,
 }
 
-// Helper function to extract data from API response
+// Response format detection utilities
+interface ResponseDetection {
+  isResponseBase: boolean
+  isApiResponse: boolean
+  isDirectData: boolean
+}
+
+function detectResponseFormat(data: unknown): ResponseDetection {
+  const isObject = typeof data === 'object' && data !== null
+  
+  if (!isObject) {
+    return { isResponseBase: false, isApiResponse: false, isDirectData: true }
+  }
+
+  const hasResponseBaseStructure = 
+    'errorCode' in data && 'errorMessage' in data && 'data' in data
+  
+  const hasApiResponseStructure = 'success' in data
+  
+  return {
+    isResponseBase: hasResponseBaseStructure,
+    isApiResponse: hasApiResponseStructure && !hasResponseBaseStructure,
+    isDirectData: !hasResponseBaseStructure && !hasApiResponseStructure
+  }
+}
+
+function handleResponseBaseFormat<T>(
+  response: AxiosResponse,
+  responseBase: ResponseBase<T>,
+  showNotification: boolean
+): T {
+  logger.debug("Processing ResponseBase", {
+    errorCode: responseBase.errorCode,
+    errorMessage: responseBase.errorMessage,
+    hasData: responseBase.data != null
+  })
+
+  // Handle notifications
+  if (showNotification) {
+    try {
+      const isSuccess = response.status >= 200 && response.status < 300
+      toastService.response(
+        response.status,
+        responseBase.errorCode,
+        responseBase.errorMessage,
+        isSuccess ? 'Operation completed successfully' : undefined
+      )
+    } catch (toastError) {
+      logger.error('Toast notification failed', toastError)
+    }
+  }
+
+  // Check for errors
+  if (responseBase.errorCode !== 'SUCCESS') {
+    const error = new Error(responseBase.errorMessage || 'Request failed')
+    ;(error as any).code = responseBase.errorCode
+    ;(error as any).status = response.status
+    throw error
+  }
+
+  return responseBase.data ?? (null as T)
+}
+
+function handleApiResponseFormat<T>(
+  apiResponse: ApiResponse<T>,
+  showNotification: boolean
+): T {
+  if (showNotification) {
+    if (apiResponse.success) {
+      toastService.success(apiResponse.message || 'Operation completed successfully')
+    } else {
+      toastService.error(apiResponse.message || 'Request failed')
+    }
+  }
+
+  if (!apiResponse.success) {
+    throw new Error(apiResponse.message || 'Request failed')
+  }
+
+  return apiResponse.data !== undefined ? apiResponse.data : (apiResponse as unknown as T)
+}
+
+function handleDirectDataFormat<T>(
+  response: AxiosResponse<T>,
+  showNotification: boolean
+): T {
+  if (showNotification && response.status >= 200 && response.status < 300) {
+    toastService.success('Operation completed successfully')
+  }
+
+  return response.data
+}
+
+// Refactored helper function to extract data from API response
 function extractResponseData<T = unknown>(
-  response: AxiosResponse<ResponseBase<T> | ApiResponse<T> | T>,
+  response: AxiosResponse<unknown>,
   showNotification: boolean = false
 ): T {
   const apiResponse = response.data
-  console.log("Raw API Response:", apiResponse)
-  console.log("Response URL:", response.config?.url)
-  console.log("Response Status:", response.status)
 
-  // Check if response follows new ResponseBase format
-  // ResponseBase has specific structure: { errorCode, errorMessage, data }
-  // All three fields must be present (even if null)
-  const isObject = typeof apiResponse === 'object' && apiResponse !== null
-  const hasErrorCode = isObject && 'errorCode' in apiResponse
-  const hasErrorMessage = isObject && 'errorMessage' in apiResponse
-  const hasData = isObject && 'data' in apiResponse
-  const hasResponseBaseStructure = hasErrorCode && hasErrorMessage && hasData
-
-  console.log("ResponseBase detection:", {
-    isObject,
-    hasErrorCode,
-    hasErrorMessage,
-    hasData,
-    hasResponseBaseStructure,
-    keys: isObject ? Object.keys(apiResponse) : []
+  logger.debug("API Response", {
+    url: response.config?.url,
+    status: response.status,
+    dataType: typeof apiResponse
   })
 
-  if (hasResponseBaseStructure) {
-    const responseBase = apiResponse as ResponseBase<T>
+  const format = detectResponseFormat(apiResponse)
 
-    console.log("Processing ResponseBase:", {
-      errorCode: responseBase.errorCode,
-      errorMessage: responseBase.errorMessage,
-      hasData: responseBase.data !== null && responseBase.data !== undefined,
-      dataType: typeof responseBase.data,
-      fullResponse: responseBase
-    })
-
-    // Show toast based on response
-    if (showNotification) {
-      try {
-        toastService.response(
-          response.status,
-          responseBase.errorCode,
-          responseBase.errorMessage,
-          response.status >= 200 && response.status < 300 ? 'Operation completed successfully' : undefined
-        )
-      } catch (toastError) {
-        console.error('Toast error:', toastError)
-        // Don't let toast errors break the API call
-      }
-    }
-
-    // Simple rule: errorCode = "SUCCESS" means success, anything else is an error
-    if (responseBase.errorCode !== 'SUCCESS') {
-      console.log("Error response detected:", {
-        errorCode: responseBase.errorCode,
-        errorMessage: responseBase.errorMessage
-      })
-      const error = new Error(responseBase.errorMessage || 'Request failed')
-        ; (error as any).code = responseBase.errorCode
-        ; (error as any).status = response.status
-      throw error
-    } else {
-      console.log("Success response detected:", {
-        errorCode: responseBase.errorCode,
-        errorMessage: responseBase.errorMessage
-      })
-    }
-
-    // Return data if available, otherwise return the whole response as T
-    if (responseBase.data !== null && responseBase.data !== undefined) {
-      return responseBase.data
-    } else {
-      // For cases where data is null but operation was successful
-      return null as T
-    }
+  if (format.isResponseBase) {
+    return handleResponseBaseFormat(response, apiResponse as ResponseBase<T>, showNotification)
   }
 
-  // Check if response follows legacy ApiResponse wrapper format
-  else if (typeof apiResponse === 'object' && apiResponse !== null && 'success' in apiResponse) {
-    const wrappedResponse = apiResponse as ApiResponse<T>
-
-    // Show toast for legacy format
-    if (showNotification) {
-      if (wrappedResponse.success) {
-        toastService.success(wrappedResponse.message || 'Operation completed successfully')
-      } else {
-        toastService.error(wrappedResponse.message || 'Request failed')
-      }
-    }
-
-    if (wrappedResponse.success && wrappedResponse.data !== undefined) {
-      return wrappedResponse.data
-    } else if (wrappedResponse.success && wrappedResponse.data === undefined) {
-      // For responses that have success: true but no data field, return the response itself
-      return apiResponse as T
-    } else {
-      throw new Error(wrappedResponse.message || 'Request failed')
-    }
+  if (format.isApiResponse) {
+    return handleApiResponseFormat(apiResponse as ApiResponse<T>, showNotification)
   }
 
-  // Response is direct data (not wrapped) or unknown format
-  else {
-    console.log("Treating as direct data response")
-
-    // Show generic success toast for direct data responses
-    if (showNotification && response.status >= 200 && response.status < 300) {
-      toastService.success('Operation completed successfully')
-    }
-
-    // For login endpoint, if we get an object with accessToken, treat it as AuthResponse
-    if (response.config?.url?.includes('/auth/login') &&
-      isObject && 'accessToken' in apiResponse) {
-      console.log("Detected direct AuthResponse format")
-      return apiResponse as T
-    }
-
-    return apiResponse as T
-  }
+  return handleDirectDataFormat(response as AxiosResponse<T>, showNotification)
 }
 
 // Export enhanced API instance and utilities
