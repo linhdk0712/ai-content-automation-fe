@@ -131,13 +131,47 @@ fi
 # 5. Navigate to project directory
 cd $PROJECT_DIR
 
-# 6. Clone or update repository (adjust as needed)
+# 6. Clone or update repository with error handling
 if [ -d ".git" ]; then
     print_status "Updating existing repository..."
-    git pull origin main
+    
+    # Try to pull, handle SSH permission errors
+    if ! git pull origin main 2>/dev/null; then
+        print_warning "Git pull failed. Checking for SSH permission issues..."
+        
+        # Check if it's an SSH permission error
+        if git remote -v | grep -q "git@github.com"; then
+            print_warning "Repository uses SSH. Checking SSH permissions..."
+            
+            # Try to fix SSH permissions
+            if [[ -f "/root/.ssh/id_rsa" ]]; then
+                chmod 600 /root/.ssh/id_rsa
+                chmod 700 /root/.ssh
+                print_status "Fixed SSH permissions. Retrying git pull..."
+                
+                if ! git pull origin main; then
+                    print_error "Git pull still failing. Consider switching to HTTPS:"
+                    print_error "Run: ./setup-https-git.sh"
+                    exit 1
+                fi
+            else
+                print_error "SSH key not found. Consider using HTTPS instead:"
+                print_error "Run: ./setup-https-git.sh"
+                exit 1
+            fi
+        else
+            print_error "Git pull failed for unknown reason"
+            git status
+            exit 1
+        fi
+    fi
 else
-    print_status "Repository should be cloned manually or via CI/CD"
-    print_warning "Make sure your code is in $PROJECT_DIR"
+    print_status "No Git repository found in $PROJECT_DIR"
+    print_warning "Please ensure your code is properly deployed to this directory"
+    print_warning "You can:"
+    print_warning "1. Clone manually: git clone <your-repo-url> ."
+    print_warning "2. Upload code via SCP/SFTP"
+    print_warning "3. Use CI/CD pipeline"
 fi
 
 # 7. Install dependencies and build with validation
