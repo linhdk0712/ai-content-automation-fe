@@ -31,45 +31,96 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Parse command line arguments
+FORCE_ROOT=false
+for arg in "$@"; do
+    case $arg in
+        --force-root)
+            FORCE_ROOT=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --force-root    Allow running as root user (not recommended)"
+            echo "  --help, -h      Show this help message"
+            echo ""
+            echo "Example:"
+            echo "  $0                    # Run as non-root user (recommended)"
+            echo "  $0 --force-root      # Force run as root (use with caution)"
+            exit 0
+            ;;
+    esac
+done
+
 # Security checks
 if [[ $EUID -eq 0 ]]; then
-    print_error "Running as root is not recommended for security reasons."
-    print_error "Please run this script as a non-root user with sudo privileges."
-    exit 1
-fi
-
-# Verify required environment variables
-if [[ -z "$USER" ]]; then
-    print_error "USER environment variable is not set"
-    exit 1
+    if [[ "$FORCE_ROOT" != "true" ]]; then
+        print_error "Running as root is not recommended for security reasons."
+        print_error "If you must run as root, use: $0 --force-root"
+        print_error "Recommended: Run as non-root user with sudo privileges."
+        exit 1
+    else
+        print_warning "Running as root user (forced). This is not recommended for security."
+        print_warning "Consider creating a dedicated user for deployment."
+        sleep 3
+    fi
 fi
 
 # 1. Update system packages
 print_status "Updating system packages..."
-sudo apt update && sudo apt upgrade -y
+if [[ $EUID -eq 0 ]]; then
+    apt update && apt upgrade -y
+else
+    sudo apt update && sudo apt upgrade -y
+fi
 
 # 2. Install required packages
 print_status "Installing required packages..."
-sudo apt install -y nginx nodejs npm git curl
+if [[ $EUID -eq 0 ]]; then
+    apt install -y nginx nodejs npm git curl
+else
+    sudo apt install -y nginx nodejs npm git curl
+fi
 
 # 3. Install PM2 globally
 print_status "Installing PM2..."
-sudo npm install -g pm2
+if [[ $EUID -eq 0 ]]; then
+    npm install -g pm2
+else
+    sudo npm install -g pm2
+fi
 
 # 4. Create project directory with proper permissions
 print_status "Setting up project directory..."
 if [[ ! -d "$PROJECT_DIR" ]]; then
-    sudo mkdir -p "$PROJECT_DIR" || {
-        print_error "Failed to create project directory: $PROJECT_DIR"
+    if [[ $EUID -eq 0 ]]; then
+        mkdir -p "$PROJECT_DIR" || {
+            print_error "Failed to create project directory: $PROJECT_DIR"
+            exit 1
+        }
+    else
+        sudo mkdir -p "$PROJECT_DIR" || {
+            print_error "Failed to create project directory: $PROJECT_DIR"
+            exit 1
+        }
+    fi
+fi
+
+# Set appropriate permissions based on user
+if [[ $EUID -eq 0 ]]; then
+    # Running as root - set ownership to root but make it accessible
+    chown -R root:root "$PROJECT_DIR"
+    chmod -R 755 "$PROJECT_DIR"
+    print_warning "Project directory owned by root. Consider using a dedicated user."
+else
+    # Running as non-root - set ownership to current user
+    sudo chown -R "$USER:$USER" "$PROJECT_DIR" || {
+        print_error "Failed to set ownership for: $PROJECT_DIR"
         exit 1
     }
 fi
-
-# Set secure permissions
-sudo chown -R "$USER:$USER" "$PROJECT_DIR" || {
-    print_error "Failed to set ownership for: $PROJECT_DIR"
-    exit 1
-}
 
 # Verify directory is writable
 if [[ ! -w "$PROJECT_DIR" ]]; then
@@ -137,6 +188,14 @@ print_status "Build completed successfully"
 print_status "Setting up PM2..."
 
 # Create PM2 log directory with proper permissions
+if [[ $EUID -eq 0 ]]; then
+    mkdir -p /var/log/pm2
+    chown -R root:root /var/log/pm2
+    chmod 755 /var/log/pm2
+else
+    sudo mkdir -p /var/log/pm2
+    sudo chown -R "$USER:$USER" /var/log/pm2
+fi
 sudo mkdir -p /var/log/pm2 || {
     print_error "Failed to create PM2 log directory"
     exit 1
@@ -206,54 +265,91 @@ if [[ -f "/etc/nginx/sites-available/$NGINX_SITE" ]]; then
 fi
 
 # Copy nginx configuration with validation
-sudo cp nginx-production.conf "/etc/nginx/sites-available/$NGINX_SITE" || {
-    print_error "Failed to copy Nginx configuration"
-    exit 1
+if [[ $EUID -eq 0 ]]; then
+    cp nginx-production.conf "/etc/nginx/sites-available/$NGINX_SITE" || {
+        print_error "Failed to copy Nginx configuration"
+        exit 1
+    }
+else
+    sudo cp nginx-production.conf "/etc/nginx/sites-available/$NGINX_SITE" || {
+        print_error "Failed to copy Nginx configuration"
+        exit 1
+    }
+fi
 }
 
 # Set proper permissions for nginx config
-sudo chmod 644 "/etc/nginx/sites-available/$NGINX_SITE"
-
-# Enable site
-sudo ln -sf "/etc/nginx/sites-available/$NGINX_SITE" "/etc/nginx/sites-enabled/" || {
-    print_error "Failed to enable Nginx site"
-    exit 1
-}
+if [[ $EUID -eq 0 ]]; then
+    chmod 644 "/etc/nginx/sites-available/$NGINX_SITE"
+    # Enable site
+    ln -sf "/etc/nginx/sites-available/$NGINX_SITE" "/etc/nginx/sites-enabled/" || {
+        print_error "Failed to enable Nginx site"
+        exit 1
+    }
+else
+    sudo chmod 644 "/etc/nginx/sites-available/$NGINX_SITE"
+    # Enable site
+    sudo ln -sf "/etc/nginx/sites-available/$NGINX_SITE" "/etc/nginx/sites-enabled/" || {
+        print_error "Failed to enable Nginx site"
+        exit 1
+    }
+fi
 
 # Remove default nginx site (with backup)
 if [[ -f "/etc/nginx/sites-enabled/default" ]]; then
     print_status "Removing default Nginx site"
-    sudo rm -f /etc/nginx/sites-enabled/default
+    if [[ $EUID -eq 0 ]]; then
+        rm -f /etc/nginx/sites-enabled/default
+    else
+        sudo rm -f /etc/nginx/sites-enabled/default
+    fi
 fi
 
 # Test nginx configuration before applying
 print_status "Testing Nginx configuration..."
-sudo nginx -t || {
-    print_error "Nginx configuration test failed"
-    print_error "Restoring previous configuration..."
-    if [[ -f "/etc/nginx/sites-available/$NGINX_SITE.backup."* ]]; then
-        sudo cp "/etc/nginx/sites-available/$NGINX_SITE.backup."* "/etc/nginx/sites-available/$NGINX_SITE"
-    fi
-    exit 1
-}
+if [[ $EUID -eq 0 ]]; then
+    nginx -t || {
+        print_error "Nginx configuration test failed"
+        exit 1
+    }
+else
+    sudo nginx -t || {
+        print_error "Nginx configuration test failed"
+        exit 1
+    }
+fi
 
 # Restart nginx with validation
 print_status "Restarting Nginx..."
-sudo systemctl restart nginx || {
-    print_error "Failed to restart Nginx"
-    sudo systemctl status nginx --no-pager -l
-    exit 1
-}
-
-sudo systemctl enable nginx || {
-    print_warning "Failed to enable Nginx service"
-}
+if [[ $EUID -eq 0 ]]; then
+    systemctl restart nginx || {
+        print_error "Failed to restart Nginx"
+        systemctl status nginx --no-pager -l
+        exit 1
+    }
+    systemctl enable nginx
+else
+    sudo systemctl restart nginx || {
+        print_error "Failed to restart Nginx"
+        sudo systemctl status nginx --no-pager -l
+        exit 1
+    }
+    sudo systemctl enable nginx
+fi
 
 # Verify nginx is running
-if ! sudo systemctl is-active --quiet nginx; then
-    print_error "Nginx is not running after restart"
-    sudo systemctl status nginx --no-pager -l
-    exit 1
+if [[ $EUID -eq 0 ]]; then
+    if ! systemctl is-active --quiet nginx; then
+        print_error "Nginx is not running after restart"
+        systemctl status nginx --no-pager -l
+        exit 1
+    fi
+else
+    if ! sudo systemctl is-active --quiet nginx; then
+        print_error "Nginx is not running after restart"
+        sudo systemctl status nginx --no-pager -l
+        exit 1
+    fi
 fi
 
 print_status "Nginx configured and running successfully"
@@ -261,9 +357,15 @@ print_status "Nginx configured and running successfully"
 # 10. Setup firewall (if ufw is available)
 if command -v ufw &> /dev/null; then
     print_status "Configuring firewall..."
-    sudo ufw allow 'Nginx Full'
-    sudo ufw allow ssh
-    sudo ufw --force enable
+    if [[ $EUID -eq 0 ]]; then
+        ufw allow 'Nginx Full'
+        ufw allow ssh
+        ufw --force enable
+    else
+        sudo ufw allow 'Nginx Full'
+        sudo ufw allow ssh
+        sudo ufw --force enable
+    fi
 fi
 
 # 11. Comprehensive health checks and final status
@@ -271,7 +373,21 @@ print_status "Performing final health checks..."
 
 # Check Nginx status
 echo "=== Nginx Status ==="
-if sudo systemctl is-active --quiet nginx; then
+if [[ $EUID -eq 0 ]]; then
+    if systemctl is-active --quiet nginx; then
+        echo "✅ Nginx is running"
+        systemctl status nginx --no-pager -l
+    else
+        echo "❌ Nginx is not running"
+    fi
+else
+    if sudo systemctl is-active --quiet nginx; then
+        echo "✅ Nginx is running"
+        sudo systemctl status nginx --no-pager -l
+    else
+        echo "❌ Nginx is not running"
+    fi
+fi
     print_status "✅ Nginx is running"
     sudo systemctl status nginx --no-pager -l | head -10
 else
