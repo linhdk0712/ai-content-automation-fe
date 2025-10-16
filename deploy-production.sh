@@ -217,6 +217,12 @@ if [[ -f "ecosystem.json" ]]; then
         print_error "Failed to start PM2 with ecosystem.json"
         exit 1
     }
+elif [[ -f "ecosystem.simple.cjs" ]]; then
+    print_status "Using ecosystem.simple.cjs configuration"
+    pm2 start ecosystem.simple.cjs --env production || {
+        print_error "Failed to start PM2 with ecosystem.simple.cjs"
+        exit 1
+    }
 elif [[ -f "ecosystem.config.cjs" ]]; then
     print_status "Using ecosystem.config.cjs configuration"
     pm2 start ecosystem.config.cjs --env production || {
@@ -224,7 +230,7 @@ elif [[ -f "ecosystem.config.cjs" ]]; then
         exit 1
     }
 else
-    print_error "No PM2 configuration file found (ecosystem.json or ecosystem.config.cjs)"
+    print_error "No PM2 configuration file found (ecosystem.json, ecosystem.simple.cjs, or ecosystem.config.cjs)"
     exit 1
 fi
 

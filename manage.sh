@@ -9,7 +9,13 @@ case "$1" in
     start)
         echo "Starting $APP_NAME..."
         cd $PROJECT_DIR
-        pm2 start ecosystem.config.cjs --env production
+        if [[ -f "ecosystem.simple.cjs" ]]; then
+            pm2 start ecosystem.simple.cjs --env production
+        elif [[ -f "ecosystem.json" ]]; then
+            pm2 start ecosystem.json --env production
+        else
+            pm2 start ecosystem.config.cjs --env production
+        fi
         ;;
     stop)
         echo "Stopping $APP_NAME..."
