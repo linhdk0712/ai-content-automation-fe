@@ -36,7 +36,7 @@ export default defineConfig({
     // Proxy for development - nginx handles production
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: 'http://auth-service:8081',
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {

@@ -1,0 +1,39 @@
+# Development Dockerfile for React/Vite application
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for building native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build arguments for environment configuration
+ARG NODE_ENV=development
+ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VERCEL=1
+ARG DOCKER=1
+
+# Set environment variables
+ENV NODE_ENV=${NODE_ENV}
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+ENV VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+ENV VERCEL=${VERCEL}
+ENV DOCKER=${DOCKER}
+
+# Expose port
+EXPOSE 3000
+
+# Start Vite dev server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
