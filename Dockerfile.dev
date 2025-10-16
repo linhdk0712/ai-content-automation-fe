@@ -4,14 +4,17 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Install dependencies for building native modules
-RUN apk add --no-cache python3 make g++
+# Install dependencies for building native modules and esbuild
+RUN apk add --no-cache python3 make g++ libc6-compat
 
 # Copy package files
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies)
 RUN npm install
+
+# Rebuild esbuild for Alpine Linux
+RUN npm rebuild esbuild
 
 # Copy source code
 COPY . .
@@ -31,6 +34,8 @@ ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
 ENV VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
 ENV VERCEL=${VERCEL}
 ENV DOCKER=${DOCKER}
+# Fix esbuild issues in Docker
+ENV ESBUILD_BINARY_PATH=/app/node_modules/esbuild/bin/esbuild
 
 # Expose port
 EXPOSE 3000
