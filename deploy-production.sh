@@ -266,22 +266,68 @@ if command -v ufw &> /dev/null; then
     sudo ufw --force enable
 fi
 
-# 11. Final status check
-print_status "Checking services status..."
-echo "Nginx status:"
-sudo systemctl status nginx --no-pager -l
+# 11. Comprehensive health checks and final status
+print_status "Performing final health checks..."
 
-echo "PM2 status:"
-pm2 status
-
-print_status "✅ Deployment completed successfully!"
-print_status "🌐 Your application should be available at: http://180.93.138.113:3000/"
-print_status "📝 Nginx logs: /var/log/nginx/ai-content-frontend.*.log"
-print_status "📝 PM2 logs: pm2 logs $PM2_APP"
+# Check Nginx status
+echo "=== Nginx Status ==="
+if sudo systemctl is-active --quiet nginx; then
+    print_status "✅ Nginx is running"
+    sudo systemctl status nginx --no-pager -l | head -10
+else
+    print_error "❌ Nginx is not running"
+    sudo systemctl status nginx --no-pager -l
+fi
 
 echo ""
-echo "Next steps:"
-echo "1. Update your domain in /etc/nginx/sites-available/$NGINX_SITE"
-echo "2. Configure SSL certificate (Let's Encrypt recommended)"
-echo "3. Update DNS records to point to your server"
-echo "4. Test the application thoroughly"
+echo "=== PM2 Status ==="
+if pm2 list | grep -q "$PM2_APP.*online"; then
+    print_status "✅ PM2 process is running"
+    pm2 status
+else
+    print_error "❌ PM2 process is not running properly"
+    pm2 status
+    pm2 logs "$PM2_APP" --lines 10
+fi
+
+echo ""
+echo "=== Application Health Check ==="
+# Test if application is responding
+sleep 5
+if curl -f -s "http://localhost:4173" > /dev/null; then
+    print_status "✅ Application is responding on port 4173"
+else
+    print_warning "⚠️  Application may not be responding on port 4173"
+fi
+
+# Check disk space
+echo ""
+echo "=== System Resources ==="
+df -h / | tail -1 | awk '{print "Disk usage: " $5 " of " $2 " used"}'
+free -h | grep "Mem:" | awk '{print "Memory usage: " $3 "/" $2}'
+
+echo ""
+print_status "🎉 Deployment completed!"
+
+# Dynamic IP detection for better user experience
+SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+print_status "🌐 Application should be available at: http://$SERVER_IP:4173/"
+
+echo ""
+echo "📋 Important Information:"
+echo "   📝 Nginx logs: /var/log/nginx/ai-content-frontend.*.log"
+echo "   📝 PM2 logs: pm2 logs $PM2_APP"
+echo "   📝 Application logs: /var/log/pm2/ai-content-frontend*.log"
+echo ""
+echo "🔧 Next Steps:"
+echo "   1. Update domain configuration in /etc/nginx/sites-available/$NGINX_SITE"
+echo "   2. Configure SSL certificate (certbot --nginx recommended)"
+echo "   3. Update DNS records to point to your server IP: $SERVER_IP"
+echo "   4. Test application functionality thoroughly"
+echo "   5. Set up monitoring and backup procedures"
+echo ""
+echo "🚨 Security Reminders:"
+echo "   - Change default passwords and API keys"
+echo "   - Configure firewall rules appropriately"
+echo "   - Enable automatic security updates"
+echo "   - Regular backup of application data"
