@@ -35,7 +35,16 @@ PROJECT_DIR="$(dirname "$CURRENT_DIR")"
 FRONTEND_DIR="$CURRENT_DIR"
 NGINX_SITE="ai-content-frontend"
 PM2_APP="ai-content-frontend"
-PM2_PORT="4173"
+
+# Environment-based configuration
+ENVIRONMENT="${DEPLOY_ENV:-production}"
+if [[ "$ENVIRONMENT" == "development" ]]; then
+    PM2_PORT="3000"
+    PM2_SCRIPT="dev"
+else
+    PM2_PORT="4173"
+    PM2_SCRIPT="preview"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -548,7 +557,7 @@ generate_pm2_config() {
     {
       "name": "$PM2_APP",
       "script": "npm",
-      "args": "run preview",
+      "args": "run $PM2_SCRIPT",
       "cwd": "$current_dir",
       "instances": 1,
       "autorestart": true,
