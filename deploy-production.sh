@@ -8,8 +8,8 @@ set -e  # Exit on any error
 echo "🚀 Starting AI Content Automation Frontend Deployment..."
 
 # Configuration
-PROJECT_DIR="/var/www/ai-content-automation"
-FRONTEND_DIR="$PROJECT_DIR/frontend"
+PROJECT_DIR="/root"
+FRONTEND_DIR="$PROJECT_DIR/ai-content-automation-fe"
 NGINX_SITE="ai-content-frontend"
 PM2_APP="ai-content-frontend"
 
@@ -123,7 +123,7 @@ echo "PM2 status:"
 pm2 status
 
 print_status "✅ Deployment completed successfully!"
-print_status "🌐 Your application should be available at: http://your-server-ip"
+print_status "🌐 Your application should be available at: http://180.93.138.113:3000/"
 print_status "📝 Nginx logs: /var/log/nginx/ai-content-frontend.*.log"
 print_status "📝 PM2 logs: pm2 logs $PM2_APP"
 
