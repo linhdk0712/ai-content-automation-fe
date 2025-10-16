@@ -353,7 +353,6 @@ else
         exit 1
     }
 fi
-}
 
 # Set proper permissions for nginx config
 if [[ $EUID -eq 0 ]]; then
@@ -453,23 +452,19 @@ echo "=== Nginx Status ==="
 if [[ $EUID -eq 0 ]]; then
     if systemctl is-active --quiet nginx; then
         echo "✅ Nginx is running"
-        systemctl status nginx --no-pager -l
+        systemctl status nginx --no-pager -l | head -10
     else
         echo "❌ Nginx is not running"
+        systemctl status nginx --no-pager -l
     fi
 else
     if sudo systemctl is-active --quiet nginx; then
         echo "✅ Nginx is running"
-        sudo systemctl status nginx --no-pager -l
+        sudo systemctl status nginx --no-pager -l | head -10
     else
         echo "❌ Nginx is not running"
+        sudo systemctl status nginx --no-pager -l
     fi
-fi
-    print_status "✅ Nginx is running"
-    sudo systemctl status nginx --no-pager -l | head -10
-else
-    print_error "❌ Nginx is not running"
-    sudo systemctl status nginx --no-pager -l
 fi
 
 echo ""
