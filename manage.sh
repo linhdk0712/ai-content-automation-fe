@@ -9,7 +9,7 @@ case "$1" in
     start)
         echo "Starting $APP_NAME..."
         cd $PROJECT_DIR
-        pm2 start ecosystem.config.js --env production
+        pm2 start ecosystem.config.cjs --env production
         ;;
     stop)
         echo "Stopping $APP_NAME..."
