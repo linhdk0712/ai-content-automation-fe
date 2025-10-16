@@ -4,7 +4,7 @@
       "name": "ai-content-frontend",
       "script": "npm",
       "args": "run preview",
-      "cwd": "/var/www/ai-content-automation/frontend",
+      "cwd": "/root/ai-content-automation-fe/frontend",
       "instances": 1,
       "autorestart": true,
       "watch": false,

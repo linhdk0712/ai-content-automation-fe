@@ -221,6 +221,43 @@ print_status "Build completed successfully"
 # 8. Setup PM2 with enhanced error handling
 print_status "Setting up PM2..."
 
+# Generate PM2 config for current directory
+print_status "Generating PM2 configuration for current directory..."
+if [[ -f "generate-pm2-config.sh" ]]; then
+    ./generate-pm2-config.sh
+else
+    # Generate config inline if script not found
+    CURRENT_DIR=$(pwd)
+    cat > ecosystem.json << EOF
+{
+  "apps": [
+    {
+      "name": "ai-content-frontend",
+      "script": "npm",
+      "args": "run preview",
+      "cwd": "$CURRENT_DIR",
+      "instances": 1,
+      "autorestart": true,
+      "watch": false,
+      "max_memory_restart": "1G",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": 4173,
+        "HOST": "0.0.0.0"
+      },
+      "log_file": "/var/log/pm2/ai-content-frontend.log",
+      "out_file": "/var/log/pm2/ai-content-frontend-out.log",
+      "error_file": "/var/log/pm2/ai-content-frontend-error.log",
+      "min_uptime": "10s",
+      "max_restarts": 10,
+      "restart_delay": 4000
+    }
+  ]
+}
+EOF
+    print_status "Generated ecosystem.json with cwd: $CURRENT_DIR"
+fi
+
 # Create PM2 log directory with proper permissions
 if [[ $EUID -eq 0 ]]; then
     mkdir -p /var/log/pm2
