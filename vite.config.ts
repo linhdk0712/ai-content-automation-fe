@@ -1,6 +1,6 @@
-import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
-import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
 
 
 // https://vitejs.dev/config/
@@ -33,28 +33,27 @@ export default defineConfig({
       'bossai.com.vn'
     ],
     middlewareMode: false,
-    // Proxy removed - using nginx proxy instead
-    // proxy: {
-    //   '/api': {
-    //     target: 'http://localhost:8081',
-    //     changeOrigin: true,
-    //     secure: false,
-    //     rewrite: (path) => path.replace(/^\/api/, ''),
-    //     configure: (proxy) => {
-    //       proxy.on('proxyReq', (_proxyReq, req, res) => {
-    //         // Add CORS headers for preflight requests
-    //         if (req.method === 'OPTIONS') {
-    //           res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    //           res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-    //           res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-    //           res.setHeader('Access-Control-Allow-Credentials', 'true');
-    //           res.statusCode = 200;
-    //           res.end();
-    //         }
-    //       });
-    //     }
-    //   }
-    // }
+    // Proxy for development - nginx handles production
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (_proxyReq, req, res) => {
+            // Add CORS headers for preflight requests
+            if (req.method === 'OPTIONS') {
+              res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+              res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+              res.setHeader('Access-Control-Allow-Credentials', 'true');
+              res.statusCode = 200;
+              res.end();
+            }
+          });
+        }
+      }
+    }
   },
   build: {
     outDir: 'dist',
