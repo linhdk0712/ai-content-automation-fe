@@ -1,20 +1,21 @@
 # Development Dockerfile for React/Vite application
-FROM node:18-alpine
+FROM node:18-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install dependencies for building native modules and esbuild
-RUN apk add --no-cache python3 make g++ libc6-compat
+# Install dependencies for building native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies)
 RUN npm install
-
-# Rebuild esbuild for Alpine Linux
-RUN npm rebuild esbuild
 
 # Copy source code
 COPY . .
@@ -36,6 +37,7 @@ ENV VERCEL=${VERCEL}
 ENV DOCKER=${DOCKER}
 # Fix esbuild issues in Docker
 ENV ESBUILD_BINARY_PATH=/app/node_modules/esbuild/bin/esbuild
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Expose port
 EXPOSE 3000

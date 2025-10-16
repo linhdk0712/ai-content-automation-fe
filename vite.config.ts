@@ -135,7 +135,16 @@ export default defineConfig({
       'date-fns'
     ],
     // Force optimization of these packages for SPA
-    force: process.env.NODE_ENV === 'development'
+    force: process.env.NODE_ENV === 'development',
+    // Disable esbuild for Docker compatibility
+    esbuildOptions: {
+      target: 'es2020'
+    }
+  },
+  esbuild: {
+    // Disable esbuild in Docker
+    target: 'es2020',
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   },
   // SPA-specific configuration
   appType: 'spa',
