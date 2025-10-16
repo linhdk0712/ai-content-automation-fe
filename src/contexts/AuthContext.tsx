@@ -42,10 +42,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (isAuth) {
         console.log('Getting current user...')
-        const userProfile = await authService.getCurrentUser();
-        console.log('User profile received:', userProfile)
-        setUser(userProfile);
-        setIsAuthenticated(true);
+        try {
+          const userProfile = await authService.getCurrentUser();
+          console.log('User profile received:', userProfile)
+          setUser(userProfile);
+          setIsAuthenticated(true);
+        } catch (userError) {
+          console.warn('Failed to get current user, clearing auth state:', userError);
+          setUser(null);
+          setIsAuthenticated(false);
+          authService.clearTokens();
+        }
       } else {
         console.log('Not authenticated, clearing state')
         setUser(null);
