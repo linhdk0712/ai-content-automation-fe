@@ -109,6 +109,7 @@ run_privileged() {
 FORCE_ROOT=false
 SKIP_GIT=false
 SKIP_BUILD=false
+BUILD_ONLY=false
 SKIP_PM2=false
 SKIP_NGINX=false
 SKIP_CLEANUP=false
@@ -127,6 +128,10 @@ parse_arguments() {
                 ;;
             --skip-build)
                 SKIP_BUILD=true
+                shift
+                ;;
+            --build-only)
+                BUILD_ONLY=true
                 shift
                 ;;
             --skip-pm2)
@@ -170,16 +175,23 @@ show_help() {
     echo "  --force-root     Allow running as root user (not recommended)"
     echo "  --skip-git       Skip Git repository update"
     echo "  --skip-build     Skip npm build process"
+    echo "  --build-only     Only build, skip service deployment"
     echo "  --skip-pm2       Skip PM2 setup"
     echo "  --skip-nginx     Skip Nginx setup"
     echo "  --skip-cleanup   Skip cleanup of existing deployment"
     echo "  --help, -h       Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Full clean deployment"
-    echo "  $0 --force-root      # Clean deployment as root"
-    echo "  $0 --skip-cleanup    # Deploy without cleaning existing"
-    echo "  $0 --skip-git        # Deploy without updating Git"
+    echo "  $0                         # Full clean deployment"
+    echo "  $0 --force-root           # Clean deployment as root"
+    echo "  $0 --skip-build           # Deploy with existing build"
+    echo "  $0 --build-only           # Only build, don't deploy services"
+    echo "  $0 --skip-cleanup         # Deploy without cleaning existing"
+    echo "  $0 --skip-git             # Deploy without updating Git"
+    echo ""
+    echo "Build Management:"
+    echo "  ./check-build.sh          # Check if build is needed"
+    echo "  ./build-production.sh     # Build only (standalone)"
     echo ""
     echo "Clean Deployment Benefits:"
     echo "  ✅ Ensures no conflicts with old code"
@@ -496,13 +508,16 @@ install_dependencies() {
     
     print_step "Installing dependencies..."
     
+    # Set memory limit for npm operations
+    export NODE_OPTIONS="--max-old-space-size=4096"
+    
     # Clean install for production
     if [[ -f "package-lock.json" ]]; then
         print_status "Using npm ci for clean install..."
-        npm ci --only=production=false
+        npm ci --only=production=false --no-audit --no-fund
     else
         print_status "Using npm install..."
-        npm install
+        npm install --no-audit --no-fund
     fi
     
     # Run security audit (non-blocking)
@@ -512,20 +527,54 @@ install_dependencies() {
     print_status "Dependencies installed successfully"
 }
 
+check_build_needed() {
+    # Check if dist directory exists and is recent
+    if [[ -d "dist" ]] && [[ -f "dist/index.html" ]]; then
+        local dist_age=$(find dist -name "index.html" -mtime +1 2>/dev/null | wc -l)
+        if [[ $dist_age -eq 0 ]]; then
+            print_status "Recent build found (less than 1 day old)"
+            return 1  # Build not needed
+        fi
+    fi
+    return 0  # Build needed
+}
+
 build_application() {
     if [[ "$SKIP_BUILD" == "true" ]]; then
         print_status "Skipping build process (--skip-build flag)"
+        
+        # Verify existing build
+        if [[ ! -d "dist" ]] || [[ ! -f "dist/index.html" ]]; then
+            print_error "No existing build found! Cannot skip build."
+            print_error "Either run without --skip-build or build manually first."
+            exit 1
+        fi
+        
+        local build_size=$(du -sh dist 2>/dev/null | cut -f1 || echo "unknown")
+        print_status "Using existing build (size: $build_size)"
         return 0
     fi
     
     print_step "Building application..."
     
-    # Set production environment
+    # Set production environment and increase memory limit
     export NODE_ENV=production
+    export NODE_OPTIONS="--max-old-space-size=4096"
     
-    # Build the application
-    npm run build
-    #NODE_OPTIONS="--max-old-space-size=4096" npm run build
+    # Clear any existing build artifacts
+    if [[ -d "dist" ]]; then
+        rm -rf dist
+    fi
+    
+    # Build the application with memory optimization
+    print_status "Building with production config and increased memory limit (4GB)..."
+    print_status "This may take several minutes, please be patient..."
+    
+    # Try production build first, fallback to regular build if it fails
+    if ! npm run build:production; then
+        print_warning "Production build failed, trying regular build..."
+        npm run build:memory-optimized
+    fi
     
     # Verify build output
     if [[ ! -d "dist" ]]; then
@@ -539,7 +588,9 @@ build_application() {
         exit 1
     fi
     
-    print_status "Application built successfully"
+    # Show build size
+    local build_size=$(du -sh dist 2>/dev/null | cut -f1 || echo "unknown")
+    print_status "Application built successfully (size: $build_size)"
 }
 
 # =============================================================================
@@ -889,6 +940,12 @@ main() {
     setup_git_repository
     install_dependencies
     build_application
+    
+    # If build-only mode, exit after build
+    if [[ "$BUILD_ONLY" == "true" ]]; then
+        print_status "Build-only mode completed. Skipping service deployment."
+        exit 0
+    fi
     
     # Service setup phase
     print_header "Phase 4: Service Setup"

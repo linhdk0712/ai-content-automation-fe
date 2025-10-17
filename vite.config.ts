@@ -48,7 +48,7 @@ const CONFIG = {
 
 export default defineConfig({
   base: (isDocker || isVercel || isDevelopment) ? '/' : '/app/',
-  
+
   plugins: [
     react({
       jsxImportSource: '@emotion/react'
@@ -60,7 +60,7 @@ export default defineConfig({
       brotliSize: true
     })
   ],
-  
+
   server: {
     port: CONFIG.server.port,
     host: CONFIG.server.host, // Bind all interfaces for Docker
@@ -73,7 +73,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: isDocker 
+        target: isDocker
           ? CONFIG.api.dockerTarget  // Docker network
           : CONFIG.api.localTarget,  // Local development
         changeOrigin: true,
@@ -82,18 +82,20 @@ export default defineConfig({
       }
     }
   },
-  
+
   build: {
     outDir: 'dist',
-    sourcemap: false, // Tắt sourcemap để giảm memory usage
-    minify: 'esbuild', // Dùng esbuild thay vì terser (nhanh hơn, ít memory hơn)
-    
+    sourcemap: false, // Disable sourcemap to reduce memory usage
+    minify: 'esbuild', // Use esbuild instead of terser (faster, less memory)
+
     rollupOptions: {
+      // Reduce memory usage during build
+      maxParallelFileOps: 2, // Limit parallel operations
       output: {
-        // SIMPLIFIED chunk strategy - tránh over-splitting
+        // SIMPLIFIED chunk strategy - avoid over-splitting
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            // Gộp tất cả vendor vào 1 chunk
+            // Group all vendor dependencies into one chunk to reduce memory
             return 'vendor'
           }
         },
@@ -115,17 +117,21 @@ export default defineConfig({
         }
       }
     },
-    
+
     chunkSizeWarningLimit: CONFIG.build.chunkSizeLimit,
-    cssCodeSplit: true,
+    cssCodeSplit: false, // Disable CSS code splitting to reduce memory usage
     assetsInlineLimit: CONFIG.build.inlineLimit,
-    
-    // Tăng memory limit cho Node.js
+
+    // Memory optimization settings
     commonjsOptions: {
       transformMixedEsModules: true
-    }
+    },
+
+    // Reduce build concurrency to save memory
+    target: CONFIG.build.target,
+    reportCompressedSize: false, // Disable gzip size reporting to save memory
   },
-  
+
   optimizeDeps: {
     include: [
       'react',
@@ -140,14 +146,14 @@ export default defineConfig({
       target: CONFIG.build.target
     }
   },
-  
+
   esbuild: {
     target: CONFIG.build.target,
     logOverride: { 'this-is-undefined-in-esm': 'silent' }
   },
-  
+
   appType: 'spa',
-  
+
   preview: {
     port: 4173,
     host: true,
