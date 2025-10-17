@@ -100,6 +100,33 @@ export const useDashboard = (): DashboardReturn => {
       // Fetch dashboard data from API
       const dashboardResponse = await dashboardService.getDashboardData(user.id, '30d')
       
+      // Validate and sanitize performance data
+      const sanitizePerformanceData = (data: any[]): any[] => {
+        if (!Array.isArray(data)) return []
+        return data.filter(item => 
+          item && 
+          typeof item === 'object' && 
+          item.date &&
+          typeof item.engagement === 'number' &&
+          typeof item.reach === 'number'
+        )
+      }
+
+      // Validate and sanitize quick stats
+      const sanitizeQuickStats = (data: any[]): any[] => {
+        if (!Array.isArray(data)) return []
+        return data.map((stat, index) => ({
+          totalReach: typeof stat?.totalReach === 'number' ? stat.totalReach : 0,
+          reachChange: typeof stat?.reachChange === 'number' ? stat.reachChange : 0,
+          totalEngagement: typeof stat?.totalEngagement === 'number' ? stat.totalEngagement : 0,
+          engagementChange: typeof stat?.engagementChange === 'number' ? stat.engagementChange : 0,
+          contentCreated: typeof stat?.contentCreated === 'number' ? stat.contentCreated : 0,
+          contentChange: typeof stat?.contentChange === 'number' ? stat.contentChange : 0,
+          postsScheduled: typeof stat?.postsScheduled === 'number' ? stat.postsScheduled : 0,
+          scheduledChange: typeof stat?.scheduledChange === 'number' ? stat.scheduledChange : 0,
+        }))
+      }
+
       // Transform API response to match expected format
       const transformedData: DashboardData = {
         stats: {
@@ -112,7 +139,7 @@ export const useDashboard = (): DashboardReturn => {
           conversionRate: 0, // Will be calculated from performance data
           revenue: 0 // Will be calculated from performance data
         },
-        recentActivity: dashboardResponse.recentActivity || [],
+        recentActivity: Array.isArray(dashboardResponse.recentActivity) ? dashboardResponse.recentActivity : [],
         quickActions: [
           {
             id: 'create-content',
@@ -152,13 +179,14 @@ export const useDashboard = (): DashboardReturn => {
           audienceGrowth: []
         },
         loadDashboardData: fetchDashboardData,
-        upcomingPosts: dashboardResponse.upcomingPosts || [],
-        performanceData: dashboardResponse.performanceData || [],
-        quickStats: dashboardResponse.quickStats || []
+        upcomingPosts: Array.isArray(dashboardResponse.upcomingPosts) ? dashboardResponse.upcomingPosts : [],
+        performanceData: sanitizePerformanceData(dashboardResponse.performanceData),
+        quickStats: sanitizeQuickStats(dashboardResponse.quickStats)
       }
       
       setDashboardData(transformedData)
     } catch (err) {
+      console.error('Dashboard data fetch error:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data')
     } finally {
       setIsLoading(false)

@@ -43,6 +43,8 @@ import {
   YAxis
 } from 'recharts'
 
+import DebugInfo from '../components/debug/DebugInfo'
+import ErrorBoundary from '../components/common/ErrorBoundary'
 import PageWrapper from '../components/common/PageWrapper'
 import { useAuth } from '../hooks/useAuth'
 import { useDashboard } from '../hooks/useDashboard'
@@ -196,11 +198,12 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <PageWrapper
-      title="Dashboard"
-      description="AI Content Automation Dashboard - Monitor your content performance, analytics, and recent activities"
-      keywords="dashboard, analytics, content performance, AI automation"
-    >
+    <ErrorBoundary>
+      <PageWrapper
+        title="Dashboard"
+        description="AI Content Automation Dashboard - Monitor your content performance, analytics, and recent activities"
+        keywords="dashboard, analytics, content performance, AI automation"
+      >
       <Box sx={{
         px: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
         py: { xs: 1, sm: 1.5, md: 2 },
@@ -272,36 +275,49 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           {renderMetricCard(
             'Total Reach',
-            quickStats?.[0]?.totalReach || 0,
-            quickStats?.[0]?.reachChange || 0,
+            quickStats && quickStats[0] ? (quickStats[0].totalReach || 0) : 0,
+            quickStats && quickStats[0] ? (quickStats[0].reachChange || 0) : 0,
             <Visibility />
           )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           {renderMetricCard(
             'Engagement',
-            quickStats?.[1]?.totalEngagement || 0,
-            quickStats?.[1]?.engagementChange || 0,
+            quickStats && quickStats[1] ? (quickStats[1].totalEngagement || 0) : 0,
+            quickStats && quickStats[1] ? (quickStats[1].engagementChange || 0) : 0,
             <ThumbUp />
           )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           {renderMetricCard(
             'Content Created',
-            quickStats?.[2]?.contentCreated || 0,
-            quickStats?.[2]?.contentChange || 0,
+            quickStats && quickStats[2] ? (quickStats[2].contentCreated || 0) : 0,
+            quickStats && quickStats[2] ? (quickStats[2].contentChange || 0) : 0,
             <Description />
           )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           {renderMetricCard(
             'Posts Scheduled',
-            quickStats?.[3]?.postsScheduled || 0,
-            quickStats?.[3]?.scheduledChange || 0,
+            quickStats && quickStats[3] ? (quickStats[3].postsScheduled || 0) : 0,
+            quickStats && quickStats[3] ? (quickStats[3].scheduledChange || 0) : 0,
             <Schedule />
           )}
         </Grid>
       </Grid>
+
+      <DebugInfo 
+        title="Dashboard Data" 
+        data={{
+          isLoading,
+          error,
+          quickStats,
+          performanceData,
+          recentActivity,
+          upcomingPosts,
+          user: user ? { id: user.id, username: user.username } : null
+        }} 
+      />
 
       <Grid container spacing={{ xs: 1, sm: 1.5, md: 2 }}>
         {/* Performance Chart */}
@@ -340,28 +356,42 @@ const Dashboard: React.FC = () => {
               </Box>
 
               <Box sx={{ height: { xs: 180, md: 220 }, mt: 1 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={performanceData || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Area
-                      type="monotone"
-                      dataKey="engagement"
-                      stroke="#8884d8"
-                      fill="#8884d8"
-                      fillOpacity={0.3}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="reach"
-                      stroke="#82ca9d"
-                      fill="#82ca9d"
-                      fillOpacity={0.3}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {performanceData && performanceData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={performanceData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <RechartsTooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="engagement"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.3}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="reach"
+                        stroke="#82ca9d"
+                        fill="#82ca9d"
+                        fillOpacity={0.3}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    height: '100%',
+                    color: 'text.secondary'
+                  }}>
+                    <Typography variant="body2">
+                      No performance data available
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -694,7 +724,8 @@ const Dashboard: React.FC = () => {
         </Grid>
       </Grid>
       </Box>
-    </PageWrapper>
+      </PageWrapper>
+    </ErrorBoundary>
   )
 }
 

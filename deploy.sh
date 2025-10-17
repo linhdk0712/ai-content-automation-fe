@@ -524,7 +524,8 @@ build_application() {
     export NODE_ENV=production
     
     # Build the application
-    npm run build
+    #npm run build
+    NODE_OPTIONS="--max-old-space-size=4096" npm run build
     
     # Verify build output
     if [[ ! -d "dist" ]]; then

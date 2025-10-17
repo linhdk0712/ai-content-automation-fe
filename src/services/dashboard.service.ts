@@ -15,10 +15,38 @@ class DashboardService {
   async getDashboardData(userId: number, timeRange: string = '30d'): Promise<DashboardDataResponse> {
     try {
       const response = await api.get(`/dashboard?userId=${userId}&timeRange=${timeRange}`)
-      return response.data as DashboardDataResponse
+      
+      // Return default structure if API returns null/undefined
+      const defaultResponse: DashboardDataResponse = {
+        totalContent: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        scheduledContent: 0,
+        performanceData: [],
+        quickStats: [],
+        recentActivity: [],
+        upcomingPosts: []
+      }
+
+      // Merge with API response, ensuring all required fields exist
+      return {
+        ...defaultResponse,
+        ...response.data
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
-      throw error
+      
+      // Return default data structure on error to prevent crashes
+      return {
+        totalContent: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        scheduledContent: 0,
+        performanceData: [],
+        quickStats: [],
+        recentActivity: [],
+        upcomingPosts: []
+      }
     }
   }
 
