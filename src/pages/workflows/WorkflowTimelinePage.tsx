@@ -16,9 +16,11 @@ import { PlayArrow, Timeline as TimelineIcon } from '@mui/icons-material';
 import { WorkflowNodeTimeline } from '../../components/workflow/WorkflowNodeTimeline';
 import { WorkflowNodeTimelineCompact } from '../../components/workflow/WorkflowNodeTimelineCompact';
 import { useAuth } from '../../hooks/useAuth';
+import { useI18n } from '../../hooks/useI18n';
 
 export const WorkflowTimelinePage: React.FC = () => {
     const { user } = useAuth();
+    const { t } = useI18n();
     const [executionId, setExecutionId] = useState('');
     const [contentId, setContentId] = useState('');
     const [activeExecutionId, setActiveExecutionId] = useState<string | undefined>();
@@ -47,7 +49,7 @@ export const WorkflowTimelinePage: React.FC = () => {
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Alert severity="warning">
-                    Bạn cần đăng nhập để sử dụng tính năng này.
+                    {t('workflowTimeline.loginRequired')}
                 </Alert>
             </Container>
         );
@@ -58,10 +60,10 @@ export const WorkflowTimelinePage: React.FC = () => {
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TimelineIcon />
-                    Workflow Node Timeline
+                    {t('workflowTimeline.title')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                    Theo dõi realtime trạng thái của các node trong N8N workflow
+                    {t('workflowTimeline.description')}
                 </Typography>
             </Box>
 
@@ -69,17 +71,17 @@ export const WorkflowTimelinePage: React.FC = () => {
             <Card sx={{ mb: 4 }}>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
-                        Kết nối Timeline
+                        {t('workflowTimeline.connectTimeline')}
                     </Typography>
-                    
+
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={6}>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                                 <TextField
-                                    label="Execution ID"
+                                    label={t('workflowTimeline.executionId')}
                                     value={executionId}
                                     onChange={(e) => setExecutionId(e.target.value)}
-                                    placeholder="Nhập execution ID để theo dõi"
+                                    placeholder={t('workflowTimeline.executionIdPlaceholder')}
                                     fullWidth
                                     size="small"
                                 />
@@ -89,18 +91,18 @@ export const WorkflowTimelinePage: React.FC = () => {
                                     disabled={!executionId.trim()}
                                     startIcon={<PlayArrow />}
                                 >
-                                    Kết nối
+                                    {t('workflowTimeline.connect')}
                                 </Button>
                             </Box>
                         </Grid>
-                        
+
                         <Grid item xs={12} md={6}>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                                 <TextField
-                                    label="Content ID"
+                                    label={t('workflowTimeline.contentId')}
                                     value={contentId}
                                     onChange={(e) => setContentId(e.target.value)}
-                                    placeholder="Nhập content ID để theo dõi"
+                                    placeholder={t('workflowTimeline.contentIdPlaceholder')}
                                     fullWidth
                                     size="small"
                                 />
@@ -110,7 +112,7 @@ export const WorkflowTimelinePage: React.FC = () => {
                                     disabled={!contentId.trim()}
                                     startIcon={<PlayArrow />}
                                 >
-                                    Kết nối
+                                    {t('workflowTimeline.connect')}
                                 </Button>
                             </Box>
                         </Grid>
@@ -119,14 +121,14 @@ export const WorkflowTimelinePage: React.FC = () => {
                     {(activeExecutionId || activeContentId) && (
                         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Alert severity="info" sx={{ flex: 1 }}>
-                                Đang theo dõi: {activeExecutionId ? `Execution ${activeExecutionId}` : `Content ${activeContentId}`}
+                                {t('workflowTimeline.tracking')}: {activeExecutionId ? `Execution ${activeExecutionId}` : `Content ${activeContentId}`}
                             </Alert>
                             <Button
                                 variant="outlined"
                                 onClick={handleDisconnect}
                                 sx={{ ml: 2 }}
                             >
-                                Ngắt kết nối
+                                {t('workflowTimeline.disconnect')}
                             </Button>
                         </Box>
                     )}
@@ -139,7 +141,7 @@ export const WorkflowTimelinePage: React.FC = () => {
                 <Grid item xs={12}>
                     <Paper sx={{ p: 2 }}>
                         <Typography variant="h6" gutterBottom>
-                            Timeline Đầy Đủ
+                            {t('workflowTimeline.fullTimeline')}
                         </Typography>
                         <WorkflowNodeTimeline
                             userId={user.id}
@@ -155,7 +157,7 @@ export const WorkflowTimelinePage: React.FC = () => {
                 <Grid item xs={12} md={6}>
                     <Box>
                         <Typography variant="h6" gutterBottom>
-                            Timeline Compact
+                            {t('workflowTimeline.compactTimeline')}
                         </Typography>
                         <WorkflowNodeTimelineCompact
                             userId={user.id}
@@ -171,40 +173,40 @@ export const WorkflowTimelinePage: React.FC = () => {
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
-                                Hướng Dẫn Sử Dụng
+                                {t('workflowTimeline.usageGuide')}
                             </Typography>
-                            
+
                             <Typography variant="body2" paragraph>
-                                <strong>1. Kết nối theo Execution ID:</strong><br />
-                                Nhập execution ID từ N8N để theo dõi một workflow cụ thể.
+                                <strong>{t('workflowTimeline.connectByExecutionId')}</strong><br />
+                                {t('workflowTimeline.connectByExecutionIdDesc')}
                             </Typography>
-                            
+
                             <Typography variant="body2" paragraph>
-                                <strong>2. Kết nối theo Content ID:</strong><br />
-                                Nhập content ID để theo dõi tất cả workflow liên quan đến content đó.
+                                <strong>{t('workflowTimeline.connectByContentId')}</strong><br />
+                                {t('workflowTimeline.connectByContentIdDesc')}
                             </Typography>
-                            
+
                             <Divider sx={{ my: 2 }} />
-                            
+
                             <Typography variant="subtitle2" gutterBottom>
-                                Trạng thái Node:
+                                {t('workflowTimeline.nodeStatuses')}:
                             </Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main' }} />
-                                    <Typography variant="caption">Success - Node hoàn thành thành công</Typography>
+                                    <Typography variant="caption">{t('workflowTimeline.nodeStatusSuccess')}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'error.main' }} />
-                                    <Typography variant="caption">Failed - Node thực thi lỗi</Typography>
+                                    <Typography variant="caption">{t('workflowTimeline.nodeStatusFailed')}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'warning.main' }} />
-                                    <Typography variant="caption">Running - Node đang thực thi</Typography>
+                                    <Typography variant="caption">{t('workflowTimeline.nodeStatusRunning')}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'info.main' }} />
-                                    <Typography variant="caption">Waiting - Node đang chờ</Typography>
+                                    <Typography variant="caption">{t('workflowTimeline.nodeStatusWaiting')}</Typography>
                                 </Box>
                             </Box>
                         </CardContent>
@@ -216,15 +218,15 @@ export const WorkflowTimelinePage: React.FC = () => {
             <Card sx={{ mt: 4 }}>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
-                        Test Data
+                        {t('workflowTimeline.testData')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" paragraph>
-                        Để test timeline, bạn có thể gửi POST request đến realtime-server:
+                        {t('workflowTimeline.testDataDescription')}
                     </Typography>
-                    
+
                     <Paper sx={{ p: 2, bgcolor: 'grey.50', overflow: 'auto' }}>
                         <pre style={{ margin: 0, fontSize: '0.8rem' }}>
-{`curl -X POST http://localhost:3001/api/v1/callback \\
+                            {`curl -X POST http://localhost:3001/api/v1/callback \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: super-secret" \\
   -d '{

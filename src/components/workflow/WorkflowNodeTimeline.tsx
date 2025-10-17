@@ -30,6 +30,7 @@ import {
     FiberManualRecord
 } from '@mui/icons-material';
 import { useWorkflowNodeTimeline, WorkflowExecution, WorkflowNodeUpdate } from '../../hooks/useWorkflowNodeTimeline';
+import { useI18n } from '../../hooks/useI18n';
 
 interface WorkflowNodeTimelineProps {
     userId: number;
@@ -85,16 +86,16 @@ const NodeTimelineItem: React.FC<{ node: WorkflowNodeUpdate; isLast: boolean }> 
     return (
         <Box sx={{ display: 'flex', mb: 2 }}>
             {/* Timeline dot and connector */}
-            <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 mr: 2,
                 minWidth: 24
             }}>
-                <Box sx={{ 
-                    width: 24, 
-                    height: 24, 
+                <Box sx={{
+                    width: 24,
+                    height: 24,
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -105,9 +106,9 @@ const NodeTimelineItem: React.FC<{ node: WorkflowNodeUpdate; isLast: boolean }> 
                     {getStatusIcon(node.status)}
                 </Box>
                 {!isLast && (
-                    <Box sx={{ 
-                        width: 2, 
-                        height: 40, 
+                    <Box sx={{
+                        width: 2,
+                        height: 40,
                         bgcolor: 'divider',
                         mt: 1
                     }} />
@@ -133,7 +134,7 @@ const NodeTimelineItem: React.FC<{ node: WorkflowNodeUpdate; isLast: boolean }> 
                         sx={{ fontSize: '0.7rem', height: 20 }}
                     />
                 </Box>
-                
+
                 <Typography variant="caption" color="text.secondary">
                     {formatTime(node.timestamp)}
                     {node.finishedAt && node.finishedAt !== node.timestamp && (
@@ -150,20 +151,20 @@ const NodeTimelineItem: React.FC<{ node: WorkflowNodeUpdate; isLast: boolean }> 
                         >
                             {expanded ? <ExpandLess /> : <ExpandMore />}
                             <Typography variant="caption" sx={{ ml: 0.5 }}>
-                                Kết quả
+                                {t('workflowTimeline.result')}
                             </Typography>
                         </IconButton>
-                        
+
                         <Collapse in={expanded}>
-                            <Box sx={{ 
-                                mt: 1, 
-                                p: 1, 
-                                bgcolor: 'grey.50', 
+                            <Box sx={{
+                                mt: 1,
+                                p: 1,
+                                bgcolor: 'grey.50',
                                 borderRadius: 1,
                                 fontSize: '0.75rem'
                             }}>
-                                <pre style={{ 
-                                    margin: 0, 
+                                <pre style={{
+                                    margin: 0,
                                     fontSize: 'inherit',
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'break-word'
@@ -179,8 +180,8 @@ const NodeTimelineItem: React.FC<{ node: WorkflowNodeUpdate; isLast: boolean }> 
     );
 };
 
-const ExecutionCard: React.FC<{ 
-    execution: WorkflowExecution; 
+const ExecutionCard: React.FC<{
+    execution: WorkflowExecution;
     isActive: boolean;
     onSelect: () => void;
 }> = ({ execution, isActive, onSelect }) => {
@@ -202,9 +203,9 @@ const ExecutionCard: React.FC<{
     const runningCount = execution.nodes.filter(n => n.status === 'running').length;
 
     return (
-        <Card 
-            sx={{ 
-                mb: 1, 
+        <Card
+            sx={{
+                mb: 1,
                 cursor: 'pointer',
                 border: isActive ? 2 : 1,
                 borderColor: isActive ? 'primary.main' : 'divider'
@@ -274,6 +275,7 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
     showHeader = true,
     autoConnect = true
 }) => {
+    const { t } = useI18n();
     const {
         executions,
         currentExecution,
@@ -303,10 +305,10 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
     return (
         <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
             {showHeader && (
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     mb: 2,
                     p: 2,
                     bgcolor: 'background.paper',
@@ -316,7 +318,7 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
                 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="h6">
-                            Timeline Workflow
+                            {t('workflowTimeline.workflowTimeline')}
                         </Typography>
                         <Badge
                             color={socketConnected ? 'success' : 'error'}
@@ -325,9 +327,9 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
                             {socketConnected ? <Wifi /> : <WifiOff />}
                         </Badge>
                     </Box>
-                    
+
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Tooltip title="Làm mới">
+                        <Tooltip title={t('workflowTimeline.refresh')}>
                             <IconButton size="small" onClick={() => window.location.reload()}>
                                 <Refresh />
                             </IconButton>
@@ -346,21 +348,21 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
                 {/* Execution List */}
                 <Box sx={{ width: 300, overflow: 'auto' }}>
                     <Typography variant="subtitle2" sx={{ mb: 1, px: 1 }}>
-                        Executions ({executions.length})
+                        {t('workflowTimeline.executions')} ({executions.length})
                     </Typography>
-                    
+
                     {executions.length === 0 ? (
-                        <Box sx={{ 
-                            display: 'flex', 
+                        <Box sx={{
+                            display: 'flex',
                             flexDirection: 'column',
-                            alignItems: 'center', 
+                            alignItems: 'center',
                             justifyContent: 'center',
                             height: 200,
                             color: 'text.secondary'
                         }}>
                             <Schedule sx={{ fontSize: 48, mb: 1 }} />
                             <Typography variant="body2">
-                                Chưa có workflow nào chạy
+                                {t('workflowTimeline.noWorkflowRunning')}
                             </Typography>
                         </Box>
                     ) : (
@@ -394,17 +396,17 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
                             </Box>
 
                             {displayExecution.nodes.length === 0 ? (
-                                <Box sx={{ 
-                                    display: 'flex', 
+                                <Box sx={{
+                                    display: 'flex',
                                     flexDirection: 'column',
-                                    alignItems: 'center', 
+                                    alignItems: 'center',
                                     justifyContent: 'center',
                                     height: 200,
                                     color: 'text.secondary'
                                 }}>
                                     <CircularProgress sx={{ mb: 2 }} />
                                     <Typography variant="body2">
-                                        Đang chờ node đầu tiên...
+                                        {t('workflowTimeline.waitingForFirstNode')}
                                     </Typography>
                                 </Box>
                             ) : (
@@ -420,17 +422,17 @@ export const WorkflowNodeTimeline: React.FC<WorkflowNodeTimelineProps> = ({
                             )}
                         </Box>
                     ) : (
-                        <Box sx={{ 
-                            display: 'flex', 
+                        <Box sx={{
+                            display: 'flex',
                             flexDirection: 'column',
-                            alignItems: 'center', 
+                            alignItems: 'center',
                             justifyContent: 'center',
                             height: '100%',
                             color: 'text.secondary'
                         }}>
                             <PlayArrow sx={{ fontSize: 48, mb: 1 }} />
                             <Typography variant="body2">
-                                Chọn một execution để xem timeline
+                                {t('workflowTimeline.selectExecutionToView')}
                             </Typography>
                         </Box>
                     )}

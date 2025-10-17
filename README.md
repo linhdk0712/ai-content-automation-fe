@@ -306,6 +306,13 @@ Visit `/toast-demo` in the application to test all notification features and pat
 - **Pluralization** - Smart pluralization rules for different languages
 - **Missing Translation Warnings** - Development-friendly logging for missing translation keys
 
+### Current I18n Status
+- **Core Components**: Fully internationalized with comprehensive translation coverage
+- **Workflow Timeline**: ✅ **Completed** - Full internationalization including WorkflowTimelinePage and WorkflowNodeTimeline components
+- **Content Creator**: Fully internationalized with all UI elements using translation keys
+- **Dashboard & Navigation**: Complete i18n support across all navigation elements
+- **Authentication**: Full translation support for login, register, and user management flows
+
 ### Translation File Structure
 Translation files are located in `public/locales/` and loaded via absolute paths for production compatibility:
 ```
@@ -459,6 +466,7 @@ location /locales/ {
 - [Deployment Guide](./DEPLOYMENT_README.md)
 - [Accessibility & Internationalization](./src/accessibility-i18n-README.md)
 - [I18n Production Fix](./docs/i18n-production-fix.md)
+- [Workflow Timeline I18n Update](./WORKFLOW_TIMELINE_I18N_UPDATE.md)
 
 ### External Links
 - [React Documentation](https://react.dev/)
