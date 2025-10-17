@@ -47,7 +47,7 @@ const CONFIG = {
 } as const
 
 export default defineConfig({
-  base: (isDocker || isVercel || isDevelopment) ? '/' : '/app/',
+  base: '/', // Always use root path for consistent asset loading
 
   plugins: [
     react({

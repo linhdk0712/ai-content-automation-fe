@@ -685,14 +685,16 @@ setup_pm2() {
 generate_nginx_config() {
     print_step "Generating Nginx configuration..."
     
+    local current_dir=$(pwd)
+    
     # Generate nginx config if it doesn't exist
     if [[ ! -f "nginx-production.conf" ]]; then
-        cat > nginx-production.conf << 'EOF'
+        cat > nginx-production.conf << EOF
 server {
     listen 80;
     server_name _;
     
-    root /var/www/html;
+    root $current_dir/dist;
     index index.html;
     
     # Security headers
@@ -735,7 +737,7 @@ server {
     }
 }
 EOF
-        print_status "Generated nginx-production.conf"
+        print_status "Generated nginx-production.conf for: $current_dir/dist"
     fi
 }
 
