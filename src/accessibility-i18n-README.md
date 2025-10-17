@@ -161,23 +161,78 @@ const results = await accessibilityManager.testCompliance();
 
 ### I18nManager
 
-The `I18nManager` handles all internationalization features:
+The `I18nManager` handles all internationalization features with production-optimized loading:
 
 **Key Features:**
-- Dynamic language loading
-- RTL/LTR text direction support
-- Locale-aware formatting
-- Pluralization rules
-- Translation interpolation
+- **Production-Ready Loading**: Translation files loaded from absolute paths (`/locales/`) for deployment compatibility
+- **Dynamic Language Loading**: On-demand loading with intelligent caching
+- **RTL/LTR Text Direction**: Automatic direction switching with CSS custom properties
+- **Locale-Aware Formatting**: Dates, numbers, currency, and time formatting per locale
+- **Pluralization Rules**: Smart pluralization with fallback handling
+- **Translation Interpolation**: Parameter substitution with `{{key}}` syntax
+- **Multi-Level Fallback System**: Enhanced fallback through current → fallback → built-in → key display
+- **Development Warnings**: Console logging for missing translations to aid development
+
+**Critical Production Fix:**
+The translation loading system now uses absolute paths (`/locales/${languageCode}.json`) instead of relative paths, ensuring compatibility with production builds and various deployment configurations.
 
 **Usage:**
 ```typescript
-// Change language
+// Change language with automatic RTL detection
 await i18nManager.changeLanguage('ar'); // Switches to Arabic with RTL
 
-// Format with locale
+// Format with locale-specific rules
 const price = i18nManager.formatCurrency(99.99); // $99.99 or ٩٩.٩٩ ر.س
 const date = i18nManager.formatDate(new Date()); // MM/DD/YYYY or DD/MM/YYYY
+
+// Handle pluralization with parameters
+const message = i18nManager.pluralize('notifications.count', 5, { count: 5 });
+
+// Get relative time formatting
+const timeAgo = i18nManager.getRelativeTime(new Date(Date.now() - 3600000)); // "1 hour ago"
+```
+
+**Enhanced Translation System:**
+```typescript
+// Multi-level fallback system for robust translation handling
+public t(key: string, params?: Record<string, string | number>): string {
+  // 1. Try current language first
+  let translation = this.getTranslation(key, this.currentLanguage);
+
+  // 2. If not found, try fallback language
+  if (!translation && this.currentLanguage !== this.fallbackLanguage) {
+    translation = this.getTranslation(key, this.fallbackLanguage);
+  }
+
+  // 3. If still not found, try built-in fallback translations
+  if (!translation) {
+    const fallbackTranslations = this.getFallbackTranslations(this.currentLanguage);
+    translation = this.getTranslationFromObject(key, fallbackTranslations);
+  }
+
+  // 4. Final fallback to key itself with warning
+  if (!translation) {
+    console.warn(`Translation missing for key: ${key}`);
+    translation = key;
+  }
+
+  return params ? this.interpolateParams(translation, params) : translation;
+}
+```
+
+**File Loading with Fallback:**
+```typescript
+// Files loaded from public/locales/ directory with graceful fallback
+private async fetchTranslations(languageCode: string): Promise<Translations> {
+  try {
+    const response = await fetch(`/locales/${languageCode}.json`);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    // Graceful fallback to comprehensive built-in translations
+    return this.getFallbackTranslations(languageCode);
+  }
+}
 ```
 
 ### VoiceCommandManager
@@ -283,6 +338,33 @@ npm test internationalization
 npm test voice
 ```
 
+### Testing Enhanced Fallback System
+
+```typescript
+// Test multi-level fallback behavior
+describe('I18n Enhanced Fallback System', () => {
+  it('should use current language translation when available', () => {
+    const manager = I18nManager.getInstance();
+    expect(manager.t('common.dashboard')).toBe('Dashboard');
+  });
+  
+  it('should fall back to default language when current language missing', async () => {
+    await manager.changeLanguage('nonexistent');
+    expect(manager.t('common.dashboard')).toBe('Dashboard'); // From built-in fallback
+  });
+  
+  it('should warn about missing translations in development', () => {
+    const consoleSpy = jest.spyOn(console, 'warn');
+    manager.t('completely.missing.key');
+    expect(consoleSpy).toHaveBeenCalledWith('Translation missing for key: completely.missing.key');
+  });
+  
+  it('should return key as final fallback', () => {
+    expect(manager.t('missing.key')).toBe('missing.key');
+  });
+});
+```
+
 ## 🌐 Supported Languages
 
 | Language | Code | RTL | Currency | Date Format |
@@ -378,19 +460,74 @@ await i18nManager.loadLanguage('zh');
 ## 🚀 Performance Optimizations
 
 ### Lazy Loading
-- Dynamic translation loading
+- Dynamic translation loading with absolute paths for production compatibility
 - Code splitting by language
 - Progressive enhancement
 
 ### Caching
-- Translation caching
+- Translation caching with intelligent cache invalidation
 - Voice model caching
-- Preference persistence
+- Preference persistence in localStorage
 
 ### Bundle Optimization
 - Tree shaking for unused languages
 - Compression for translation files
 - Efficient polyfill loading
+
+## 🔧 Production Deployment
+
+### Translation File Loading Fix
+
+**Critical Update**: The i18n system now uses absolute paths for loading translation files, ensuring compatibility with production builds and various deployment configurations.
+
+**Before (Problematic):**
+```typescript
+// Relative path that could break in production
+const response = await fetch(`../locales/${languageCode}.json`);
+```
+
+**After (Production-Ready):**
+```typescript
+// Absolute path that works in all environments
+const response = await fetch(`/locales/${languageCode}.json`);
+```
+
+### Deployment Checklist
+
+1. **Translation Files**: Ensure all translation files are in `public/locales/` directory
+2. **Build Process**: Verify translation files are copied to build output
+3. **Server Configuration**: Configure server to serve `/locales/` files with proper MIME types
+4. **CDN Setup**: If using CDN, ensure translation files are properly cached and accessible
+5. **Fallback Testing**: Test fallback behavior when translation files are unavailable
+
+### Server Configuration Examples
+
+**Nginx:**
+```nginx
+location /locales/ {
+    add_header Cache-Control "public, max-age=3600";
+    add_header Content-Type "application/json; charset=utf-8";
+}
+```
+
+**Apache:**
+```apache
+<Directory "/path/to/public/locales">
+    Header set Cache-Control "public, max-age=3600"
+    Header set Content-Type "application/json; charset=utf-8"
+</Directory>
+```
+
+### Docker Deployment
+
+Ensure translation files are properly copied in your Dockerfile:
+```dockerfile
+# Copy public assets including locales
+COPY public/ /app/public/
+
+# Verify locales directory exists
+RUN ls -la /app/public/locales/
+```
 
 ## 🔒 Security Considerations
 

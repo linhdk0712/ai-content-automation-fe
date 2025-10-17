@@ -44,12 +44,22 @@ function AppContent() {
   React.useEffect(() => {
     const initializeI18n = async () => {
       try {
-        await i18nManager.loadLanguage(i18nManager.getCurrentLanguage())
+        const currentLang = i18nManager.getCurrentLanguage()
+        console.log('Initializing i18n with language:', currentLang)
+        await i18nManager.loadLanguage(currentLang)
+        console.log('i18n initialized successfully')
       } catch (error) {
         console.error('Failed to initialize i18n:', error)
+        // Fallback to English if current language fails
+        try {
+          console.log('Falling back to English...')
+          await i18nManager.loadLanguage('en')
+        } catch (fallbackError) {
+          console.error('Failed to load fallback language:', fallbackError)
+        }
       }
     }
-    
+
     initializeI18n()
   }, [])
 
@@ -66,7 +76,7 @@ function AppContent() {
   React.useEffect(() => {
     if (user && !isLoading) {
       console.log('User authenticated:', user.email, '- Initializing real-time features')
-      
+
       // Initialize real-time services with user context
       realTimeManager.initialize(user.id).catch(error => {
         console.error('Failed to initialize real-time services:', error)
@@ -97,7 +107,7 @@ function AppContent() {
     >
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Use RouterProvider for optimized SPA routing */}
-        <RouterProvider 
+        <RouterProvider
           router={router}
           fallbackElement={<LoadingSpinner fullScreen message="Loading page..." />}
         />

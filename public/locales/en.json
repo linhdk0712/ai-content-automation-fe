@@ -51,6 +51,10 @@
     "create": "Create",
     "templates": "Templates",
     "history": "History",
+    "contentGeneration": "Content Generation",
+    "contentSettings": "Content Settings",
+    "styleAndLanguage": "Style & Language",
+    "targetAudience": "Target Audience",
     "createAiPoweredContent": "Create AI-powered content with advanced customization",
     "highestQuality": "Highest Quality",
     "bestAiModels": "Use the best AI models for premium results",
@@ -87,7 +91,13 @@
     "validationRequired": "This field is required",
     "validationPromptLength": "Prompt must be at least 10 characters",
     "validationMaxTokens": "Max tokens must be between 50 and 2000",
-    "validationTemperature": "Temperature must be between 0 and 1"
+    "validationTemperature": "Temperature must be between 0 and 1",
+    "readyToGenerate": "Ready to Generate",
+    "enterPromptInstruction": "Enter your prompt and click \"Generate Content\" to see AI-powered results here.",
+    "contentPrompt": "Content Prompt",
+    "contentPromptPlaceholder": "Enter your content prompt...",
+    "contentPromptRequired": "Content prompt is required",
+    "targetAudienceRequired": "Target audience is required"
   },
   "workflows": {
     "workflowRuns": "Workflow Runs",

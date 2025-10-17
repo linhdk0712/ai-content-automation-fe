@@ -261,7 +261,7 @@ export class I18nManager {
 
     // Check browser language
     const browserLanguages = navigator.languages || [navigator.language];
-    
+
     for (const browserLang of browserLanguages) {
       const langCode = browserLang.split('-')[0];
       if (this.isLanguageSupported(langCode)) {
@@ -296,7 +296,7 @@ export class I18nManager {
       this.loadedLanguages.add(languageCode);
     } catch (error) {
       console.error(`Failed to load translations for ${languageCode}:`, error);
-      
+
       // If it's not the fallback language, try loading fallback
       if (languageCode !== this.fallbackLanguage) {
         await this.loadLanguage(this.fallbackLanguage);
@@ -310,9 +310,9 @@ export class I18nManager {
   private async fetchTranslations(languageCode: string): Promise<Translations> {
     try {
       // In a real application, this would fetch from your API or CDN
-      // Use relative path that works with base path
-      const response = await fetch(`../locales/${languageCode}.json`);
-      
+      // Use absolute path from public directory that works in production
+      const response = await fetch(`/locales/${languageCode}.json`);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch translations: ${response.status}`);
       }
@@ -546,9 +546,25 @@ export class I18nManager {
    * Get translation for a key
    */
   public t(key: string, params?: Record<string, string | number>): string {
-    const translation = this.getTranslation(key, this.currentLanguage) || 
-                       this.getTranslation(key, this.fallbackLanguage) || 
-                       key;
+    // Try current language first
+    let translation = this.getTranslation(key, this.currentLanguage);
+
+    // If not found, try fallback language
+    if (!translation && this.currentLanguage !== this.fallbackLanguage) {
+      translation = this.getTranslation(key, this.fallbackLanguage);
+    }
+
+    // If still not found, try to get from fallback translations
+    if (!translation) {
+      const fallbackTranslations = this.getFallbackTranslations(this.currentLanguage);
+      translation = this.getTranslationFromObject(key, fallbackTranslations);
+    }
+
+    // Final fallback to the key itself
+    if (!translation) {
+      console.warn(`Translation missing for key: ${key}`);
+      translation = key;
+    }
 
     // Replace parameters
     if (params) {
@@ -556,6 +572,24 @@ export class I18nManager {
     }
 
     return translation;
+  }
+
+  /**
+   * Get translation from a translation object
+   */
+  private getTranslationFromObject(key: string, translations: Translations): string | null {
+    const keys = key.split('.');
+    let current: any = translations;
+
+    for (const k of keys) {
+      if (current && typeof current === 'object' && k in current) {
+        current = current[k];
+      } else {
+        return null;
+      }
+    }
+
+    return typeof current === 'string' ? current : null;
   }
 
   /**
@@ -678,8 +712,8 @@ export class I18nManager {
     } catch {
       const symbol = locale.currency.symbol;
       const formatted = this.formatNumber(amount);
-      
-      return locale.currency.position === 'before' 
+
+      return locale.currency.position === 'before'
         ? `${symbol}${formatted}`
         : `${formatted}${symbol}`;
     }
@@ -690,7 +724,7 @@ export class I18nManager {
    */
   public addLanguageChangeListener(listener: (language: string) => void): () => void {
     this.changeListeners.push(listener);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.changeListeners.indexOf(listener);
@@ -713,9 +747,9 @@ export class I18nManager {
   public pluralize(key: string, count: number, params?: Record<string, string | number>): string {
     const pluralKey = count === 1 ? `${key}.singular` : `${key}.plural`;
     const fallbackKey = count === 1 ? key : `${key}s`;
-    
+
     const translation = this.t(pluralKey) || this.t(fallbackKey) || this.t(key);
-    
+
     return this.interpolateParams(translation, { ...params, count });
   }
 
@@ -742,7 +776,7 @@ export class I18nManager {
       const now = new Date();
       const diffInMs = date.getTime() - now.getTime();
       const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-      
+
       if (diffInHours === 0) {
         return this.t('time.now');
       } else if (diffInHours > 0) {

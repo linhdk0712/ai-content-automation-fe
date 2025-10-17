@@ -51,6 +51,10 @@
     "create": "Tạo mới",
     "templates": "Mẫu",
     "history": "Lịch sử",
+    "contentGeneration": "Tạo nội dung",
+    "contentSettings": "Cài đặt nội dung",
+    "styleAndLanguage": "Phong cách & Ngôn ngữ",
+    "targetAudience": "Đối tượng mục tiêu",
     "createAiPoweredContent": "Tạo nội dung AI với tùy chỉnh nâng cao",
     "highestQuality": "Chất lượng cao nhất",
     "bestAiModels": "Sử dụng mô hình AI tốt nhất cho kết quả cao cấp",
@@ -87,7 +91,13 @@
     "validationRequired": "Trường này là bắt buộc",
     "validationPromptLength": "Yêu cầu phải có ít nhất 10 ký tự",
     "validationMaxTokens": "Số token tối đa phải từ 50 đến 2000",
-    "validationTemperature": "Mức độ sáng tạo phải từ 0 đến 1"
+    "validationTemperature": "Mức độ sáng tạo phải từ 0 đến 1",
+    "readyToGenerate": "Sẵn sàng tạo nội dung",
+    "enterPromptInstruction": "Nhập yêu cầu của bạn và nhấp \"Tạo nội dung\" để xem kết quả AI tại đây.",
+    "contentPrompt": "Yêu cầu nội dung",
+    "contentPromptPlaceholder": "Nhập yêu cầu nội dung của bạn...",
+    "contentPromptRequired": "Yêu cầu nội dung là bắt buộc",
+    "targetAudienceRequired": "Đối tượng mục tiêu là bắt buộc"
   },
   "workflows": {
     "workflowRuns": "Lịch sử quy trình",

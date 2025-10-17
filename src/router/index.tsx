@@ -105,6 +105,11 @@ const WorkflowDemo = createRouteComponent(
   'Workflow Demo'
 )
 
+const I18nDebug = createRouteComponent(
+  () => import('../components/debug/I18nDebug'),
+  'i18n Debug'
+)
+
 // SPA Route Configuration
 export const routes: RouteObject[] = [
   // Public routes
@@ -229,6 +234,17 @@ export const routes: RouteObject[] = [
           {
             path: 'workflow',
             element: <WorkflowDemo />,
+          },
+        ],
+      },
+
+      // Debug routes
+      {
+        path: 'debug',
+        children: [
+          {
+            path: 'i18n',
+            element: <I18nDebug />,
           },
         ],
       },

@@ -36,6 +36,7 @@ import {
   CloudUpload
 } from '@mui/icons-material';
 import { useContentPreview } from '../../hooks/useContentPreview';
+import { useI18n } from '../../hooks/useI18n';
 
 interface ContentPreviewProps {
   content?: string;
@@ -67,6 +68,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   isSaving,
   isSendingToBackend
 }) => {
+  const { t } = useI18n();
   const [editableContent, setEditableContent] = useState(content || '');
   const [isEditing, setIsEditing] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null as any);
@@ -131,7 +133,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   };
 
   const renderLoadingState = () => (
-    <Card sx={{ 
+    <Card sx={{
       height: '100%',
       minHeight: 400,
       display: 'flex',
@@ -142,18 +144,18 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
       borderColor: 'divider'
     }}>
       <CardContent sx={{ textAlign: 'center', py: 6 }}>
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', 
-          mb: 3 
+          alignItems: 'center',
+          mb: 3
         }}>
-          <CircularProgress 
-            size={48} 
-            sx={{ 
+          <CircularProgress
+            size={48}
+            sx={{
               mb: 2,
               color: 'primary.main'
-            }} 
+            }}
           />
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Generating Content...
@@ -170,7 +172,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   );
 
   const renderEmptyState = () => (
-    <Card sx={{ 
+    <Card sx={{
       height: '100%',
       minHeight: 400,
       display: 'flex',
@@ -182,21 +184,21 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
       borderColor: 'divider'
     }}>
       <CardContent sx={{ textAlign: 'center', py: 6 }}>
-        <Psychology sx={{ 
-          fontSize: 80, 
+        <Psychology sx={{
+          fontSize: 80,
           mb: 3,
           opacity: 0.9
         }} />
         <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-          Ready to Generate
+          {t('contentCreator.readyToGenerate')}
         </Typography>
-        <Typography variant="body1" sx={{ 
+        <Typography variant="body1" sx={{
           maxWidth: 400,
           mx: 'auto',
           opacity: 0.9,
           lineHeight: 1.6
         }}>
-          Enter your prompt and click "Generate Content" to see AI-powered results here.
+          {t('contentCreator.enterPromptInstruction')}
         </Typography>
       </CardContent>
     </Card>
@@ -211,7 +213,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   }
 
   return (
-    <Card sx={{ 
+    <Card sx={{
       height: 'fit-content',
       minHeight: 400,
       boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
@@ -221,16 +223,16 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
     }}>
       <CardContent sx={{ p: 3 }}>
         {/* Header */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
           mb: 3,
           pb: 2,
           borderBottom: '1px solid',
           borderColor: 'divider'
         }}>
-          <Typography variant="h6" sx={{ 
+          <Typography variant="h6" sx={{
             fontWeight: 600,
             color: 'primary.main',
             display: 'flex',
@@ -246,7 +248,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
                 onClick={() => setIsEditing(!isEditing)}
                 color={isEditing ? 'primary' : 'default'}
                 size="small"
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   bgcolor: isEditing ? 'primary.50' : 'transparent'
                 }}
@@ -255,7 +257,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
               </IconButton>
             </Tooltip>
             <Tooltip title="Copy to clipboard">
-              <IconButton 
+              <IconButton
                 onClick={handleCopy}
                 size="small"
                 sx={{ borderRadius: 2 }}
@@ -265,7 +267,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
             </Tooltip>
             {onRegenerate && (
               <Tooltip title="Regenerate content">
-                <IconButton 
+                <IconButton
                   onClick={onRegenerate}
                   size="small"
                   sx={{ borderRadius: 2 }}
@@ -274,7 +276,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-            <IconButton 
+            <IconButton
               onClick={(e) => setMenuAnchor(e.currentTarget)}
               size="small"
               sx={{ borderRadius: 2 }}
@@ -302,7 +304,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
               onChange={(e) => setEditableContent(e.target.value)}
               variant="outlined"
               placeholder="Edit your content here..."
-              sx={{ 
+              sx={{
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -318,15 +320,15 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
               }}
             />
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 onClick={handleCancelEdit}
                 sx={{ borderRadius: 2 }}
               >
                 Cancel
               </Button>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={handleSaveEdit}
                 sx={{ borderRadius: 2 }}
               >
@@ -597,7 +599,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
           <>
             <Divider sx={{ my: 3 }} />
             <Box>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Typography variant="h6" gutterBottom sx={{
                 fontWeight: 600,
                 color: 'primary.main',
                 mb: 2
@@ -629,7 +631,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
                     Generate AI avatar video
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4}>
                   <Button
                     fullWidth
@@ -657,7 +659,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
                     Store in content library
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4}>
                   <Button
                     fullWidth

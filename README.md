@@ -296,10 +296,53 @@ Visit `/toast-demo` in the application to test all notification features and pat
 ## 🌐 Internationalization
 
 ### Multi-language Support
-- **i18n Ready** - Framework for multiple languages
-- **RTL Support** - Right-to-left language support
-- **Dynamic Loading** - Language packs loaded on demand
-- **Fallback Handling** - Graceful fallback to default language
+- **10 Supported Languages** - English, Vietnamese, Chinese, Japanese, Korean, Arabic, Spanish, French, German, Portuguese
+- **Production-Ready Loading** - Translation files loaded from `/locales/` directory with production-optimized paths
+- **RTL Support** - Full right-to-left language support for Arabic with automatic text direction
+- **Dynamic Loading** - Language packs loaded on demand with intelligent fallback handling
+- **Multi-Level Fallback System** - Graceful degradation through current language → fallback language → built-in translations → key display
+- **Locale-Aware Formatting** - Dates, numbers, currency, and time formatting per locale
+- **Real-time Switching** - Language changes without page reload
+- **Pluralization** - Smart pluralization rules for different languages
+- **Missing Translation Warnings** - Development-friendly logging for missing translation keys
+
+### Translation File Structure
+Translation files are located in `public/locales/` and loaded via absolute paths for production compatibility:
+```
+public/locales/
+├── en.json          # English (default)
+├── vi.json          # Vietnamese  
+├── ar.json          # Arabic (RTL)
+├── zh.json          # Chinese
+├── ja.json          # Japanese
+├── ko.json          # Korean
+├── es.json          # Spanish
+├── fr.json          # French
+├── de.json          # German
+└── pt.json          # Portuguese
+```
+
+### Usage Examples
+```typescript
+import { i18nManager } from '@/utils/internationalization/i18nManager';
+
+// Change language with automatic RTL detection
+await i18nManager.changeLanguage('ar');
+
+// Get translations with intelligent fallback system
+const message = i18nManager.t('welcome.message', { name: 'John' });
+// Fallback order: current language → fallback language → built-in translations → key
+
+// Handle missing translations gracefully
+const unknownKey = i18nManager.t('missing.key'); // Returns 'missing.key' with console warning
+
+// Format locale-specific data
+const price = i18nManager.formatCurrency(99.99); // $99.99 or ٩٩.٩٩ ر.س
+const date = i18nManager.formatDate(new Date()); // MM/DD/YYYY or DD/MM/YYYY
+
+// Handle pluralization with fallback support
+const itemCount = i18nManager.pluralize('items.count', 5, { count: 5 });
+```
 
 ## 🔒 Security
 
@@ -344,6 +387,48 @@ docker run -p 3000:3000 ai-content-frontend
 - **Staging** - Production-like environment
 - **Production** - Optimized build with minification
 
+### Critical Production Considerations
+
+#### Translation Files
+Ensure translation files in `public/locales/` are properly served:
+- Files must be accessible via absolute paths (`/locales/en.json`)
+- Configure proper MIME types (`application/json`)
+- Set appropriate cache headers for performance
+
+#### Server Configuration
+```nginx
+# Nginx example
+location /locales/ {
+    add_header Cache-Control "public, max-age=3600";
+    add_header Content-Type "application/json; charset=utf-8";
+}
+```
+
+#### Enhanced Translation System
+
+**Multi-Level Fallback System**: The i18n manager now includes an improved fallback mechanism for robust translation handling:
+
+```typescript
+// Translation resolution order:
+// 1. Current language files (/locales/{lang}.json)
+// 2. Fallback language files (/locales/en.json)
+// 3. Built-in fallback translations (hardcoded)
+// 4. Translation key itself (with console warning)
+```
+
+**Development Features**:
+- Console warnings for missing translation keys
+- Graceful degradation when translation files are unavailable
+- Built-in fallback translations for core UI elements
+
+#### Deployment Checklist
+- ✅ Translation files copied to build output
+- ✅ Server configured to serve `/locales/` directory
+- ✅ Multi-level fallback system tested
+- ✅ Missing translation warnings reviewed
+- ✅ RTL languages display correctly
+- ✅ All supported languages load properly
+
 ## 🤝 Contributing
 
 ### Development Workflow
@@ -371,7 +456,9 @@ docker run -p 3000:3000 ai-content-frontend
 - [Component Library](./src/components/README.md)
 - [API Integration](./src/services/README.md)
 - [Testing Guide](./src/test/README.md)
-- [Deployment Guide](./docs/deployment.md)
+- [Deployment Guide](./DEPLOYMENT_README.md)
+- [Accessibility & Internationalization](./src/accessibility-i18n-README.md)
+- [I18n Production Fix](./docs/i18n-production-fix.md)
 
 ### External Links
 - [React Documentation](https://react.dev/)

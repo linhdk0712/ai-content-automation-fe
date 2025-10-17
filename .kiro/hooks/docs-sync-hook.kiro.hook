@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Monitors all TypeScript source files, React components, hooks, services, and configuration files for changes and automatically updates project documentation to keep it in sync with the codebase",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.tsx",
+      "src/**/*.ts",
+      "*.ts",
+      "*.tsx",
+      "package.json",
+      "tsconfig.json",
+      "vite.config.ts",
+      "cypress.config.ts",
+      "README.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source code files have been modified in this TypeScript React project. Please review the changes and update the project documentation accordingly. Focus on:\n\n1. Update README.md with any new features, components, or architectural changes\n2. If there's a /docs folder, update relevant documentation files there\n3. Ensure API documentation reflects any service layer changes\n4. Update component documentation for new or modified React components\n5. Document any new hooks, utilities, or configuration changes\n6. Keep installation and setup instructions current\n7. Update any architectural diagrams or technical specifications\n\nPlease analyze the changed files and provide comprehensive documentation updates that accurately reflect the current state of the codebase."
+  }
+}

@@ -58,14 +58,16 @@
 7. **Git Update** - Pulls latest code, fixes SSH/HTTPS issues
 8. **Fresh Install** - Clean npm install of all dependencies
 9. **Fresh Build** - New build with latest code and dependencies
+10. **Translation Files** - Ensures i18n files are properly accessible via `/locales/` paths
 
 **Phase 4: Service Setup**
-10. **PM2 Configuration** - Generates and starts new PM2 process
-11. **Nginx Setup** - Configures reverse proxy and static file serving
-12. **Firewall Rules** - Sets up basic security rules
+11. **PM2 Configuration** - Generates and starts new PM2 process
+12. **Nginx Setup** - Configures reverse proxy and static file serving with i18n support
+13. **Firewall Rules** - Sets up basic security rules
 
 **Phase 5: Verification**
-13. **Service Testing** - Tests all services and provides status report
+14. **Service Testing** - Tests all services and provides status report
+15. **I18n Verification** - Confirms translation files are accessible via HTTP
 
 ## 🌐 Access Points
 
@@ -90,6 +92,47 @@ sudo systemctl restart nginx
 
 # Re-deploy (safe to run multiple times)
 ./deploy.sh
+```
+
+## 🌐 Internationalization (i18n) Deployment
+
+The application includes comprehensive internationalization support with **critical production fixes**:
+
+### Translation File Serving
+- **Location**: Translation files are in `public/locales/` directory
+- **Access Path**: Files must be accessible via `/locales/en.json`, `/locales/ar.json`, etc.
+- **Production Fix**: Updated to use absolute paths for production compatibility
+
+### Nginx Configuration
+The deployment script automatically configures Nginx to serve translation files:
+```nginx
+location /locales/ {
+    add_header Cache-Control "public, max-age=3600";
+    add_header Content-Type "application/json; charset=utf-8";
+    add_header Access-Control-Allow-Origin "*";
+}
+```
+
+### Supported Languages
+- English (en) - Default
+- Vietnamese (vi)
+- Arabic (ar) - RTL support
+- Chinese (zh)
+- Japanese (ja)
+- Korean (ko)
+- Spanish (es)
+- French (fr)
+- German (de)
+- Portuguese (pt)
+
+### Verification
+After deployment, test translation loading:
+```bash
+# Test translation file access
+curl http://your-server-ip/locales/en.json
+curl http://your-server-ip/locales/ar.json
+
+# Should return JSON content with proper headers
 ```
 
 ## 🔒 Security Notes
