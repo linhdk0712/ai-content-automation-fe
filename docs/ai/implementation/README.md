@@ -24,14 +24,19 @@ description: Technical implementation notes, patterns, and code guidelines
 **Key technical details to remember:**
 
 ### Core Features
-- Feature 1: Implementation approach
-- Feature 2: Implementation approach
-- Feature 3: Implementation approach
+- **AI Content Generation**: Multi-provider content creation with ContentCreator component
+- **Real-time Collaboration**: Live editing and user presence tracking
+- **Template System**: Pre-built and custom templates for content generation
+- **Analytics Dashboard**: Performance metrics and content insights
+- **Social Media Integration**: Multi-platform publishing and scheduling
 
 ### Patterns & Best Practices
-- Design patterns being used
-- Code style guidelines
-- Common utilities/helpers
+- **Component Architecture**: Feature-based organization with shared components
+- **State Management**: Custom hooks with React Context for global state
+- **Form Handling**: Comprehensive validation with real-time feedback
+- **Accessibility**: WCAG 2.1 AA compliance with full keyboard navigation
+- **Internationalization**: Multi-language support with RTL languages
+- **Performance**: Code splitting, lazy loading, and debounced operations
 
 ## Integration Points
 **How do pieces connect?**

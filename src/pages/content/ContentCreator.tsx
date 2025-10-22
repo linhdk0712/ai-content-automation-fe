@@ -1,7 +1,6 @@
 import React from 'react'
 import { Box } from '@mui/material'
 import ContentCreator from '../../components/content/ContentCreator'
-import PageHeader from '../../components/common/PageHeader'
 
 const ContentCreatorPage: React.FC = () => {
   // const breadcrumbs = [
@@ -11,7 +10,7 @@ const ContentCreatorPage: React.FC = () => {
   // ]
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       width: '100%',
       display: 'flex',
       flexDirection: 'column',

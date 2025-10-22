@@ -69,16 +69,16 @@ export class ContentService {
   async createContent(request: CreateContentRequest): Promise<ContentResponse> {
     try {
       const result = await apiRequest.post<ContentResponse>('/content', request)
-      
+
       // Show success toast
       toastService.success('Content created successfully!', {
         title: 'Content Created'
       })
-      
+
       return result
     } catch (error) {
       console.error('Failed to create content:', error)
-      
+
       // Show error toast
       toastService.error(
         error instanceof Error ? error.message : 'Failed to create content. Please try again.',
@@ -86,7 +86,7 @@ export class ContentService {
           title: 'Create Failed'
         }
       )
-      
+
       throw error
     }
   }
@@ -97,7 +97,7 @@ export class ContentService {
       if (workspaceId) {
         params.append('workspaceId', workspaceId.toString())
       }
-      
+
       const url = `/content/${id}${params.toString() ? `?${params.toString()}` : ''}`
       return await apiRequest.get<ContentResponse>(url)
     } catch (error) {
@@ -109,16 +109,16 @@ export class ContentService {
   async updateContent(id: number, request: UpdateContentRequest): Promise<ContentResponse> {
     try {
       const result = await apiRequest.put<ContentResponse>(`/content/${id}`, request)
-      
+
       // Show success toast
       toastService.success('Content updated successfully!', {
         title: 'Content Updated'
       })
-      
+
       return result
     } catch (error) {
       console.error(`Failed to update content ${id}:`, error)
-      
+
       // Show error toast
       toastService.error(
         error instanceof Error ? error.message : 'Failed to update content. Please try again.',
@@ -126,7 +126,7 @@ export class ContentService {
           title: 'Update Failed'
         }
       )
-      
+
       throw error
     }
   }
@@ -137,17 +137,17 @@ export class ContentService {
       if (workspaceId) {
         params.append('workspaceId', workspaceId.toString())
       }
-      
+
       const url = `/content/${id}${params.toString() ? `?${params.toString()}` : ''}`
       await apiRequest.delete<void>(url)
-      
+
       // Show success toast
       toastService.success('Content deleted successfully!', {
         title: 'Content Deleted'
       })
     } catch (error) {
       console.error(`Failed to delete content ${id}:`, error)
-      
+
       // Show error toast
       toastService.error(
         error instanceof Error ? error.message : 'Failed to delete content. Please try again.',
@@ -155,23 +155,23 @@ export class ContentService {
           title: 'Delete Failed'
         }
       )
-      
+
       throw error
     }
   }
 
   async listContent(
-    filter?: ContentFilter, 
-    page = 0, 
+    filter?: ContentFilter,
+    page = 0,
     size = 20
   ): Promise<PaginatedResponse<ContentResponse>> {
     try {
       const params = new URLSearchParams()
-      
+
       // Add pagination parameters
       params.append('page', page.toString())
       params.append('size', size.toString())
-      
+
       // Add filter parameters
       if (filter) {
         if (filter.status && filter.status.length > 0) {
@@ -366,7 +366,7 @@ export class ContentService {
       if (workspaceId) {
         params.append('workspaceId', workspaceId.toString())
       }
-      
+
       const url = `/content/scheduled${params.toString() ? `?${params.toString()}` : ''}`
       return await apiRequest.get<ScheduleResponse[]>(url)
     } catch (error) {
@@ -408,7 +408,7 @@ export class ContentService {
     try {
       const params = new URLSearchParams()
       params.append('timeRange', timeRange)
-      
+
       return await apiRequest.get<ContentPerformanceResponse>(`/content/${id}/performance?${params.toString()}`)
     } catch (error) {
       console.error(`Failed to get content performance ${id}:`, error)
@@ -422,7 +422,7 @@ export class ContentService {
       if (platform) {
         params.append('platform', platform)
       }
-      
+
       return await apiRequest.get<EngagementMetricsResponse>(`/content/${id}/engagement?${params.toString()}`)
     } catch (error) {
       console.error(`Failed to get engagement metrics ${id}:`, error)
@@ -497,7 +497,7 @@ export class ContentService {
       params.append('q', query)
       params.append('page', page.toString())
       params.append('size', size.toString())
-      
+
       if (filters) {
         if (filters.status && filters.status.length > 0) {
           params.append('status', filters.status.join(','))
@@ -699,7 +699,7 @@ export class ContentService {
       params.append('size', size.toString())
       params.append('sortBy', sortBy)
       params.append('sortDirection', sortDirection)
-      
+
       return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/favorites?${params.toString()}`)
     } catch (error) {
       console.error('Failed to get user favorites:', error)
@@ -740,7 +740,7 @@ export class ContentService {
       if (workspaceId) {
         params.append('workspaceId', workspaceId.toString())
       }
-      
+
       return await apiRequest.get<ContentLibraryStatsResponse>(`/content-library/stats?${params.toString()}`)
     } catch (error) {
       console.error('Failed to get library stats:', error)
@@ -752,7 +752,7 @@ export class ContentService {
     try {
       const params = new URLSearchParams()
       params.append('limit', limit.toString())
-      
+
       return await apiRequest.get<ContentTagResponse[]>(`/content-library/tags/popular?${params.toString()}`)
     } catch (error) {
       console.error('Failed to get popular tags:', error)
@@ -774,7 +774,7 @@ export class ContentService {
       const params = new URLSearchParams()
       params.append('page', page.toString())
       params.append('size', size.toString())
-      
+
       return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/recent?${params.toString()}`)
     } catch (error) {
       console.error('Failed to get recent content:', error)
@@ -787,7 +787,7 @@ export class ContentService {
       const params = new URLSearchParams()
       params.append('page', page.toString())
       params.append('size', size.toString())
-      
+
       return await apiRequest.get<PaginatedResponse<ContentResponse>>(`/content-library/by-type/${contentType}?${params.toString()}`)
     } catch (error) {
       console.error(`Failed to get content by type ${contentType}:`, error)
@@ -802,7 +802,7 @@ export class ContentService {
       if (workspaceId) {
         params.append('workspaceId', workspaceId.toString())
       }
-      
+
       return await apiRequest.get(`/content/statistics?${params.toString()}`)
     } catch (error) {
       console.error('Failed to get content statistics:', error)
@@ -841,7 +841,7 @@ export class ContentService {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      
+
       const response = await apiRequest.upload<{ url: string }>('/content/upload', formData, onProgress)
       return response.url
     } catch (error) {
@@ -857,13 +857,34 @@ export class ContentService {
       files.forEach((file, index) => {
         formData.append(`files[${index}]`, file)
       })
-      
+
       const response = await apiRequest.upload<{ urls: string[] }>('/content/upload/batch', formData, onProgress)
       return response.urls
     } catch (error) {
       console.error('Failed to upload files:', error)
       throw error
     }
+  }
+
+  // Generation History Methods - Method declarations
+  async getGenerationHistory(page?: number, size?: number): Promise<GenerationHistoryEntry[]> {
+    // Implementation is added via prototype below
+    throw new Error('Method not implemented')
+  }
+
+  async getMonthlyUsageStats(): Promise<MonthlyUsageStats> {
+    // Implementation is added via prototype below
+    throw new Error('Method not implemented')
+  }
+
+  async deleteGenerationHistory(requestId: string): Promise<void> {
+    // Implementation is added via prototype below
+    throw new Error('Method not implemented')
+  }
+
+  async exportGenerationHistory(format: string): Promise<Blob> {
+    // Implementation is added via prototype below
+    throw new Error('Method not implemented')
   }
 }
 
@@ -874,75 +895,207 @@ export const contentService = new ContentService()
 export function useContentService() {
   return {
     // Basic CRUD operations
-    createContent: (request: CreateContentRequest) => 
+    createContent: (request: CreateContentRequest) =>
       contentService.createContent(request),
-    
-    getContent: (id: number, workspaceId?: number) => 
+
+    getContent: (id: number, workspaceId?: number) =>
       contentService.getContent(id, workspaceId),
-    
-    updateContent: (id: number, request: UpdateContentRequest) => 
+
+    updateContent: (id: number, request: UpdateContentRequest) =>
       contentService.updateContent(id, request),
-    
-    deleteContent: (id: number, workspaceId?: number) => 
+
+    deleteContent: (id: number, workspaceId?: number) =>
       contentService.deleteContent(id, workspaceId),
-    
-    listContent: (filter?: ContentFilter, page?: number, size?: number) => 
+
+    listContent: (filter?: ContentFilter, page?: number, size?: number) =>
       contentService.listContent(filter, page, size),
-    
+
     // AI operations
-    generateWithAI: (request: AIGenerationRequest) => 
+    generateWithAI: (request: AIGenerationRequest) =>
       contentService.generateWithAI(request),
-    
-    regenerateContent: (id: number, request: RegenerateContentRequest) => 
+
+    regenerateContent: (id: number, request: RegenerateContentRequest) =>
       contentService.regenerateContent(id, request),
-    
+
     // Analysis and preview
-    analyzeContent: (id: number, request?: Partial<ContentAnalysisRequest>) => 
+    analyzeContent: (id: number, request?: Partial<ContentAnalysisRequest>) =>
       contentService.analyzeContent(id, request),
-    
-    getContentPreview: (id: number, platforms?: string[], customizations?: Record<string, any>) => 
+
+    getContentPreview: (id: number, platforms?: string[], customizations?: Record<string, any>) =>
       contentService.getContentPreview(id, platforms, customizations),
-    
+
     // Publishing and scheduling
-    publishContent: (id: number, request: PublishContentRequest) => 
+    publishContent: (id: number, request: PublishContentRequest) =>
       contentService.publishContent(id, request),
-    
-    scheduleContent: (id: number, request: ScheduleContentRequest) => 
+
+    scheduleContent: (id: number, request: ScheduleContentRequest) =>
       contentService.scheduleContent(id, request),
-    
+
     // Performance and analytics
-    getContentPerformance: (id: number, timeRange?: string) => 
+    getContentPerformance: (id: number, timeRange?: string) =>
       contentService.getContentPerformance(id, timeRange),
-    
-    getEngagementMetrics: (id: number, platform?: string) => 
+
+    getEngagementMetrics: (id: number, platform?: string) =>
       contentService.getEngagementMetrics(id, platform),
-    
+
     // Bulk operations
-    bulkDelete: (request: BulkDeleteRequest) => 
+    bulkDelete: (request: BulkDeleteRequest) =>
       contentService.bulkDelete(request),
-    
-    bulkPublish: (request: BulkPublishRequest) => 
+
+    bulkPublish: (request: BulkPublishRequest) =>
       contentService.bulkPublish(request),
-    
-    bulkSchedule: (request: BulkScheduleRequest) => 
+
+    bulkSchedule: (request: BulkScheduleRequest) =>
       contentService.bulkSchedule(request),
-    
+
     // Search and filtering
-    searchContent: (query: string, filters?: ContentFilter, page?: number, size?: number) => 
+    searchContent: (query: string, filters?: ContentFilter, page?: number, size?: number) =>
       contentService.searchContent(query, filters, page, size),
-    
+
     // File operations
-    uploadFile: (file: File, onProgress?: (progress: number) => void) => 
+    uploadFile: (file: File, onProgress?: (progress: number) => void) =>
       contentService.uploadFile(file, onProgress),
-    
-    uploadFiles: (files: File[], onProgress?: (progress: number) => void) => 
+
+    uploadFiles: (files: File[], onProgress?: (progress: number) => void) =>
       contentService.uploadFiles(files, onProgress),
-    
+
     // Utility methods
-    createLoadingState: (operation?: string) => 
+    createLoadingState: (operation?: string) =>
       contentService.createLoadingState(operation),
-    
-    createServiceResponse: <T>(data?: T, error?: ApiError, loading?: boolean) => 
+
+    createServiceResponse: <T>(data?: T, error?: ApiError, loading?: boolean) =>
       contentService.createServiceResponse(data, error, loading)
   }
 }
+
+// Generation History Methods - Updated to match API response
+export interface GenerationHistoryEntry {
+  id: number;
+  requestId: string;
+  generatedContent: string;
+  generatedTitle: string;
+  aiProvider: string;
+  industry: string;
+  contentType: string;
+  generationCost: number;
+  tokensUsed: number;
+  qualityScore: number;
+  readabilityScore: number;
+  responseTimeMs: number;
+  createdAt: string;
+  success: boolean;
+  errorMessage?: string;
+  prompt?: string;
+  // Additional fields from API
+  language?: string;
+  tone?: string;
+  targetAudience?: string;
+  aiModel?: string;
+  sentimentScore?: number;
+  templateName?: string;
+  updatedAt?: string;
+  workspaceId?: number;
+  workspaceName?: string;
+  contentId?: number;
+  contentTitle?: string;
+  templateId?: number;
+}
+
+export interface MonthlyUsageStats {
+  totalGenerations: number;
+  totalTokensUsed: number;
+  totalCost: number;
+  remainingQuota?: number;
+  averageQualityScore: number;
+  averageResponseTime: number;
+  mostUsedProvider: string;
+  mostUsedIndustry?: string;
+  mostUsedContentType?: string;
+  successfulGenerations: number;
+  failedGenerations: number;
+  successRate: number;
+  usageByProvider?: {
+    [key: string]: {
+      count: number;
+      tokensUsed: number;
+      cost: number;
+      averageResponseTime: number;
+      successRate: number;
+      averageQualityScore: number;
+    };
+  };
+  usageByContentType?: any;
+  usageByIndustry?: any;
+}
+
+// Add generation history methods to ContentService class
+ContentService.prototype.getGenerationHistory = async function (page: number = 0, size: number = 10): Promise<GenerationHistoryEntry[]> {
+  try {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+
+    console.log('Calling generation history API with params:', params.toString());
+    const response = await apiRequest.get<any>(`/content/generation-history?${params.toString()}`);
+    console.log('Generation history API response:', response);
+
+    // The API interceptor already processes ResponseBase and returns responseBase.data
+    // So response is actually the 'data' field from ResponseBase: { content: [...], pageable: {...}, ... }
+    const historyData = response.content || [];
+    console.log('Extracted history data:', historyData);
+    return historyData;
+  } catch (error) {
+    console.error('Failed to get generation history:', error);
+    throw error;
+  }
+};
+
+ContentService.prototype.getMonthlyUsageStats = async function (): Promise<MonthlyUsageStats> {
+  try {
+    console.log('Calling monthly usage stats API');
+    const response = await apiRequest.get<any>('/content/generation-history/stats');
+    console.log('Monthly usage stats API response:', response);
+
+    // The API interceptor already processes ResponseBase and returns responseBase.data
+    // So response is actually the 'data' field from ResponseBase
+    const statsData = response || {
+      totalGenerations: 0,
+      totalTokensUsed: 0,
+      totalCost: 0,
+      remainingQuota: 1000,
+      averageQualityScore: 0,
+      averageResponseTime: 0,
+      mostUsedProvider: '',
+      mostUsedIndustry: '',
+      mostUsedContentType: '',
+      successfulGenerations: 0,
+      failedGenerations: 0,
+      successRate: 0
+    };
+    console.log('Extracted stats data:', statsData);
+    return statsData;
+  } catch (error) {
+    console.error('Failed to get monthly usage stats:', error);
+    throw error;
+  }
+};
+
+ContentService.prototype.deleteGenerationHistory = async function (requestId: string): Promise<void> {
+  try {
+    await apiRequest.delete(`/content/generation-history/${requestId}`);
+  } catch (error) {
+    console.error('Failed to delete generation history:', error);
+    throw error;
+  }
+};
+
+ContentService.prototype.exportGenerationHistory = async function (format: string): Promise<Blob> {
+  try {
+    return await apiRequest.get(`/content/generation-history/export/${format}`, {
+      responseType: 'blob'
+    });
+  } catch (error) {
+    console.error('Failed to export generation history:', error);
+    throw error;
+  }
+};

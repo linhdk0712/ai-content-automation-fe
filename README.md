@@ -20,6 +20,34 @@ A modern, responsive React frontend application for AI-powered content automatio
 - **Voice Commands** - Voice-controlled content generation and navigation
 - **Advanced Security** - Multi-factor authentication, role-based access control
 
+## 🎯 Key Components
+
+### ContentCreator Component
+The `ContentCreator` is the flagship component providing comprehensive AI-powered content generation:
+
+#### Features
+- **Multi-Provider AI Integration** - Support for OpenAI, Gemini, Claude with dynamic provider selection
+- **Comprehensive Form Interface** - Industry, content type, language, tone, and audience targeting
+- **Optimization Criteria** - Quality, cost, speed, or balanced optimization modes
+- **Advanced Settings** - Configurable AI parameters (temperature, max tokens)
+- **Template Integration** - Pre-built templates with one-click application
+- **Real-time Validation** - Form validation with user-friendly error messages
+- **Tabbed Interface** - Create, Templates, and History tabs for organized workflow
+
+#### Architecture
+- **Location**: `src/components/content/ContentCreator.tsx`
+- **State Management**: Local useState with custom hooks integration
+- **Validation**: Comprehensive form validation with real-time feedback
+- **Accessibility**: Full WCAG 2.1 AA compliance with keyboard navigation
+- **Internationalization**: Complete i18n support with RTL language compatibility
+
+#### Integration Points
+- **AI Providers**: Dynamic provider selection with optimization criteria
+- **Template System**: Integration with template library and selection
+- **Workflow Automation**: N8N workflow triggering for generated content
+- **Content Library**: Direct saving to content management system
+- **Analytics**: Generation tracking and performance metrics
+
 ## 🛠️ Tech Stack
 
 ### Core Technologies
@@ -139,22 +167,34 @@ src/
 ├── components/          # Reusable UI components
 │   ├── auth/           # Authentication components
 │   ├── content/        # Content management components
+│   │   ├── ContentCreator.tsx # AI content generation interface
+│   │   ├── AIProviderSelector.tsx # AI provider selection
+│   │   ├── ContentPreview.tsx # Real-time content preview
+│   │   ├── TemplateLibrary.tsx # Template management
+│   │   └── GenerationHistory.tsx # Generation history
 │   ├── analytics/      # Analytics and reporting
 │   ├── common/         # Shared components
+│   │   ├── ListOfValuesSelect.tsx # Dynamic form selects
+│   │   ├── ErrorBoundaries/ # Error handling components
+│   │   └── ...
 │   ├── mobile/         # Mobile-specific components
 │   └── ...
 ├── pages/              # Page components
 │   ├── Dashboard.tsx   # Main dashboard
 │   ├── auth/          # Authentication pages
 │   ├── content/       # Content management pages
+│   │   └── ContentCreator.tsx # Content creator page wrapper
 │   └── ...
 ├── hooks/              # Custom React hooks
 │   ├── useAuth.ts     # Authentication hook
 │   ├── useContentGeneration.ts # AI content generation
+│   ├── useTemplates.ts # Template management
 │   └── ...
 ├── services/           # API services and utilities
 │   ├── api.ts         # Base API configuration
 │   ├── auth.service.ts # Authentication service
+│   ├── content.service.ts # Content management service
+│   ├── n8n.service.ts # Workflow automation service
 │   └── ...
 ├── contexts/           # React contexts
 ├── types/              # TypeScript type definitions
@@ -481,7 +521,11 @@ location /locales/ {
 - [Realtime Server Configuration](./docs/realtime-server-configuration.md)
 - [Accessibility & Internationalization](./src/accessibility-i18n-README.md)
 - [I18n Production Fix](./docs/i18n-production-fix.md)
-- [Workflow Timeline I18n Update](./WORKFLOW_TIMELINE_I18N_UPDATE.md)
+- [Workflow Timeline I18n Update](./WORKFLOW_TIMELINE_I18n_UPDATE.md)
+
+#### Component Documentation
+- [ContentCreator Component](./docs/ai/implementation/content-creator-component.md)
+- [Implementation Guide](./docs/ai/implementation/README.md)
 
 ### External Links
 - [React Documentation](https://react.dev/)

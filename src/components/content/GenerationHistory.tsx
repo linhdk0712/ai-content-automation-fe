@@ -118,13 +118,13 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
   };
 
   const filteredHistory = history.filter((entry) => {
-    const matchesSearch = !searchQuery || 
-      entry.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesProvider = !filterProvider || entry.provider?.includes(filterProvider);
+    const matchesSearch = !searchQuery ||
+      entry.generatedContent?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.generatedTitle?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesProvider = !filterProvider || entry.aiProvider?.includes(filterProvider);
     const matchesIndustry = !filterIndustry || entry.industry === filterIndustry;
-    const matchesStatus = !filterStatus || 
+    const matchesStatus = !filterStatus ||
       (filterStatus === 'success' && entry.success) ||
       (filterStatus === 'failed' && !entry.success);
 
@@ -177,8 +177,8 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
           <CardContent sx={{ textAlign: 'center' }}>
             <Timer color="primary" sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h4">
-              {monthlyStats?.averageResponseTime ? 
-                `${(monthlyStats.averageResponseTime / 1000).toFixed(1)}s` : 
+              {monthlyStats?.averageResponseTime ?
+                `${(monthlyStats.averageResponseTime / 1000).toFixed(1)}s` :
                 '0.0s'
               }
             </Typography>
@@ -303,30 +303,30 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {getStatusIcon(entry.success)}
                         <Box sx={{ ml: 1, maxWidth: 300 }}>
-                          {entry.title && (
+                          {entry.generatedTitle && (
                             <Typography variant="subtitle2" noWrap>
-                              {entry.title}
+                              {entry.generatedTitle}
                             </Typography>
                           )}
                           <Typography variant="body2" color="text.secondary" noWrap>
-                            {entry.content?.substring(0, 100)}...
+                            {entry.generatedContent?.substring(0, 100)}...
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={entry.provider?.split(' ')[0] || 'Unknown'} 
-                        size="small" 
-                        variant="outlined" 
+                      <Chip
+                        label={entry.aiProvider?.split(' ')[0] || 'Unknown'}
+                        size="small"
+                        variant="outlined"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={entry.industry} 
-                        size="small" 
-                        color="primary" 
-                        variant="outlined" 
+                      <Chip
+                        label={entry.industry}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
                       />
                     </TableCell>
                     <TableCell>
@@ -350,12 +350,12 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        ${entry.cost?.toFixed(4) || '0.0000'}
+                        ${entry.generationCost?.toFixed(4) || '0.0000'}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {format(new Date(entry.generatedAt), 'MMM dd, HH:mm')}
+                        {format(new Date(entry.createdAt), 'MMM dd, HH:mm')}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -373,7 +373,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                             <Tooltip title="Copy content">
                               <IconButton
                                 size="small"
-                                onClick={() => handleCopyContent(entry.content)}
+                                onClick={() => handleCopyContent(entry.generatedContent)}
                               >
                                 <ContentCopy />
                               </IconButton>
@@ -466,7 +466,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                     Provider
                   </Typography>
                   <Typography variant="body1">
-                    {selectedEntry.provider}
+                    {selectedEntry.aiProvider}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
@@ -490,7 +490,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                     Generated At
                   </Typography>
                   <Typography variant="body1">
-                    {format(new Date(selectedEntry.generatedAt), 'PPpp')}
+                    {format(new Date(selectedEntry.createdAt), 'PPpp')}
                   </Typography>
                 </Grid>
               </Grid>
@@ -511,7 +511,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                       Cost
                     </Typography>
                     <Typography variant="h6">
-                      ${selectedEntry.cost?.toFixed(4)}
+                      ${selectedEntry.generationCost?.toFixed(4)}
                     </Typography>
                   </Grid>
                   <Grid item xs={3}>
@@ -549,7 +549,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                 }}
               >
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {selectedEntry.success ? selectedEntry.content : selectedEntry.errorMessage}
+                  {selectedEntry.success ? selectedEntry.generatedContent : selectedEntry.errorMessage}
                 </Typography>
               </Box>
             </Box>
@@ -562,7 +562,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
           {selectedEntry?.success && (
             <>
               <Button
-                onClick={() => handleCopyContent(selectedEntry.content)}
+                onClick={() => handleCopyContent(selectedEntry.generatedContent)}
                 startIcon={<ContentCopy />}
               >
                 Copy Content

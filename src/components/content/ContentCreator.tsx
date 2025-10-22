@@ -7,15 +7,9 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  FormControl,
-  FormControlLabel,
   Grid,
-  MenuItem,
   Alert as MuiAlert,
-  Select,
-  Slider,
   Snackbar,
-  Switch,
   TextField,
   Typography
 } from '@mui/material';
@@ -34,7 +28,7 @@ import {
   TargetAudienceSelect,
   ToneSelect
 } from '../common/ListOfValuesSelect';
-import AIProviderSelector from './AIProviderSelector';
+
 import ContentPreview from './ContentPreview';
 import GenerationHistory from './GenerationHistory';
 import TemplateLibrary from './TemplateLibrary';
@@ -51,10 +45,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   const [language, setLanguage] = useState('vi');
   const [tone, setTone] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
-  const [maxTokens, setMaxTokens] = useState(500);
-  const [temperature, setTemperature] = useState(0.7);
-  const [selectedProvider, setSelectedProvider] = useState('');
-  const [optimizationCriteria, setOptimizationCriteria] = useState('BALANCED');
+
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('create');
@@ -142,9 +133,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       errors.targetAudience = t('contentCreator.targetAudienceRequired');
     }
 
-    if (!optimizationCriteria.trim()) {
-      errors.optimizationCriteria = t('contentCreator.optimizationRequired');
-    }
+
 
     // Optional: Validate prompt length
     if (prompt.trim() && prompt.trim().length < 10) {
@@ -180,11 +169,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       language,
       tone,
       targetAudience,
-      maxTokens,
-      temperature,
+      maxTokens: 500,
+      temperature: 0.7,
       workspaceId,
-      preferredProvider: selectedProvider && selectedProvider.trim() !== '' ? selectedProvider : null,
-      optimizationCriteria,
+      preferredProvider: 'openai',
       templateId: selectedTemplate?.id,
       templateVariables: selectedTemplate?.variables,
       templateName: selectedTemplate?.name,
@@ -203,11 +191,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       templateSeoTitle: selectedTemplate?.seoTitle,
       templateSeoDescription: selectedTemplate?.seoDescription,
       templateKeywords: selectedTemplate?.keywords,
-      aiProvider: selectedProvider && selectedProvider.trim() !== '' ? selectedProvider : undefined,
+      aiProvider: 'openai',
       aiModel: null, // Let backend auto-select the model
       aiParameters: {
-        temperature: temperature,
-        maxTokens: maxTokens
+        temperature: 0.7,
+        maxTokens: 500
       },
     };
 
@@ -243,7 +231,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
       // Use existing content ID or generate a new one
       const contentId = lastContentId || generateContentId();
       console.log('Using content ID for workflow:', contentId);
-      
+
       const run = await triggerAiAvatarWorkflow(contentId, contentData);
       setToastSeverity('success');
       setToastMsg(t('contentCreator.sentToWorkflow'));
@@ -532,156 +520,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
               )}
             </Box>
 
-            {/* Optimization Criteria */}
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-                {t('contentCreator.optimization')}
-              </Typography>
-              <FormControl fullWidth error={!!validationErrors.optimizationCriteria}>
-                <Select
-                  value={optimizationCriteria}
-                  onChange={(e) => {
-                    setOptimizationCriteria(e.target.value);
-                    if (validationErrors.optimizationCriteria) {
-                      setValidationErrors(prev => ({ ...prev, optimizationCriteria: '' }));
-                    }
-                  }}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: 'background.paper',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: 'background.paper',
-                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        borderRadius: 2,
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        mt: 0.5,
-                        '& .MuiMenuItem-root': {
-                          borderRadius: 1,
-                          mx: 0.5,
-                          my: 0.25,
-                          minHeight: 56,
-                        },
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="" disabled>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      {t('contentCreator.selectOptimization')}
-                    </Typography>
-                  </MenuItem>
-                  {optimizationOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      <Box sx={{ py: 0.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
-                          {option.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-                          {option.description}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-                {validationErrors.optimizationCriteria && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
-                    {validationErrors.optimizationCriteria}
-                  </Typography>
-                )}
-              </FormControl>
-            </Box>
 
-            {/* AI Provider Selection */}
-            <Box sx={{ mb: 4 }}>
-              <AIProviderSelector
-                selectedProvider={selectedProvider}
-                onProviderSelect={setSelectedProvider}
-                optimizationCriteria={optimizationCriteria}
-              />
-            </Box>
 
-            {/* Advanced Settings */}
-            <Box sx={{
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              pt: 3,
-              mt: 3
-            }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showAdvancedSettings}
-                    onChange={(e) => setShowAdvancedSettings(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                    {t('contentCreator.advancedSettings')}
-                  </Typography>
-                }
-                sx={{ mb: 2 }}
-              />
-            </Box>
 
-            {showAdvancedSettings && (
-              <Box sx={{
-                mb: 3,
-                p: 3,
-                bgcolor: 'grey.50',
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider'
-              }}>
-                <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                  {t('contentCreator.maxTokens')}: {maxTokens}
-                </Typography>
-                <Slider
-                  value={maxTokens}
-                  onChange={(_, value) => setMaxTokens(value as number)}
-                  min={50}
-                  max={4000}
-                  step={50}
-                  marks={[
-                    { value: 50, label: '50' },
-                    { value: 500, label: '500' },
-                    { value: 1000, label: '1K' },
-                    { value: 2000, label: '2K' },
-                    { value: 4000, label: '4K' }
-                  ]}
-                  sx={{ mb: 3 }}
-                />
 
-                <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                  {t('contentCreator.temperature')}: {temperature}
-                </Typography>
-                <Slider
-                  value={temperature}
-                  onChange={(_, value) => setTemperature(value as number)}
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  marks={[
-                    { value: 0, label: t('contentCreator.focused') },
-                    { value: 0.7, label: t('contentCreator.balanced') },
-                    { value: 1.5, label: t('contentCreator.creative') },
-                    { value: 2, label: t('contentCreator.random') }
-                  ]}
-                />
-              </Box>
-            )}
+
 
             {/* Validation Errors Summary */}
             {Object.keys(validationErrors).length > 0 && (
@@ -753,7 +596,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                 justifyContent: 'center'
               }}>
                 <Chip
-                  label={t('contentCreator.useTemplate')}
+                  label={t('contentCreator.templates')}
                   onClick={() => setActiveTab('templates')}
                   variant="outlined"
                   size="medium"
@@ -767,7 +610,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
                   }}
                 />
                 <Chip
-                  label={t('contentCreator.viewHistory')}
+                  label={t('contentCreator.history')}
                   onClick={() => setActiveTab('history')}
                   variant="outlined"
                   size="medium"
