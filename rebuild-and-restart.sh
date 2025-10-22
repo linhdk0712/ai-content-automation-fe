@@ -50,7 +50,7 @@ server {
     
     # API proxy to backend service
     location /api/ {
-        proxy_pass http://localhost:8081;
+        proxy_pass http://localhost:8082;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;

@@ -37,14 +37,14 @@ export interface LocaleData {
 export class I18nManager {
   private static instance: I18nManager;
   private currentLanguage: string = 'en';
-  private translations: Map<string, Translations> = new Map();
-  private localeData: Map<string, LocaleData> = new Map();
-  private fallbackLanguage: string = 'en';
-  private loadedLanguages: Set<string> = new Set();
-  private changeListeners: Array<(language: string) => void> = [];
+  private readonly translations: Map<string, Translations> = new Map();
+  private readonly localeData: Map<string, LocaleData> = new Map();
+  private readonly fallbackLanguage: string = 'en';
+  private readonly loadedLanguages: Set<string> = new Set();
+  private readonly changeListeners: Array<(language: string) => void> = [];
 
   // Supported languages
-  private supportedLanguages: Language[] = [
+  private readonly supportedLanguages: Language[] = [
     {
       code: 'en',
       name: 'English',
@@ -58,63 +58,63 @@ export class I18nManager {
       nativeName: 'Tiếng Việt',
       rtl: false,
       flag: '🇻🇳'
-    },
-    {
-      code: 'zh',
-      name: 'Chinese',
-      nativeName: '中文',
-      rtl: false,
-      flag: '🇨🇳'
-    },
-    {
-      code: 'ja',
-      name: 'Japanese',
-      nativeName: '日本語',
-      rtl: false,
-      flag: '🇯🇵'
-    },
-    {
-      code: 'ko',
-      name: 'Korean',
-      nativeName: '한국어',
-      rtl: false,
-      flag: '🇰🇷'
-    },
-    {
-      code: 'ar',
-      name: 'Arabic',
-      nativeName: 'العربية',
-      rtl: true,
-      flag: '🇸🇦'
-    },
-    {
-      code: 'es',
-      name: 'Spanish',
-      nativeName: 'Español',
-      rtl: false,
-      flag: '🇪🇸'
-    },
-    {
-      code: 'fr',
-      name: 'French',
-      nativeName: 'Français',
-      rtl: false,
-      flag: '🇫🇷'
-    },
-    {
-      code: 'de',
-      name: 'German',
-      nativeName: 'Deutsch',
-      rtl: false,
-      flag: '🇩🇪'
-    },
-    {
-      code: 'pt',
-      name: 'Portuguese',
-      nativeName: 'Português',
-      rtl: false,
-      flag: '🇵🇹'
-    }
+     }
+    // {
+    //   code: 'zh',
+    //   name: 'Chinese',
+    //   nativeName: '中文',
+    //   rtl: false,
+    //   flag: '🇨🇳'
+    // },
+    // {
+    //   code: 'ja',
+    //   name: 'Japanese',
+    //   nativeName: '日本語',
+    //   rtl: false,
+    //   flag: '🇯🇵'
+    // },
+    // {
+    //   code: 'ko',
+    //   name: 'Korean',
+    //   nativeName: '한국어',
+    //   rtl: false,
+    //   flag: '🇰🇷'
+    // },
+    // {
+    //   code: 'ar',
+    //   name: 'Arabic',
+    //   nativeName: 'العربية',
+    //   rtl: true,
+    //   flag: '🇸🇦'
+    // },
+    // {
+    //   code: 'es',
+    //   name: 'Spanish',
+    //   nativeName: 'Español',
+    //   rtl: false,
+    //   flag: '🇪🇸'
+    // },
+    // {
+    //   code: 'fr',
+    //   name: 'French',
+    //   nativeName: 'Français',
+    //   rtl: false,
+    //   flag: '🇫🇷'
+    // },
+    // {
+    //   code: 'de',
+    //   name: 'German',
+    //   nativeName: 'Deutsch',
+    //   rtl: false,
+    //   flag: '🇩🇪'
+    // },
+    // {
+    //   code: 'pt',
+    //   name: 'Portuguese',
+    //   nativeName: 'Português',
+    //   rtl: false,
+    //   flag: '🇵🇹'
+    // }
   ];
 
   private constructor() {
@@ -230,7 +230,7 @@ export class I18nManager {
     });
 
     // Add other languages...
-    ['es', 'fr', 'de', 'pt'].forEach(lang => {
+    for (const lang of ['es', 'fr', 'de', 'pt']) {
       this.localeData.set(lang, {
         dateFormat: 'DD/MM/YYYY',
         timeFormat: 'HH:mm',
@@ -245,7 +245,7 @@ export class I18nManager {
           position: 'before'
         }
       });
-    });
+    }
   }
 
   /**
@@ -319,8 +319,8 @@ export class I18nManager {
 
       return await response.json();
     } catch (error) {
-      // Fallback to basic translations if file doesn't exist
-      console.warn(`Translation file for ${languageCode} not found, using fallback`);
+      // Fallback to basic translations if file doesn't exist, but log the root cause
+      console.warn(`Translation file for ${languageCode} not found, using fallback`, error);
       return this.getFallbackTranslations(languageCode);
     }
   }
@@ -328,7 +328,7 @@ export class I18nManager {
   /**
    * Get fallback translations for unsupported languages
    */
-  private getFallbackTranslations(languageCode: string): Translations {
+  private getFallbackTranslations(_languageCode: string): Translations {
     // Basic fallback translations
     return {
       common: {
@@ -490,13 +490,13 @@ export class I18nManager {
     this.applyLocaleFormatting();
 
     // Notify listeners
-    this.changeListeners.forEach(listener => {
+    for (const listener of this.changeListeners) {
       try {
         listener(languageCode);
       } catch (error) {
         console.error('Error in language change listener:', error);
       }
-    });
+    }
 
     console.log(`Language changed from ${previousLanguage} to ${languageCode}`);
   }
@@ -617,9 +617,15 @@ export class I18nManager {
    * Interpolate parameters in translation string
    */
   private interpolateParams(translation: string, params: Record<string, string | number>): string {
-    return translation.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      return params[key]?.toString() || match;
-    });
+    let result = translation;
+    for (const [key, value] of Object.entries(params)) {
+      const search = `{{${key}}}`;
+      const anyResult = result as any;
+      result = anyResult.replaceAll
+        ? anyResult.replaceAll(search, String(value))
+        : result.split(search).join(String(value));
+    }
+    return result;
   }
 
   /**

@@ -79,7 +79,7 @@ npm run perf:lighthouse  # Performance testing
 
 ### Environment Setup
 - Docker support with polling for file watching
-- Proxy configuration for API integration (port 8081)
+- Proxy configuration for API integration (port 8082)
 - CORS handling for development
 - PWA manifest and service worker generation
 

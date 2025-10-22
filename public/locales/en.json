@@ -29,6 +29,8 @@
     "info": "Info"
   },
   "sidebar": {
+    "appTitle": "AI Content Pro",
+    "searchPlaceholder": "Search...",
     "dashboard": "Dashboard",
     "content": "Content",
     "createContent": "Create Content",

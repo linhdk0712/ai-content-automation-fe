@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import { ToastContainer } from 'react-toastify'
 
 import App from './App'
@@ -14,11 +15,11 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import { theme } from './theme'
 
 // Import styles - optimized for SPA
-import './styles/improvements.css'
-import './styles/layout-fixes.css'
+import 'react-toastify/dist/ReactToastify.css'
 import './styles/auth.css'
 import './styles/dashboard.css'
-import 'react-toastify/dist/ReactToastify.css'
+import './styles/improvements.css'
+import './styles/layout-fixes.css'
 import './styles/toast.css'
 
 // Create QueryClient optimized for SPA
@@ -63,34 +64,36 @@ window.addEventListener('unhandledrejection', handleUnhandledRejection)
 // Render app with SPA-optimized providers
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <CssBaseline />
-          <AuthProvider>
-            <NotificationProvider>
-              <App />
-            </NotificationProvider>
-          </AuthProvider>
-        </LocalizationProvider>
-      </ThemeProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        toastClassName="custom-toast"
-        progressClassName="custom-toast-progress"
-        // SPA-specific toast settings
-        limit={5}
-      />
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <CssBaseline />
+            <AuthProvider>
+              <NotificationProvider>
+                <App />
+              </NotificationProvider>
+            </AuthProvider>
+          </LocalizationProvider>
+        </ThemeProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          toastClassName="custom-toast"
+          progressClassName="custom-toast-progress"
+          // SPA-specific toast settings
+          limit={5}
+        />
+      </QueryClientProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 )

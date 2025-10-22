@@ -99,5 +99,26 @@
     "direction": "Text Direction",
     "yes": "Yes",
     "no": "No"
+  },
+  "sidebar": {
+    "appTitle": "AI Content Pro",
+    "searchPlaceholder": "Search...",
+    "dashboard": "Dashboard",
+    "content": "Content",
+    "createContent": "Create Content",
+    "workflow": "Workflow",
+    "workflowRuns": "Workflow Runs",
+    "workflowTimeline": "Workflow Timeline",
+    "contentLibrary": "Content Library",
+    "templates": "Templates",
+    "versionHistory": "Version History",
+    "export": "Export",
+    "socialMedia": "Social Media",
+    "accounts": "Accounts",
+    "publishingQueue": "Publishing Queue",
+    "calendar": "Calendar",
+    "analytics": "Analytics",
+    "platformSettings": "Platform Settings",
+    "contentOptimization": "Content Optimization"
   }
 }

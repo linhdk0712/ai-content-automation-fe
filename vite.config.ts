@@ -19,8 +19,6 @@ const configureCORS = (proxy: any) => {
 // https://vitejs.dev/config/
 // Environment detection utilities
 const isDocker = process.env.DOCKER === '1' || process.env.DOCKER === 'true'
-const isVercel = process.env.VERCEL === '1' || process.env.VERCEL === 'true'
-const isDevelopment = process.env.NODE_ENV === 'development'
 
 // Configuration constants
 const CONFIG = {
@@ -33,11 +31,15 @@ const CONFIG = {
       'localhost',
       '127.0.0.1',
       'bossai.com.vn'
-    ]
+    ] as string[]
   },
   api: {
-    dockerTarget: 'http://auth-service:8081',
-    localTarget: 'http://localhost:8081'
+    dockerTarget: 'http://auth-service:8082',
+    localTarget: 'http://localhost:8082'
+  },
+  realtime: {
+    remoteTarget: 'http://180.93.138.113:3001',
+    localTarget: 'http://localhost:3001'
   },
   build: {
     chunkSizeLimit: 2000,
@@ -79,6 +81,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: configureCORS
+      },
+      '/socket.io': {
+        target: CONFIG.realtime.remoteTarget, // Always use remote websocket server
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Enable websocket proxying
+        configure: configureCORS
       }
     }
   },
@@ -102,7 +111,8 @@ export default defineConfig({
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name?.split('.') || []
+          const fileName = assetInfo.name || ''
+          const info = fileName.split('.')
           const ext = info[info.length - 1]
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
             return `assets/images/[name]-[hash].[ext]`

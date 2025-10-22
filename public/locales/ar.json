@@ -140,5 +140,26 @@
     "deleted": "تم الحذف بنجاح",
     "created": "تم الإنشاء بنجاح",
     "published": "تم النشر بنجاح"
+  },
+  "sidebar": {
+    "appTitle": "AI Content Pro",
+    "searchPlaceholder": "بحث...",
+    "dashboard": "لوحة التحكم",
+    "content": "المحتوى",
+    "createContent": "إنشاء محتوى",
+    "workflow": "سير العمل",
+    "workflowRuns": "تشغيلات سير العمل",
+    "workflowTimeline": "الجدول الزمني لسير العمل",
+    "contentLibrary": "مكتبة المحتوى",
+    "templates": "القوالب",
+    "versionHistory": "تاريخ الإصدارات",
+    "export": "تصدير",
+    "socialMedia": "وسائل التواصل الاجتماعي",
+    "accounts": "الحسابات",
+    "publishingQueue": "طابور النشر",
+    "calendar": "التقويم",
+    "analytics": "التحليلات",
+    "platformSettings": "إعدادات المنصة",
+    "contentOptimization": "تحسين المحتوى"
   }
 }

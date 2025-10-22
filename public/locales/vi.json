@@ -29,6 +29,8 @@
     "info": "Thông tin"
   },
   "sidebar": {
+    "appTitle": "AI Content Pro",
+    "searchPlaceholder": "Tìm kiếm...",
     "dashboard": "Bảng điều khiển",
     "content": "Nội dung",
     "createContent": "Tạo nội dung",

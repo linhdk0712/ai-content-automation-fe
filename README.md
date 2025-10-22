@@ -51,10 +51,13 @@ A modern, responsive React frontend application for AI-powered content automatio
 
 ## 📦 Installation
 
+### ⚠️ Recent Updates
+**API Port Change**: The backend authentication service port has been updated from 8081 to **8082**. All configurations have been updated automatically. Ensure your backend service is running on port 8082.
+
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
-- Backend API running on port 8080
+- Backend API running on port 8082
 
 ### Setup
 ```bash
@@ -77,8 +80,15 @@ Create a `.env.local` file with the following variables:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_WS_URL=ws://localhost:8080/ws
+VITE_API_BASE_URL=/api/v1
+VITE_REALTIME_SERVER_URL=http://localhost:3001
+
+# Backend Services Configuration
+AUTH_SERVICE_PORT=8082
+REALTIME_SERVER_PORT=3001
+
+# Environment
+VITE_NODE_ENV=development
 
 # Feature Flags
 VITE_ENABLE_PWA=true
@@ -177,10 +187,13 @@ src/
 ### Vite Configuration
 The project uses Vite with the following key configurations:
 
-- **Development Server** - Hot module replacement and API proxying
-- **Build Optimization** - Code splitting, minification, and compression
+- **Development Server** - Hot module replacement with API and realtime proxying
+- **API Proxy** - Routes `/api` requests to authentication service (port 8082)
+- **Realtime Proxy** - Handles WebSocket connections to realtime server (port 3001)
+- **Docker Support** - Environment-aware proxy configuration for containerized development
+- **Build Optimization** - Memory-optimized builds with code splitting and minification
 - **PWA Support** - Service worker and manifest generation
-- **Bundle Analysis** - Visual bundle size analysis
+- **Bundle Analysis** - Visual bundle size analysis with rollup-plugin-visualizer
 
 ### TypeScript Configuration
 - **Strict Mode** - Enhanced type checking
@@ -464,6 +477,8 @@ location /locales/ {
 - [API Integration](./src/services/README.md)
 - [Testing Guide](./src/test/README.md)
 - [Deployment Guide](./DEPLOYMENT_README.md)
+- [API Configuration Update](./docs/api-configuration-update.md)
+- [Realtime Server Configuration](./docs/realtime-server-configuration.md)
 - [Accessibility & Internationalization](./src/accessibility-i18n-README.md)
 - [I18n Production Fix](./docs/i18n-production-fix.md)
 - [Workflow Timeline I18n Update](./WORKFLOW_TIMELINE_I18N_UPDATE.md)
@@ -487,7 +502,7 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 ### Common Issues
 - **Build Errors** - Check Node.js version and dependencies
-- **API Connection** - Verify backend is running on port 8080
+- **API Connection** - Verify backend is running on port 8082
 - **PWA Issues** - Clear browser cache and reinstall service worker
 - **Performance** - Use bundle analyzer to identify large dependencies
 

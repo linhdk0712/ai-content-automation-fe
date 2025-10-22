@@ -4,7 +4,7 @@ let io: any = null;
 // Initialize Socket.IO client
 const initializeSocketIO = async () => {
   if (io) return io;
-  
+
   try {
     const socketIOModule = await import('socket.io-client');
     io = socketIOModule.io || socketIOModule.default;
@@ -14,9 +14,9 @@ const initializeSocketIO = async () => {
     // Fallback mock
     io = () => ({
       connected: false,
-      on: () => {},
-      emit: () => {},
-      disconnect: () => {},
+      on: () => { },
+      emit: () => { },
+      disconnect: () => { },
       id: null
     });
     return io;
@@ -56,7 +56,9 @@ export class SocketService {
   private connectionOptions: SocketConnectionOptions | null = null;
 
   constructor() {
+    // Use environment variable for realtime server URL with fallback
     this.baseUrl = import.meta.env.VITE_REALTIME_SERVER_URL || 'http://localhost:3001';
+    console.log('Socket service initialized with URL:', this.baseUrl);
   }
 
   /**
@@ -73,7 +75,7 @@ export class SocketService {
     try {
       // Initialize Socket.IO client
       const socketIO = await initializeSocketIO();
-      
+
       if (typeof socketIO !== 'function') {
         throw new Error('Socket.IO client not available');
       }

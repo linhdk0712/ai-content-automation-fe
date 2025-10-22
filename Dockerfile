@@ -45,7 +45,7 @@ RUN npm run build && \
 FROM nginx:1.25-alpine AS production
 
 # Configure backend origin
-ARG BACKEND_ORIGIN=http://host.docker.internal:8081
+ARG BACKEND_ORIGIN=http://host.docker.internal:8082
 ENV BACKEND_ORIGIN=${BACKEND_ORIGIN}
 
 # Install curl for health checks
@@ -53,7 +53,7 @@ RUN apk add --no-cache curl
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-RUN sed -i "s|http://localhost:8081|${BACKEND_ORIGIN}|g" /etc/nginx/conf.d/default.conf
+RUN sed -i "s|http://localhost:8082|${BACKEND_ORIGIN}|g" /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

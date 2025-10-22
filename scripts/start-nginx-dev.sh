@@ -4,7 +4,7 @@
 
 echo "🚀 Starting nginx for development..."
 
-# Backend host/port with defaults: dev=8080, prod=8081
+# Backend host/port with defaults: dev=8080, prod=8082
 export BACKEND_HOST=${BACKEND_HOST:-localhost}
 export BACKEND_PORT=${BACKEND_PORT:-8080}
 echo "🔧 Using backend ${BACKEND_HOST}:${BACKEND_PORT}"

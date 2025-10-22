@@ -9,10 +9,10 @@ import NotificationContainer from './components/common/NotificationContainer'
 
 import { useAuth } from './hooks/useAuth'
 import routes from './router'
-import { ComponentPreloader } from './utils/codeSplitting'
-import { usePerformanceMonitor } from './utils/performance'
-import { i18nManager } from './utils/internationalization/i18nManager'
 import { realTimeManager } from './services/realtime.manager'
+import { ComponentPreloader } from './utils/codeSplitting'
+import { i18nManager } from './utils/internationalization/i18nManager'
+import { usePerformanceMonitor } from './utils/performance'
 
 // Import debug utilities in development
 if (import.meta.env.DEV) {
@@ -25,6 +25,8 @@ const router = createBrowserRouter(routes, {
   // Enable future flags for better SPA performance
   future: {
     v7_normalizeFormMethod: true,
+    // @ts-expect-error: Flag exists at runtime in newer React Router versions
+    v7_startTransition: true,
   },
 })
 
@@ -99,12 +101,7 @@ function AppContent() {
   }
 
   return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error('App Error:', error, errorInfo)
-        // Send to error tracking service in production
-      }}
-    >
+    <ErrorBoundary>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Use RouterProvider for optimized SPA routing */}
         <RouterProvider
