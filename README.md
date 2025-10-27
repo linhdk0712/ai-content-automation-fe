@@ -358,6 +358,7 @@ Visit `/toast-demo` in the application to test all notification features and pat
 - **Real-time Switching** - Language changes without page reload
 - **Pluralization** - Smart pluralization rules for different languages
 - **Missing Translation Warnings** - Development-friendly logging for missing translation keys
+- **I18n Provider Component** - Centralized translation loading with error handling and loading states
 
 ### Current I18n Status
 - **Core Components**: Fully internationalized with comprehensive translation coverage
@@ -381,6 +382,46 @@ public/locales/
 ├── de.json          # German
 └── pt.json          # Portuguese
 ```
+
+### I18nProvider Component
+**Location**: `src/components/common/I18nProvider.tsx`
+
+The I18nProvider component handles centralized translation loading and initialization:
+
+#### Features
+- **Automatic Initialization** - Loads current language and English fallback on app startup
+- **Loading States** - Displays loading spinner during translation file loading
+- **Error Handling** - Graceful error handling with user-friendly error messages
+- **Fallback Loading** - Automatically loads English as fallback for non-English languages
+- **Production Optimization** - Optimized for production environments with proper error recovery
+- **Production Ready** - Optimized initialization process for production environments
+- **Clean Loading** - Streamlined loading without debug overhead
+
+#### Implementation
+```typescript
+import I18nProvider from '@/components/common/I18nProvider';
+
+function App() {
+  return (
+    <I18nProvider>
+      <YourAppComponents />
+    </I18nProvider>
+  );
+}
+```
+
+#### Production Optimization
+The I18nProvider has been optimized for production environments:
+- **Clean Initialization**: Streamlined loading process without debug overhead
+- **Error Handling**: Robust error handling with user-friendly messages
+- **Performance**: Optimized loading sequence for faster app startup
+- **Fallback System**: Reliable fallback to English translations when needed
+
+#### Error States
+- **Loading State**: Shows spinner with "Loading translations..." message
+- **Error State**: Displays error message with refresh instruction
+- **Automatic Recovery**: Attempts to load fallback translations on failure
+- **Production Optimized**: Clean initialization without debug logging overhead
 
 ### Usage Examples
 ```typescript
@@ -525,6 +566,7 @@ location /locales/ {
 
 #### Component Documentation
 - [ContentCreator Component](./docs/ai/implementation/content-creator-component.md)
+- [Generation History Improvements](./docs/ai/implementation/generation-history-improvements.md)
 - [Implementation Guide](./docs/ai/implementation/README.md)
 
 ### External Links
@@ -549,6 +591,21 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 - **API Connection** - Verify backend is running on port 8082
 - **PWA Issues** - Clear browser cache and reinstall service worker
 - **Performance** - Use bundle analyzer to identify large dependencies
+- **Translation Issues** - Verify translation files are properly served and accessible
+
+### Troubleshooting I18n Issues
+If you encounter translation loading issues:
+
+1. **Check Network Tab**: Verify translation files are being loaded from `/locales/` directory
+2. **Verify File Paths**: Ensure translation files exist in `public/locales/` directory
+3. **Check Server Configuration**: Confirm server properly serves static files from `/locales/`
+4. **Browser Console**: Look for any error messages during app initialization
+5. **Fallback System**: The app should gracefully fall back to English if primary language fails
+
+**Common Solutions**:
+- Clear browser cache and reload
+- Verify translation files are included in build output
+- Check server MIME type configuration for `.json` files
 
 ---
 

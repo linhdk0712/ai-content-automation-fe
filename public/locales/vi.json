@@ -26,7 +26,13 @@
     "error": "Lỗi",
     "success": "Thành công",
     "warning": "Cảnh báo",
-    "info": "Thông tin"
+    "info": "Thông tin",
+    "loadingOptions": "Đang tải tùy chọn...",
+    "noOptionsAvailable": "Không có tùy chọn nào",
+    "selectOptions": "Chọn tùy chọn...",
+    "selectAnOption": "Chọn một tùy chọn...",
+    "searchOptions": "Tìm kiếm tùy chọn...",
+    "failedToLoadOptions": "Không thể tải tùy chọn"
   },
   "sidebar": {
     "appTitle": "AI Content Pro",
@@ -115,7 +121,10 @@
     "failedToSendBackend": "Không thể gửi nội dung đến backend",
     "usingTemplate": "Đang sử dụng mẫu",
     "completeRequiredFields": "Vui lòng hoàn thành tất cả các trường bắt buộc",
-    "generatingContent": "Đang tạo nội dung..."
+    "generatingContent": "Đang tạo nội dung...",
+    "fastestResponse": "Phản hồi nhanh nhất",
+    "prioritizeQuickGeneration": "Ưu tiên tạo nội dung nhanh chóng",
+    "goodBalance": "Cân bằng tốt giữa chất lượng, chi phí và tốc độ"
   },
   "workflows": {
     "workflowRuns": "Lịch sử quy trình",
@@ -149,7 +158,16 @@
     "selectIndustry": "Chọn ngành",
     "selectContentType": "Chọn loại nội dung",
     "selectTone": "Chọn giọng điệu",
-    "selectTargetAudience": "Chọn đối tượng mục tiêu"
+    "selectTargetAudience": "Chọn đối tượng mục tiêu",
+    "sendToWorkflow": "Gửi đến Workflow",
+    "sending": "Đang gửi..."
+  },
+  "sendToWorkflow": {
+    "sendToWorkflow": "Gửi đến Workflow",
+    "sending": "Đang gửi...",
+    "sentToWorkflow": "Đã gửi nội dung đến workflow thành công!",
+    "failedToSendWorkflow": "Không thể gửi nội dung đến workflow",
+    "noContentError": "Không có nội dung để gửi đến workflow"
   },
   "workflowTimeline": {
     "title": "Timeline Node Workflow",
@@ -185,6 +203,7 @@
     "noWorkflowsRunning": "Chưa có workflow nào chạy",
     "waitingForFirstNode": "Đang chờ node đầu tiên...",
     "selectExecutionToView": "Chọn một execution để xem timeline",
-    "result": "Kết quả"
+    "result": "Kết quả",
+    "finishedAt": "Kết thúc lúc"
   }
 }

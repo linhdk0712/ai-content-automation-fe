@@ -47,7 +47,6 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   const [targetAudience, setTargetAudience] = useState('');
 
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('create');
 
   const {
@@ -70,19 +69,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ workspaceId }) => {
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info'>('info');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // // Removed hardcoded arrays - now using List of Values system
-  //   { value: 'de', label: 'German' },
-  //   { value: 'zh', label: 'Chinese' },
-  //   { value: 'ja', label: 'Japanese' },
-  //   { value: 'ko', label: 'Korean' }
-  // ];
-
-  const optimizationOptions = [
-    { value: 'QUALITY', label: t('contentCreator.highestQuality'), description: t('contentCreator.bestAiModels') },
-    { value: 'COST', label: t('contentCreator.costEffective'), description: t('contentCreator.optimizeLowestCost') },
-    { value: 'SPEED', label: t('contentCreator.fastestResponse'), description: t('contentCreator.prioritizeQuickGeneration') },
-    { value: 'BALANCED', label: t('contentCreator.balanced'), description: t('contentCreator.goodBalance') }
-  ];
+  // Removed hardcoded arrays - now using List of Values system
 
   // Debounce template loading to avoid excessive API calls
   const debouncedFilters = useMemo(() => ({ industry, contentType }), [industry, contentType]);

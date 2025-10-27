@@ -28,7 +28,9 @@ import {
   Select,
   MenuItem,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Snackbar,
+  Alert as MuiAlert
 } from '@mui/material';
 import {
   ArrowBack,
@@ -43,10 +45,15 @@ import {
   Timer,
   Assessment,
   CheckCircle,
-  Error
+  Error,
+  SendToMobile
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useGenerationHistory } from '../../hooks/useGenerationHistory';
+import { triggerAiAvatarWorkflow } from '../../services/n8n.service';
+import { generateContentId } from '../../utils/uuid';
+import { useI18n } from '../../hooks/useI18n';
+import SendToWorkflowButton from './SendToWorkflowButton';
 
 interface GenerationHistoryProps {
   onRegenerateContent: (historyEntry: any) => void;
@@ -57,6 +64,7 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
   onRegenerateContent,
   onBackToCreate
 }) => {
+  const { t } = useI18n();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
@@ -92,6 +100,22 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
   const handleRegenerate = async (entry: any) => {
     await regenerateContent(entry.requestId);
     onRegenerateContent(entry);
+  };
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'info'>('info');
+
+  const handleWorkflowSuccess = (runId: string) => {
+    setToastSeverity('success');
+    setToastMsg(t('sendToWorkflow.sentToWorkflow'));
+    setToastOpen(true);
+  };
+
+  const handleWorkflowError = (error: Error) => {
+    setToastSeverity('error');
+    setToastMsg(t('sendToWorkflow.failedToSendWorkflow'));
+    setToastOpen(true);
   };
 
   const handleCopyContent = async (content: string) => {
@@ -378,14 +402,23 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
                                 <ContentCopy />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Regenerate">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleRegenerate(entry)}
-                              >
-                                <Refresh />
-                              </IconButton>
-                            </Tooltip>
+                            <SendToWorkflowButton
+                              content={entry.generatedContent}
+                              title={`Generated Content - ${format(new Date(entry.createdAt), 'MMM dd, yyyy')}`}
+                              metadata={{
+                                industry: entry.industry,
+                                contentType: entry.contentType,
+                                language: entry.language,
+                                tone: entry.tone,
+                                targetAudience: entry.targetAudience,
+                                aiProvider: entry.aiProvider,
+                                aiModel: entry.aiModel
+                              }}
+                              variant="outlined"
+                              size="small"
+                              onSuccess={handleWorkflowSuccess}
+                              onError={handleWorkflowError}
+                            />
                           </>
                         )}
                       </Box>
@@ -567,20 +600,41 @@ const GenerationHistory: React.FC<GenerationHistoryProps> = ({
               >
                 Copy Content
               </Button>
-              <Button
+              <SendToWorkflowButton
+                content={selectedEntry.generatedContent}
+                title={`Generated Content - ${format(new Date(selectedEntry.createdAt), 'MMM dd, yyyy')}`}
+                metadata={{
+                  industry: selectedEntry.industry,
+                  contentType: selectedEntry.contentType,
+                  language: selectedEntry.language,
+                  tone: selectedEntry.tone,
+                  targetAudience: selectedEntry.targetAudience,
+                  aiProvider: selectedEntry.aiProvider,
+                  aiModel: selectedEntry.aiModel
+                }}
                 variant="contained"
-                onClick={() => {
-                  handleRegenerate(selectedEntry);
+                onSuccess={(runId) => {
+                  handleWorkflowSuccess(runId);
                   setSelectedEntry(null as any);
                 }}
-                startIcon={<Refresh />}
-              >
-                Regenerate
-              </Button>
+                onError={handleWorkflowError}
+              />
             </>
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Toast Notifications */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert elevation={6} variant="filled" onClose={() => setToastOpen(false)} severity={toastSeverity}>
+          {toastMsg}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };

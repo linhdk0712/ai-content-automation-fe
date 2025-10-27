@@ -81,6 +81,42 @@ Real-time content preview and action interface:
 
 ### Common Components
 
+#### I18nProvider
+**Location**: `src/components/common/I18nProvider.tsx`
+
+Centralized internationalization provider component that handles translation loading and initialization:
+
+**Features**:
+- Automatic translation file loading on app startup
+- Loading states with user-friendly spinner
+- Error handling with graceful fallback
+- English fallback loading for non-English languages
+- Production-optimized error recovery
+- Clean initialization without debug overhead
+- Streamlined loading for optimal performance
+
+**Usage**:
+```typescript
+import I18nProvider from '@/components/common/I18nProvider';
+
+function App() {
+  return (
+    <I18nProvider>
+      <YourAppComponents />
+    </I18nProvider>
+  );
+}
+```
+
+**Production Optimization**:
+The component has been optimized for production environments:
+- Clean initialization process without debug logging overhead
+- Streamlined loading sequence for faster app startup
+- Robust error handling with user-friendly messages
+- Efficient fallback system for translation loading failures
+
+The component maintains comprehensive error handling while providing optimal performance in production.
+
 #### ListOfValuesSelect
 **Location**: `src/components/common/ListOfValuesSelect.tsx`
 

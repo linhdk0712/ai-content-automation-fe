@@ -172,9 +172,17 @@ The `I18nManager` handles all internationalization features with production-opti
 - **Translation Interpolation**: Parameter substitution with `{{key}}` syntax
 - **Multi-Level Fallback System**: Enhanced fallback through current → fallback → built-in → key display
 - **Development Warnings**: Console logging for missing translations to aid development
+- **Debug Logging**: Comprehensive initialization logging for troubleshooting translation issues
 
 **Critical Production Fix:**
 The translation loading system now uses absolute paths (`/locales/${languageCode}.json`) instead of relative paths, ensuring compatibility with production builds and various deployment configurations.
+
+**Debug Logging Enhancement:**
+The I18nProvider component now includes comprehensive debug logging to help troubleshoot translation loading issues:
+- Language detection and initialization logging
+- Translation file loading confirmation
+- Fallback translation loading verification
+- Translation functionality validation with test keys
 
 **Usage:**
 ```typescript
@@ -418,6 +426,33 @@ describe('I18n Enhanced Fallback System', () => {
 - Works without JavaScript
 - Graceful degradation
 - Performance optimization
+
+## 🛠️ Troubleshooting
+
+### I18n Debug Logging
+
+The I18nProvider component includes comprehensive debug logging to help troubleshoot translation issues. Check the browser console for detailed information:
+
+**Expected Console Output:**
+```
+Initializing i18n with language: vi
+Loaded translations for: vi
+Loaded fallback translations for: en
+Test translation for "common.loading": Đang tải...
+```
+
+**Common Issues:**
+- **Translation files not loading**: Check if files exist in `public/locales/` directory
+- **Incorrect language detection**: Verify browser language settings and localStorage
+- **Missing translations**: Look for console warnings about missing translation keys
+- **Fallback not working**: Ensure English translations are available as fallback
+
+**Debug Steps:**
+1. Open browser developer tools
+2. Refresh the page to see initialization logs
+3. Check for any error messages in the console
+4. Verify translation files are accessible at `/locales/{lang}.json`
+5. Test translation functionality with `i18nManager.t('common.loading')`
 
 ## 🔧 Configuration
 

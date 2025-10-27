@@ -17,13 +17,14 @@ import {
   Typography,
   Divider,
 } from '@mui/material'
-import { 
+import {
   Search as SearchIcon,
   KeyboardArrowDown as ArrowDownIcon,
   Check as CheckIcon
 } from '@mui/icons-material'
 import { useListOfValues, useDropdownWithListOfValues } from '../../hooks/useListOfValues'
 import { ListOfValuesResponse } from '../../services/listOfValues.service'
+import { useI18n } from '../../hooks/useI18n'
 
 export interface ListOfValuesSelectProps {
   category: string
@@ -73,6 +74,7 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
   renderValue,
   renderOption,
 }) => {
+  const { t } = useI18n();
   const {
     values,
     selectedValue,
@@ -99,7 +101,7 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
   const handleChange = (event: SelectChangeEvent<string | string[]>) => {
     const newValue = event.target.value
     setSelectedValue(newValue)
-    
+
     // Only notify parent when user actually changes the value
     if (onChange) {
       onChange(newValue)
@@ -117,11 +119,11 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
       if (selected.length === 0) {
         return (
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            {placeholder || 'Select options...'}
+            {placeholder || t('common.selectOptions')}
           </Typography>
         )
       }
-      
+
       return (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {selected.map((val) => {
@@ -152,11 +154,11 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
       if (!selected) {
         return (
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            {placeholder || 'Select an option...'}
+            {placeholder || t('common.selectAnOption')}
           </Typography>
         )
       }
-      
+
       const item = values.find(v => v.value === selected)
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -172,33 +174,33 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
   }
 
   const defaultRenderOption = (option: ListOfValuesResponse) => {
-    const isSelected = multiple 
+    const isSelected = multiple
       ? Array.isArray(selectedValue) && selectedValue.includes(option.value)
       : selectedValue === option.value
 
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
         width: '100%',
         py: 0.5,
         gap: 1.5
       }}>
         {showIcons && option.iconUrl && (
-          <Avatar 
-            src={option.iconUrl} 
-            sx={{ 
-              width: 28, 
+          <Avatar
+            src={option.iconUrl}
+            sx={{
+              width: 28,
               height: 28,
               border: '2px solid',
               borderColor: isSelected ? 'primary.main' : 'transparent'
-            }} 
+            }}
           />
         )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               fontWeight: isSelected ? 600 : 500,
               color: isSelected ? 'primary.main' : 'text.primary',
               mb: option.description ? 0.25 : 0
@@ -207,10 +209,10 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
             {option.displayLabel || option.label}
           </Typography>
           {option.description && (
-            <Typography 
-              variant="caption" 
+            <Typography
+              variant="caption"
               color="text.secondary"
-              sx={{ 
+              sx={{
                 display: 'block',
                 lineHeight: 1.2,
                 overflow: 'hidden',
@@ -223,11 +225,11 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
           )}
         </Box>
         {isSelected && (
-          <CheckIcon 
-            sx={{ 
+          <CheckIcon
+            sx={{
               color: 'primary.main',
               fontSize: 20
-            }} 
+            }}
           />
         )}
       </Box>
@@ -237,7 +239,7 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
   if (queryError) {
     return (
       <Alert severity="error" sx={sx}>
-        Failed to load options: {queryError.message}
+        {t('common.failedToLoadOptions')}: {queryError.message}
       </Alert>
     )
   }
@@ -279,8 +281,8 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
       }}
     >
       {label && (
-        <InputLabel 
-          sx={{ 
+        <InputLabel
+          sx={{
             fontWeight: 500,
             fontSize: '0.8rem',
             '&.MuiInputLabel-shrink': {
@@ -291,14 +293,14 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
           {label}
         </InputLabel>
       )}
-      
+
       {showSearch && (
         <TextField
-          placeholder="Search options..."
+          placeholder={t('common.searchOptions')}
           value={searchQuery}
           onChange={handleSearchChange}
           size="small"
-          sx={{ 
+          sx={{
             mb: 1,
             '& .MuiOutlinedInput-root': {
               borderRadius: 1.5,
@@ -370,9 +372,9 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
       >
         {isLoading ? (
           <MenuItem disabled>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
               gap: 1.5,
               py: 1,
               width: '100%',
@@ -380,7 +382,7 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
             }}>
               <CircularProgress size={18} />
               <Typography variant="body2" color="text.secondary">
-                Loading options...
+                {t('common.loadingOptions')}
               </Typography>
             </Box>
           </MenuItem>
@@ -400,15 +402,15 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
           ))
         ) : (
           <MenuItem disabled>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               py: 2,
               width: '100%'
             }}>
               <Typography variant="body2" color="text.secondary">
-                No options available
+                {t('common.noOptionsAvailable')}
               </Typography>
             </Box>
           </MenuItem>
@@ -416,10 +418,10 @@ export const ListOfValuesSelect: React.FC<ListOfValuesSelectProps> = ({
       </Select>
 
       {helperText && (
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            mt: 0.75, 
+        <Typography
+          variant="caption"
+          sx={{
+            mt: 0.75,
             ml: 1.75,
             color: error ? 'error.main' : 'text.secondary',
             fontWeight: 400

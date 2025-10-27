@@ -113,8 +113,8 @@ export const useGenerationHistory = () => {
 
       // Create regeneration request
       const regenerateRequest = {
-        prompt: originalEntry.content, // This would be the original prompt
-        aiProvider: originalEntry.provider.split(' ')[0], // Extract provider name
+        prompt: originalEntry.generatedContent, // Use the generated content as prompt
+        aiProvider: originalEntry.aiProvider.split(' ')[0], // Extract provider name
         parameters: {
           industry: originalEntry.industry,
           contentType: originalEntry.contentType
@@ -126,8 +126,8 @@ export const useGenerationHistory = () => {
       // Add new entry to history
       if (result.content) {
         const newEntry: GenerationHistoryEntry = {
-          id: result.id || 0,
-          requestId: result.requestId || '',
+          id: typeof result.id === 'number' ? result.id : 0,
+          requestId: `regen_${Date.now()}`, // Generate a new request ID for regenerated content
           generatedContent: result.content || '',
           generatedTitle: result.title || '',
           aiProvider: result.provider || '',

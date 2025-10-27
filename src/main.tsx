@@ -12,6 +12,7 @@ import { ToastContainer } from 'react-toastify'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import I18nProvider from './components/common/I18nProvider'
 import { theme } from './theme'
 
 // Import styles - optimized for SPA
@@ -69,11 +70,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider theme={theme}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <CssBaseline />
-            <AuthProvider>
-              <NotificationProvider>
-                <App />
-              </NotificationProvider>
-            </AuthProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <NotificationProvider>
+                  <App />
+                </NotificationProvider>
+              </AuthProvider>
+            </I18nProvider>
           </LocalizationProvider>
         </ThemeProvider>
         <ReactQueryDevtools initialIsOpen={false} />

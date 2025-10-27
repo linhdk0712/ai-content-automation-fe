@@ -26,7 +26,13 @@
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
-    "info": "Info"
+    "info": "Info",
+    "loadingOptions": "Loading options...",
+    "noOptionsAvailable": "No options available",
+    "selectOptions": "Select options...",
+    "selectAnOption": "Select an option...",
+    "searchOptions": "Search options...",
+    "failedToLoadOptions": "Failed to load options"
   },
   "sidebar": {
     "appTitle": "AI Content Pro",
@@ -170,7 +176,8 @@
     "noWorkflowsRunning": "No workflows running yet",
     "waitingForFirstNode": "Waiting for first node...",
     "selectExecutionToView": "Select an execution to view timeline",
-    "result": "Result"
+    "result": "Result",
+    "finishedAt": "Finished At"
   },
   "workflow": {
     "title": "Workflow",
@@ -185,7 +192,16 @@
     "selectIndustry": "Select Industry",
     "selectContentType": "Select Content Type",
     "selectTone": "Select Tone",
-    "selectTargetAudience": "Select Target Audience"
+    "selectTargetAudience": "Select Target Audience",
+    "sendToWorkflow": "Send to Workflow",
+    "sending": "Sending..."
+  },
+  "sendToWorkflow": {
+    "sendToWorkflow": "Send to Workflow",
+    "sending": "Sending...",
+    "sentToWorkflow": "Content sent to workflow successfully!",
+    "failedToSendWorkflow": "Failed to send content to workflow",
+    "noContentError": "No content available to send to workflow"
   },
   "workflowTimeline": {
     "title": "Workflow Node Timeline",
